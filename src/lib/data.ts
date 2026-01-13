@@ -106,4 +106,7 @@ export async function updateStudentStatus(id: string, status: Student['status'])
 export async function updateLessonStatus(id: string, status: Lesson['status']): Promise<Lesson> {
     await new Promise(resolve => setTimeout(resolve, 500));
     const lessonIndex = lessons.findIndex(l => l.id === id);
-    if(lessonIndex === -
+    if(lessonIndex === -1) throw new Error("Lesson not found");
+    lessons[lessonIndex].status = status;
+    return lessons[lessonIndex];
+}

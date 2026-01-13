@@ -23,4 +23,7 @@ export interface Lesson {
   studentId: string;
   title: string;
   date: string; // ISO string
-  startTime: string; //
+  startTime: string;
+  endTime: string;
+  status: LessonStatus;
+}

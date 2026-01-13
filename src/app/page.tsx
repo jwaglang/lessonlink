@@ -11,7 +11,7 @@ import PageHeader from '@/components/page-header';
 import { getStudents, getLessons } from '@/lib/data';
 import { BarChart, Clock, Users, DollarSign } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
-import RevenueChart from '@/app/reports/components/revenue-chart';
+import RevenueChart from './reports/components/revenue-chart';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default async function DashboardPage() {
