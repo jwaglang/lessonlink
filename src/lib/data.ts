@@ -103,6 +103,17 @@ export async function updateStudentStatus(id: string, status: Student['status'])
     return students[studentIndex];
 }
 
+export async function updateStudent(id: string, data: Partial<Pick<Student, 'name' | 'email'>>): Promise<Student> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const studentIndex = students.findIndex(s => s.id === id);
+    if (studentIndex === -1) throw new Error("Student not found");
+    
+    const updatedStudent = { ...students[studentIndex], ...data };
+    students[studentIndex] = updatedStudent;
+    
+    return updatedStudent;
+}
+
 export async function updateLessonStatus(id: string, status: Lesson['status']): Promise<Lesson> {
     await new Promise(resolve => setTimeout(resolve, 500));
     const lessonIndex = lessons.findIndex(l => l.id === id);

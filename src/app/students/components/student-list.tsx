@@ -23,15 +23,29 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import EditStudentForm from './edit-student-form';
 
 export default function StudentList({ initialStudents }: { initialStudents: Student[] }) {
   const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const handleStatusUpdate = (studentId: string, updatedStudent: Student) => {
     setStudents(prevStudents =>
-      prevStudents.map(s => (s.id === studentId ? updatedStudent : s))
+      prevStudents.map(s => (s.id === studentId ? { ...s, ...updatedStudent } : s))
     );
   };
+
+  const handleEditClick = (student: Student) => {
+    setSelectedStudent(student);
+    setIsSheetOpen(true);
+  }
+
+  const handleFormSuccess = (updatedStudent: Student) => {
+    handleStatusUpdate(updatedStudent.id, updatedStudent);
+    setIsSheetOpen(false);
+  }
 
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -86,7 +100,7 @@ export default function StudentList({ initialStudents }: { initialStudents: Stud
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(student)}>Edit</DropdownMenuItem>
                         <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
@@ -98,6 +112,14 @@ export default function StudentList({ initialStudents }: { initialStudents: Stud
         })}
         </TableBody>
       </Table>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent>
+            <SheetHeader>
+                <SheetTitle>Edit Student</SheetTitle>
+            </SheetHeader>
+            {selectedStudent && <EditStudentForm student={selectedStudent} onSuccess={handleFormSuccess} />}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
