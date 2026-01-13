@@ -95,6 +95,18 @@ export async function getLessons(): Promise<Lesson[]> {
   return lessons;
 }
 
+export async function addLesson(data: Omit<Lesson, 'id' | 'status'>): Promise<Lesson> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const newId = `l${lessons.length + 1}`;
+    const newLesson: Lesson = {
+        id: newId,
+        ...data,
+        status: 'scheduled',
+    };
+    lessons = [newLesson, ...lessons];
+    return newLesson;
+}
+
 export async function addStudent(data: Pick<Student, 'name' | 'email'>): Promise<Student> {
     await new Promise(resolve => setTimeout(resolve, 500));
     const newId = String(students.length + 1);

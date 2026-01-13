@@ -13,11 +13,10 @@ import {
   subDays,
 } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Edit, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -33,14 +32,15 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 type LessonWithStudent = Lesson & { student?: Student };
 
 export default function WeeklyCalendar({
-  lessons: initialLessons,
+  lessons,
+  setLessons,
   students,
 }: {
   lessons: Lesson[];
+  setLessons: React.Dispatch<React.SetStateAction<Lesson[]>>;
   students: Student[];
 }) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [lessons, setLessons] = useState(initialLessons);
   const [selectedLesson, setSelectedLesson] = useState<LessonWithStudent | null>(null);
   const { toast } = useToast();
 
