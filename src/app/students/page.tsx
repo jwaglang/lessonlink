@@ -4,12 +4,12 @@ import { useState } from 'react';
 import type { Student } from '@/lib/types';
 import { getStudents } from "@/lib/data";
 import PageHeader from "@/components/page-header";
-import StudentListWrapper from "./components/student-list-wrapper";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import AddStudentForm from "./components/add-student-form";
 import { useEffect } from 'react';
+import StudentList from './components/student-list';
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
