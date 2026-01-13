@@ -38,3 +38,10 @@ export interface Availability {
   time: string; // "HH:00" format
   isAvailable: boolean;
 }
+
+export interface LessonType {
+  id: string;
+  name: string;
+  rate: number;
+  currency: string;
+}

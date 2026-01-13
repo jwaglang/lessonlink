@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import WeeklyCalendar from "./components/weekly-calendar";
-import { getLessons, getStudents, getAvailability } from "@/lib/data";
-import type { Lesson, Student, Availability } from '@/lib/types';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { getLessons, getStudents, getAvailability, getLessonTypes } from "@/lib/data";
+import type { Lesson, Student, Availability, LessonType } from '@/lib/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import BookLessonForm from './components/book-lesson-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AvailabilityCalendar from './components/availability-calendar';
@@ -14,7 +14,8 @@ export default function CalendarPage() {
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [availability, setAvailability] = useState<Availability[]>([]);
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
 
     useEffect(() => {
@@ -22,21 +23,23 @@ export default function CalendarPage() {
             const lessonData = await getLessons();
             const studentData = await getStudents();
             const availabilityData = await getAvailability();
+            const lessonTypeData = await getLessonTypes();
             setLessons(lessonData);
             setStudents(studentData);
             setAvailability(availabilityData);
+            setLessonTypes(lessonTypeData);
         };
         fetchData();
     }, []);
 
     const handleLessonBooked = (newLesson: Lesson) => {
         setLessons(prev => [...prev, newLesson]);
-        setIsSheetOpen(false);
+        setIsDialogOpen(false);
     };
 
     const handleSlotDoubleClick = (date: Date, time: string) => {
         setSelectedSlot({ date, time });
-        setIsSheetOpen(true);
+        setIsDialogOpen(true);
     };
 
     return (
@@ -61,21 +64,22 @@ export default function CalendarPage() {
                 </TabsContent>
             </Tabs>
             
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetContent>
-                    <SheetHeader>
-                        <SheetTitle>Book a New Lesson</SheetTitle>
-                    </SheetHeader>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Book a New Lesson</DialogTitle>
+                    </DialogHeader>
                     {selectedSlot && (
                         <BookLessonForm 
-                            students={students} 
+                            students={students}
+                            lessonTypes={lessonTypes}
                             onSuccess={handleLessonBooked} 
                             selectedDate={selectedSlot.date}
                             selectedTime={selectedSlot.time}
                         />
                     )}
-                </SheetContent>
-            </Sheet>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

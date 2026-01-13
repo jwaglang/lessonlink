@@ -1,7 +1,15 @@
-import type { Student, Lesson, Availability } from './types';
+import type { Student, Lesson, Availability, LessonType } from './types';
 import { subDays, addDays, formatISO, startOfDay } from 'date-fns';
 
 const today = new Date();
+
+let lessonTypes: LessonType[] = [
+    { id: 'lt1', name: 'Algebra II', rate: 25, currency: 'USD' },
+    { id: 'lt2', name: 'Creative Writing', rate: 2000, currency: 'RUB' },
+    { id: 'lt3', name: 'History 101', rate: 30, currency: 'EUR' },
+    { id: 'lt4', name: 'Physics Fundamentals', rate: 40, currency: 'USD' },
+    { id: 'lt5', name: 'Spanish for Beginners', rate: 150, currency: 'CNY' },
+];
 
 let lessons: Lesson[] = [
   { id: 'l1', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 10)), startTime: '10:00', endTime: '11:00', status: 'paid', rate: 25, paymentAmount: 25, paymentCurrency: 'USD' },
@@ -86,6 +94,12 @@ let availability: Availability[] = [
     { id: 'a4', date: formatISO(startOfDay(addDays(today, 2))), time: '15:00', isAvailable: true },
 ];
 
+export async function getLessonTypes(): Promise<LessonType[]> {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return lessonTypes;
+}
+
 export async function getStudents(): Promise<Student[]> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
@@ -162,7 +176,8 @@ export async function updateLessonStatus(id: string, status: Lesson['status']): 
     // If lesson is paid, but has no payment info, add some mock payment
     if (status === 'paid' && !lessons[lessonIndex].paymentAmount) {
         lessons[lessonIndex].paymentAmount = lessons[lessonIndex].rate;
-        lessons[lessonIndex].paymentCurrency = 'USD';
+        const lessonType = lessonTypes.find(lt => lt.name === lessons[lessonIndex].title);
+        lessons[lessonIndex].paymentCurrency = lessonType?.currency || 'USD';
     }
 
     return lessons[lessonIndex];

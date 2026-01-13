@@ -4,7 +4,7 @@ import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, parse, addHours } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Form,
   FormControl,
@@ -14,37 +14,33 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { addLesson } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
-import type { Lesson, Student } from '@/lib/types';
+import type { Lesson, Student, LessonType } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
-  title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
-  rate: z.coerce.number().min(0, { message: 'Rate must be a positive number.' }),
+  lessonTypeId: z.string({ required_error: 'Please select a lesson type.' }),
 });
 
 interface BookLessonFormProps {
   students: Student[];
+  lessonTypes: LessonType[];
   onSuccess: (newLesson: Lesson) => void;
   selectedDate: Date;
   selectedTime: string;
 }
 
-export default function BookLessonForm({ students, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
+export default function BookLessonForm({ students, lessonTypes, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: '',
-      rate: 25,
-    },
+    defaultValues: {},
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -54,8 +50,13 @@ export default function BookLessonForm({ students, onSuccess, selectedDate, sele
         const startHour = parseInt(startTime.split(':')[0]);
         const endTime = `${(startHour + 1).toString().padStart(2, '0')}:00`;
 
+        const lessonType = lessonTypes.find(lt => lt.id === values.lessonTypeId);
+        if (!lessonType) throw new Error('Selected lesson type not found');
+
         const newLessonData = {
-          ...values,
+          studentId: values.studentId,
+          title: lessonType.name,
+          rate: lessonType.rate,
           date: selectedDate.toISOString(),
           startTime,
           endTime,
@@ -108,29 +109,27 @@ export default function BookLessonForm({ students, onSuccess, selectedDate, sele
         />
         <FormField
           control={form.control}
-          name="title"
+          name="lessonTypeId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Lesson Title</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Algebra II" {...field} />
-              </FormControl>
+              <FormLabel>Lesson</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a lesson type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {lessonTypes.map(lessonType => (
+                    <SelectItem key={lessonType.id} value={lessonType.id}>
+                      {lessonType.name} ({lessonType.rate} {lessonType.currency})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormDescription>
-                We will later replace this with a pre-defined lesson selector.
+                You will be able to create and manage these lessons later.
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="rate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rate</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="25" {...field} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
