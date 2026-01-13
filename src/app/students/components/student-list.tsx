@@ -58,7 +58,7 @@ export default function StudentList({ initialStudents, setStudents }: { initialS
           </TableRow>
         </TableHeader>
         <TableBody>
-          {initialStudents.map((student) => {
+          {initialStudents && initialStudents.map((student) => {
             const packagePercentage = (student.prepaidPackage.balance / student.prepaidPackage.initialValue) * 100;
             const studentImage = PlaceHolderImages.find(img => img.id === `student${student.id}`);
             return (
