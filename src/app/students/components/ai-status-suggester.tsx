@@ -95,16 +95,18 @@ export default function AIStatusSuggester({ student, onStatusUpdate }: AIStatusS
             <AlertDialogTitle className="flex items-center gap-2 font-headline">
               <Wand2 className="primary-gradient-text" /> AI Status Suggestion
             </AlertDialogTitle>
-            <AlertDialogDescription className="pt-4">
-              <p className="font-semibold text-foreground">
-                Based on {student.name}'s profile, we suggest the status:
-              </p>
-              <p className="text-lg font-bold primary-gradient-text my-2 capitalize">
-                {suggestion?.suggestedStatus}
-              </p>
-              <p className="text-sm text-muted-foreground italic">
-                "{suggestion?.reason}"
-              </p>
+            <AlertDialogDescription className="pt-4" asChild>
+              <div>
+                <span className="font-semibold text-foreground">
+                  Based on {student.name}'s profile, we suggest the status:
+                </span>
+                <div className="text-lg font-bold primary-gradient-text my-2 capitalize">
+                  {suggestion?.suggestedStatus}
+                </div>
+                <div className="text-sm text-muted-foreground italic">
+                  "{suggestion?.reason}"
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
