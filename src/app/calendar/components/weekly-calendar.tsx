@@ -156,4 +156,16 @@ export default function WeeklyCalendar({
                             <SelectContent>
                                 <SelectItem value="scheduled">Scheduled</SelectItem>
                                 <SelectItem value="paid">Paid</SelectItem>
-                                <SelectItem value="unpaid">Unpaid</
+                                <SelectItem value="unpaid">Unpaid</SelectItem>
+                                <SelectItem value="deducted">Deducted from Package</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                </>
+            )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
