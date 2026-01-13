@@ -95,6 +95,26 @@ export async function getLessons(): Promise<Lesson[]> {
   return lessons;
 }
 
+export async function addStudent(data: Pick<Student, 'name' | 'email'>): Promise<Student> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const newId = String(students.length + 1);
+    const newStudent: Student = {
+        id: newId,
+        name: data.name,
+        email: data.email,
+        avatarUrl: `/avatars/student${newId}.png`,
+        status: 'currently enrolled',
+        enrollmentStatus: 'Active',
+        paymentStatus: 'unpaid',
+        prepaidPackage: { initialValue: 0, balance: 0 },
+        lessons: [],
+        goalMet: false,
+    };
+    students = [newStudent, ...students];
+    return newStudent;
+}
+
+
 export async function updateStudentStatus(id: string, status: Student['status']): Promise<Student> {
     await new Promise(resolve => setTimeout(resolve, 500));
     const studentIndex = students.findIndex(s => s.id === id);
