@@ -10,7 +10,7 @@ interface PageHeaderProps {
 
 const PageHeader: React.FC<PageHeaderProps> = ({ title, description, className, children }) => {
   return (
-    <div className={cn("flex flex-col md:flex-row md:items-center md:justify-between gap-4", className)}>
+    <div className={cn("flex flex-col md:flex-row md:items-start md:justify-between gap-4", className)}>
       <div>
         <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tight primary-gradient-text">
           {title}

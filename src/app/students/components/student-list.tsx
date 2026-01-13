@@ -26,7 +26,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import EditStudentForm from './edit-student-form';
 
-export default function StudentList({ initialStudents, setStudents }: { initialStudents: Student[], setStudents: React.Dispatch<React.SetStateAction<Student[]>> }) {
+export default function StudentList({ students, setStudents }: { students: Student[], setStudents: React.Dispatch<React.SetStateAction<Student[]>> }) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -58,7 +58,7 @@ export default function StudentList({ initialStudents, setStudents }: { initialS
           </TableRow>
         </TableHeader>
         <TableBody>
-          {initialStudents && initialStudents.map((student) => {
+          {students && students.map((student) => {
             const packagePercentage = (student.prepaidPackage.balance / student.prepaidPackage.initialValue) * 100;
             const studentImage = PlaceHolderImages.find(img => img.id === `student${student.id}`);
             return (
