@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -13,10 +15,64 @@ import { BarChart, Clock, Users, DollarSign } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 import RevenueChart from './reports/components/revenue-chart';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useEffect, useState } from 'react';
+import type { Student, Lesson } from '@/lib/types';
 
-export default async function DashboardPage() {
-  const students = await getStudents();
-  const lessons = await getLessons();
+type ConversionRate = {
+    from: string;
+    to: string;
+    rate: number;
+}
+
+export default function DashboardPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [defaultCurrency, setDefaultCurrency] = useState('EUR');
+
+  useEffect(() => {
+    async function fetchData() {
+        const studentData = await getStudents();
+        const lessonData = await getLessons();
+        setStudents(studentData);
+        setLessons(lessonData);
+        
+        const savedSettings = localStorage.getItem('lessonLinkSettings');
+        let rates: ConversionRate[] = [
+            { from: 'USD', to: 'EUR', rate: 0.92 },
+            { from: 'RUB', to: 'EUR', rate: 0.01 },
+            { from: 'CNY', to: 'EUR', rate: 0.13 },
+        ];
+        let currency = 'EUR';
+
+        if (savedSettings) {
+            const { currencySettings } = JSON.parse(savedSettings);
+            if (currencySettings) {
+               rates = currencySettings.conversionRates;
+               currency = currencySettings.defaultCurrency;
+               setDefaultCurrency(currency);
+            }
+        }
+        
+        const revenue = lessonData
+            .filter((l) => l.status === 'paid' && l.paymentAmount && l.paymentCurrency)
+            .reduce((sum, l) => {
+                if (l.paymentCurrency === currency) {
+                    return sum + l.paymentAmount!;
+                }
+                const conversion = rates.find(r => r.from === l.paymentCurrency && r.to === currency);
+                if (conversion) {
+                    return sum + (l.paymentAmount! * conversion.rate);
+                }
+                // If no conversion rate is found, we don't add it to the total for now.
+                // You might want to handle this case differently, e.g., show a warning.
+                return sum;
+            }, 0);
+        
+        setTotalRevenue(revenue);
+    }
+    fetchData();
+  }, []);
 
   const upcomingLessons = lessons
     .filter((lesson) => isFuture(parseISO(lesson.date)))
@@ -27,16 +83,12 @@ export default async function DashboardPage() {
     (student) => student.status === 'MIA' || (student.prepaidPackage.balance <= 0 && student.status === 'currently enrolled')
   );
 
-  const totalRevenue = lessons
-    .filter((l) => l.status === 'paid')
-    .reduce((sum, l) => {
-        const student = students.find(s => s.id === l.studentId);
-        if (student) {
-            return sum + (student.prepaidPackage.initialValue / 20); // Assuming 20 lessons per package
-        }
-        return sum;
-    }, 0);
-
+  const currencySymbols: { [key: string]: string } = {
+    'EUR': '€',
+    'USD': '$',
+    'GBP': '£',
+    'JPY': '¥',
+  }
 
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8">
@@ -48,7 +100,9 @@ export default async function DashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-headline">${totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold font-headline">
+                {currencySymbols[defaultCurrency] || '$'}{totalRevenue.toFixed(2)}
+            </div>
             <p className="text-xs text-muted-foreground">+20.1% from last month</p>
           </CardContent>
         </Card>

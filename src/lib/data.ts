@@ -4,16 +4,16 @@ import { subDays, addDays, formatISO } from 'date-fns';
 const today = new Date();
 
 let lessons: Lesson[] = [
-  { id: 'l1', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 10)), startTime: '10:00', endTime: '11:00', status: 'paid' },
-  { id: 'l2', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 3)), startTime: '10:00', endTime: '11:00', status: 'deducted' },
-  { id: 'l3', studentId: '1', title: 'Algebra II', date: formatISO(addDays(today, 4)), startTime: '10:00', endTime: '11:00', status: 'scheduled' },
-  { id: 'l4', studentId: '2', title: 'Creative Writing', date: formatISO(subDays(today, 8)), startTime: '14:00', endTime: '15:00', status: 'paid' },
-  { id: 'l5', studentId: '2', title: 'Creative Writing', date: formatISO(addDays(today, 6)), startTime: '14:00', endTime: '15:00', status: 'scheduled' },
-  { id: 'l6', studentId: '3', title: 'History 101', date: formatISO(subDays(today, 1)), startTime: '11:00', endTime: '12:00', status: 'unpaid' },
-  { id: 'l7', studentId: '3', title: 'History 101', date: formatISO(addDays(today, 7)), startTime: '11:00', endTime: '12:00', status: 'scheduled' },
-  { id: 'l8', studentId: '4', title: 'Physics Fundamentals', date: formatISO(subDays(today, 5)), startTime: '16:00', endTime: '17:00', status: 'deducted' },
-  { id: 'l9', studentId: '4', title: 'Physics Fundamentals', date: formatISO(addDays(today, 2)), startTime: '16:00', endTime: '17:00', status: 'scheduled' },
-  { id: 'l10', studentId: '5', title: 'Spanish for Beginners', date: formatISO(subDays(today, 14)), startTime: '09:00', endTime: '10:00', status: 'paid' },
+  { id: 'l1', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 10)), startTime: '10:00', endTime: '11:00', status: 'paid', rate: 25, paymentAmount: 25, paymentCurrency: 'USD' },
+  { id: 'l2', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 3)), startTime: '10:00', endTime: '11:00', status: 'deducted', rate: 25 },
+  { id: 'l3', studentId: '1', title: 'Algebra II', date: formatISO(addDays(today, 4)), startTime: '10:00', endTime: '11:00', status: 'scheduled', rate: 25 },
+  { id: 'l4', studentId: '2', title: 'Creative Writing', date: formatISO(subDays(today, 8)), startTime: '14:00', endTime: '15:00', status: 'paid', rate: 2000, paymentAmount: 2000, paymentCurrency: 'RUB' },
+  { id: 'l5', studentId: '2', title: 'Creative Writing', date: formatISO(addDays(today, 6)), startTime: '14:00', endTime: '15:00', status: 'scheduled', rate: 2000 },
+  { id: 'l6', studentId: '3', title: 'History 101', date: formatISO(subDays(today, 1)), startTime: '11:00', endTime: '12:00', status: 'unpaid', rate: 30 },
+  { id: 'l7', studentId: '3', title: 'History 101', date: formatISO(addDays(today, 7)), startTime: '11:00', endTime: '12:00', status: 'scheduled', rate: 30 },
+  { id: 'l8', studentId: '4', title: 'Physics Fundamentals', date: formatISO(subDays(today, 5)), startTime: '16:00', endTime: '17:00', status: 'deducted', rate: 40 },
+  { id: 'l9', studentId: '4', title: 'Physics Fundamentals', date: formatISO(addDays(today, 2)), startTime: '16:00', endTime: '17:00', status: 'scheduled', rate: 40 },
+  { id: 'l10', studentId: '5', title: 'Spanish for Beginners', date: formatISO(subDays(today, 14)), startTime: '09:00', endTime: '10:00', status: 'paid', rate: 150, paymentAmount: 150, paymentCurrency: 'CNY' },
 ];
 
 let students: Student[] = [
@@ -25,7 +25,7 @@ let students: Student[] = [
     status: 'currently enrolled',
     enrollmentStatus: 'Active',
     paymentStatus: 'paid',
-    prepaidPackage: { initialValue: 500, balance: 250 },
+    prepaidPackage: { initialValue: 500, balance: 250, currency: 'USD' },
     lessons: lessons.filter(l => l.studentId === '1'),
     goalMet: false,
   },
@@ -37,7 +37,7 @@ let students: Student[] = [
     status: 'currently enrolled',
     enrollmentStatus: 'Active',
     paymentStatus: 'unpaid',
-    prepaidPackage: { initialValue: 0, balance: 0 },
+    prepaidPackage: { initialValue: 0, balance: 0, currency: 'RUB' },
     lessons: lessons.filter(l => l.studentId === '2'),
     goalMet: false,
   },
@@ -49,7 +49,7 @@ let students: Student[] = [
     status: 'unenrolled (goal met)',
     enrollmentStatus: 'Inactive',
     paymentStatus: 'paid',
-    prepaidPackage: { initialValue: 300, balance: 0 },
+    prepaidPackage: { initialValue: 300, balance: 0, currency: 'EUR' },
     lessons: lessons.filter(l => l.studentId === '3'),
     goalMet: true,
   },
@@ -61,7 +61,7 @@ let students: Student[] = [
     status: 'unenrolled (package over)',
     enrollmentStatus: 'Inactive',
     paymentStatus: 'paid',
-    prepaidPackage: { initialValue: 800, balance: 0 },
+    prepaidPackage: { initialValue: 800, balance: 0, currency: 'USD' },
     lessons: lessons.filter(l => l.studentId === '4'),
     goalMet: false,
   },
@@ -73,7 +73,7 @@ let students: Student[] = [
     status: 'MIA',
     enrollmentStatus: 'Active',
     paymentStatus: 'unpaid',
-    prepaidPackage: { initialValue: 0, balance: 0 },
+    prepaidPackage: { initialValue: 0, balance: 0, currency: 'CNY' },
     lessons: lessons.filter(l => l.studentId === '5'),
     goalMet: false,
   },
@@ -106,7 +106,7 @@ export async function addStudent(data: Pick<Student, 'name' | 'email'>): Promise
         status: 'currently enrolled',
         enrollmentStatus: 'Active',
         paymentStatus: 'unpaid',
-        prepaidPackage: { initialValue: 0, balance: 0 },
+        prepaidPackage: { initialValue: 0, balance: 0, currency: 'USD' },
         lessons: [],
         goalMet: false,
     };
@@ -139,5 +139,12 @@ export async function updateLessonStatus(id: string, status: Lesson['status']): 
     const lessonIndex = lessons.findIndex(l => l.id === id);
     if(lessonIndex === -1) throw new Error("Lesson not found");
     lessons[lessonIndex].status = status;
+
+    // If lesson is paid, but has no payment info, add some mock payment
+    if (status === 'paid' && !lessons[lessonIndex].paymentAmount) {
+        lessons[lessonIndex].paymentAmount = lessons[lessonIndex].rate;
+        lessons[lessonIndex].paymentCurrency = 'USD';
+    }
+
     return lessons[lessonIndex];
 }

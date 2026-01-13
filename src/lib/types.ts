@@ -11,6 +11,7 @@ export interface Student {
   prepaidPackage: {
     initialValue: number;
     balance: number;
+    currency: string;
   };
   lessons: Lesson[];
   goalMet: boolean;
@@ -26,4 +27,7 @@ export interface Lesson {
   startTime: string;
   endTime: string;
   status: LessonStatus;
+  paymentAmount?: number;
+  paymentCurrency?: string;
+  rate: number;
 }

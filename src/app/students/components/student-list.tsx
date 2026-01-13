@@ -26,6 +26,15 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import EditStudentForm from './edit-student-form';
 
+const currencySymbols: { [key: string]: string } = {
+    'EUR': '€',
+    'USD': '$',
+    'GBP': '£',
+    'JPY': '¥',
+    'RUB': '₽',
+    'CNY': '¥'
+}
+
 export default function StudentList({ students, setStudents }: { students: Student[], setStudents: React.Dispatch<React.SetStateAction<Student[]>> }) {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -61,6 +70,7 @@ export default function StudentList({ students, setStudents }: { students: Stude
           {students && students.map((student) => {
             const packagePercentage = (student.prepaidPackage.balance / student.prepaidPackage.initialValue) * 100;
             const studentImage = PlaceHolderImages.find(img => img.id === `student${student.id}`);
+            const symbol = currencySymbols[student.prepaidPackage.currency] || '$';
             return (
               <TableRow key={student.id}>
                 <TableCell>
@@ -81,7 +91,7 @@ export default function StudentList({ students, setStudents }: { students: Stude
                 <TableCell>
                     {student.prepaidPackage.initialValue > 0 ? (
                         <div>
-                            <p className="font-mono text-sm">${student.prepaidPackage.balance.toFixed(2)}</p>
+                            <p className="font-mono text-sm">{symbol}{student.prepaidPackage.balance.toFixed(2)}</p>
                             <Progress value={packagePercentage} className="h-2 w-[150px] mt-1"/>
                         </div>
                     ) : (
