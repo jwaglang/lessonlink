@@ -1,5 +1,5 @@
-import type { Student, Lesson } from './types';
-import { subDays, addDays, formatISO } from 'date-fns';
+import type { Student, Lesson, Availability } from './types';
+import { subDays, addDays, formatISO, startOfDay } from 'date-fns';
 
 const today = new Date();
 
@@ -77,6 +77,13 @@ let students: Student[] = [
     lessons: lessons.filter(l => l.studentId === '5'),
     goalMet: false,
   },
+];
+
+let availability: Availability[] = [
+    { id: 'a1', date: formatISO(startOfDay(addDays(today, 1))), time: '10:00', isAvailable: true },
+    { id: 'a2', date: formatISO(startOfDay(addDays(today, 1))), time: '11:00', isAvailable: true },
+    { id: 'a3', date: formatISO(startOfDay(addDays(today, 2))), time: '14:00', isAvailable: true },
+    { id: 'a4', date: formatISO(startOfDay(addDays(today, 2))), time: '15:00', isAvailable: true },
 ];
 
 export async function getStudents(): Promise<Student[]> {
@@ -159,4 +166,31 @@ export async function updateLessonStatus(id: string, status: Lesson['status']): 
     }
 
     return lessons[lessonIndex];
+}
+
+export async function getAvailability(): Promise<Availability[]> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return availability;
+}
+
+export async function toggleAvailability(date: Date, time: string): Promise<Availability> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const dateISO = formatISO(startOfDay(date));
+    const existingSlotIndex = availability.findIndex(a => a.date === dateISO && a.time === time);
+
+    if (existingSlotIndex > -1) {
+        const updatedSlot = { ...availability[existingSlotIndex], isAvailable: !availability[existingSlotIndex].isAvailable };
+        availability[existingSlotIndex] = updatedSlot;
+        return updatedSlot;
+    } else {
+        const newId = `a${availability.length + 1}`;
+        const newSlot: Availability = {
+            id: newId,
+            date: dateISO,
+            time: time,
+            isAvailable: true,
+        };
+        availability.push(newSlot);
+        return newSlot;
+    }
 }

@@ -31,3 +31,10 @@ export interface Lesson {
   paymentCurrency?: string;
   rate: number;
 }
+
+export interface Availability {
+  id: string;
+  date: string; // ISO string for the date
+  time: string; // "HH:00" format
+  isAvailable: boolean;
+}
