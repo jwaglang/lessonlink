@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   addDays,
   eachDayOfInterval,
@@ -92,8 +92,8 @@ export default function AvailabilityCalendar({ initialAvailability }: { initialA
           ))}
           
           {hours.map(hour => (
-            <React.Fragment key={hour}>
-                <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs">{hour}</div>
+            <>
+                <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs" key={`${hour}-label`}>{hour}</div>
                 {days.map(day => {
                     const slot = availability.find(a => isSameDay(parseISO(a.date), day) && a.time === hour);
                     return (
@@ -106,7 +106,7 @@ export default function AvailabilityCalendar({ initialAvailability }: { initialA
                         />
                     )
                 })}
-            </React.Fragment>
+            </>
           ))}
         </div>
       </CardContent>
