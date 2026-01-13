@@ -15,7 +15,7 @@ export default async function StudentsPage() {
             >
                 <Button>
                     <PlusCircle />
-                    Add Student
+                    <span>Add Student</span>
                 </Button>
             </PageHeader>
             <StudentList initialStudents={students} />
