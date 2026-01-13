@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition } from 'react';
@@ -5,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { CourseTemplate } from '@/lib/types';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,8 @@ import { Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
@@ -22,12 +25,17 @@ const formSchema = z.object({
   description: z.string().optional(),
   rate: z.coerce.number().positive({ message: 'Rate must be a positive number.' }),
   duration: z.enum(['30', '60']),
+  thumbnailUrl: z.string().optional(),
 });
 
 interface CourseFormProps {
     courseTemplate: CourseTemplate | null;
     onSuccess: (template: CourseTemplate) => void;
 }
+
+// Get only course thumbnail placeholders
+const courseThumbnails = PlaceHolderImages.filter(p => p.id.startsWith('course-thumb'));
+
 
 export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProps) {
     const [isPending, startTransition] = useTransition();
@@ -41,18 +49,22 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
             description: courseTemplate?.description || '',
             rate: courseTemplate?.rate || 0,
             duration: courseTemplate?.duration?.toString() as '30' | '60' || '60',
+            thumbnailUrl: courseTemplate?.thumbnailUrl || '',
         },
     });
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {
             try {
-                const newIdNumber = Math.floor(Math.random() * 100);
+                // If we are editing, we preserve the original imageUrl (hero image)
+                // If we are creating a new one, we derive it from the selected thumbnail.
+                const newHeroUrl = courseTemplate?.imageUrl || values.thumbnailUrl?.replace('thumb', 'hero') || 'course-hero1';
+                
                 const templateData = {
                     ...values,
                     duration: parseInt(values.duration, 10) as 30 | 60,
-                    thumbnailUrl: `course-thumb${newIdNumber}`, // Placeholder
-                    imageUrl: `course-hero${newIdNumber}`, // Placeholder
+                    thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
+                    imageUrl: newHeroUrl,
                 };
 
                 let savedTemplate;
@@ -163,6 +175,46 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                     )}
                 />
 
+                <FormField
+                    control={form.control}
+                    name="thumbnailUrl"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Course Thumbnail</FormLabel>
+                             <FormDescription>Select an image for your course card.</FormDescription>
+                            <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="grid grid-cols-3 gap-4 pt-2"
+                                >
+                                    {courseThumbnails.map((thumb) => (
+                                        <FormItem key={thumb.id} className="space-y-0">
+                                            <FormControl>
+                                                <RadioGroupItem value={thumb.id} className="sr-only" />
+                                            </FormControl>
+                                            <Label className={cn(
+                                                "cursor-pointer rounded-md overflow-hidden border-2 border-transparent transition-all",
+                                                "ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                                field.value === thumb.id && "border-primary"
+                                            )}>
+                                                <Image 
+                                                    src={thumb.imageUrl} 
+                                                    alt={thumb.description} 
+                                                    width={200} height={112} 
+                                                    className="aspect-video object-cover w-full" 
+                                                    data-ai-hint={thumb.imageHint}
+                                                />
+                                            </Label>
+                                        </FormItem>
+                                    ))}
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
                 <Button type="submit" disabled={isPending} className="w-full mt-4">
                     {isPending ? <Loader2 className="animate-spin" /> : 'Save Template'}
                 </Button>
@@ -170,3 +222,5 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
         </Form>
     );
 }
+
+    
