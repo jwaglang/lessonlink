@@ -18,6 +18,18 @@ import { toggleAvailability } from '@/lib/data';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
+// Helper functions to handle dates without timezones messing things up
+function isSameDay(d1: Date, d2: Date) {
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+}
+
+function parseISO(isoString: string) {
+    const [year, month, day] = isoString.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
 export default function AvailabilityCalendar({ initialAvailability }: { initialAvailability: Availability[] }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
@@ -80,8 +92,8 @@ export default function AvailabilityCalendar({ initialAvailability }: { initialA
           ))}
           
           {hours.map(hour => (
-            <>
-                <div key={hour} className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs">{hour}</div>
+            <React.Fragment key={hour}>
+                <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs">{hour}</div>
                 {days.map(day => {
                     const slot = availability.find(a => isSameDay(parseISO(a.date), day) && a.time === hour);
                     return (
@@ -94,22 +106,10 @@ export default function AvailabilityCalendar({ initialAvailability }: { initialA
                         />
                     )
                 })}
-            </>
+            </React.Fragment>
           ))}
         </div>
       </CardContent>
     </Card>
   );
-}
-
-// Helper functions to handle dates without timezones messing things up
-function isSameDay(d1: Date, d2: Date) {
-    return d1.getFullYear() === d2.getFullYear() &&
-           d1.getMonth() === d2.getMonth() &&
-           d1.getDate() === d2.getDate();
-}
-
-function parseISO(isoString: string) {
-    const [year, month, day] = isoString.split('T')[0].split('-').map(Number);
-    return new Date(year, month - 1, day);
 }
