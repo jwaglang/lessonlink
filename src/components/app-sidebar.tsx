@@ -16,6 +16,7 @@ import {
   BarChart2,
   Settings,
   BookOpenCheck,
+  Library,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 
@@ -26,6 +27,7 @@ const AppSidebar = () => {
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/students', label: 'Students', icon: Users },
     { href: '/calendar', label: 'Calendar', icon: Calendar },
+    { href: '/courses', label: 'Courses', icon: Library },
     { href: '/reports', label: 'Reports', icon: BarChart2 },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];

@@ -1,27 +1,28 @@
-import type { Student, Lesson, Availability, LessonType } from './types';
+import type { Student, Lesson, Availability, CourseTemplate } from './types';
 import { subDays, addDays, formatISO, startOfDay } from 'date-fns';
 
 const today = new Date();
 
-let lessonTypes: LessonType[] = [
-    { id: 'lt1', name: 'Algebra II', rate: 25, currency: 'USD' },
-    { id: 'lt2', name: 'Creative Writing', rate: 2000, currency: 'RUB' },
-    { id: 'lt3', name: 'History 101', rate: 30, currency: 'EUR' },
-    { id: 'lt4', name: 'Physics Fundamentals', rate: 40, currency: 'USD' },
-    { id: 'lt5', name: 'Spanish for Beginners', rate: 150, currency: 'CNY' },
+let courseTemplates: CourseTemplate[] = [
+    { id: 'ct1', title: 'Algebra II', duration: 60, rate: 25, pitch: 'Master advanced algebra concepts.', description: 'A full course on Algebra II.', thumbnailUrl: 'course-thumb1', imageUrl: 'course-hero1' },
+    { id: 'ct2', title: 'Creative Writing', duration: 60, rate: 35, pitch: 'Unleash your inner author.', description: 'Learn the art of storytelling.', thumbnailUrl: 'course-thumb2', imageUrl: 'course-hero2' },
+    { id: 'ct3', title: 'History 101', duration: 30, rate: 20, pitch: 'Journey through the ages.', description: 'An introduction to world history.', thumbnailUrl: 'course-thumb3', imageUrl: 'course-hero3' },
+    { id: 'ct4', title: 'Physics Fundamentals', duration: 60, rate: 40, pitch: 'Explore the laws of the universe.', description: 'Grasp the core principles of physics.', thumbnailUrl: 'course-thumb4', imageUrl: 'course-hero4' },
+    { id: 'ct5', title: 'Spanish for Beginners', duration: 30, rate: 15, pitch: 'Start speaking Spanish today.', description: 'A beginner-friendly introduction to Spanish.', thumbnailUrl: 'course-thumb5', imageUrl: 'course-hero5' },
 ];
+
 
 let lessons: Lesson[] = [
   { id: 'l1', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 10)), startTime: '10:00', endTime: '11:00', status: 'paid', rate: 25, paymentAmount: 25, paymentCurrency: 'USD' },
   { id: 'l2', studentId: '1', title: 'Algebra II', date: formatISO(subDays(today, 3)), startTime: '10:00', endTime: '11:00', status: 'deducted', rate: 25 },
   { id: 'l3', studentId: '1', title: 'Algebra II', date: formatISO(addDays(today, 4)), startTime: '10:00', endTime: '11:00', status: 'scheduled', rate: 25 },
-  { id: 'l4', studentId: '2', title: 'Creative Writing', date: formatISO(subDays(today, 8)), startTime: '14:00', endTime: '15:00', status: 'paid', rate: 2000, paymentAmount: 2000, paymentCurrency: 'RUB' },
-  { id: 'l5', studentId: '2', title: 'Creative Writing', date: formatISO(addDays(today, 6)), startTime: '14:00', endTime: '15:00', status: 'scheduled', rate: 2000 },
-  { id: 'l6', studentId: '3', title: 'History 101', date: formatISO(subDays(today, 1)), startTime: '11:00', endTime: '12:00', status: 'unpaid', rate: 30 },
-  { id: 'l7', studentId: '3', title: 'History 101', date: formatISO(addDays(today, 7)), startTime: '11:00', endTime: '12:00', status: 'scheduled', rate: 30 },
+  { id: 'l4', studentId: '2', title: 'Creative Writing', date: formatISO(subDays(today, 8)), startTime: '14:00', endTime: '15:00', status: 'paid', rate: 35, paymentAmount: 2800, paymentCurrency: 'RUB' },
+  { id: 'l5', studentId: '2', title: 'Creative Writing', date: formatISO(addDays(today, 6)), startTime: '14:00', endTime: '15:00', status: 'scheduled', rate: 35 },
+  { id: 'l6', studentId: '3', title: 'History 101', date: formatISO(subDays(today, 1)), startTime: '11:00', endTime: '12:00', status: 'unpaid', rate: 20 },
+  { id: 'l7', studentId: '3', title: 'History 101', date: formatISO(addDays(today, 7)), startTime: '11:00', endTime: '12:00', status: 'scheduled', rate: 20 },
   { id: 'l8', studentId: '4', title: 'Physics Fundamentals', date: formatISO(subDays(today, 5)), startTime: '16:00', endTime: '17:00', status: 'deducted', rate: 40 },
   { id: 'l9', studentId: '4', title: 'Physics Fundamentals', date: formatISO(addDays(today, 2)), startTime: '16:00', endTime: '17:00', status: 'scheduled', rate: 40 },
-  { id: 'l10', studentId: '5', title: 'Spanish for Beginners', date: formatISO(subDays(today, 14)), startTime: '09:00', endTime: '10:00', status: 'paid', rate: 150, paymentAmount: 150, paymentCurrency: 'CNY' },
+  { id: 'l10', studentId: '5', title: 'Spanish for Beginners', date: formatISO(subDays(today, 14)), startTime: '09:00', endTime: '10:00', status: 'paid', rate: 15, paymentAmount: 110, paymentCurrency: 'CNY' },
 ];
 
 let students: Student[] = [
@@ -94,10 +95,33 @@ let availability: Availability[] = [
     { id: 'a4', date: formatISO(startOfDay(addDays(today, 2))), time: '15:00', isAvailable: true },
 ];
 
-export async function getLessonTypes(): Promise<LessonType[]> {
-    // Simulate API delay
+export async function getCourseTemplates(): Promise<CourseTemplate[]> {
     await new Promise(resolve => setTimeout(resolve, 100));
-    return lessonTypes;
+    return courseTemplates;
+}
+
+export async function addCourseTemplate(data: Omit<CourseTemplate, 'id'>): Promise<CourseTemplate> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const newTemplate: CourseTemplate = {
+        ...data,
+        id: `ct${courseTemplates.length + 1}`,
+    };
+    courseTemplates.unshift(newTemplate);
+    return newTemplate;
+}
+
+export async function updateCourseTemplate(id: string, data: Partial<Omit<CourseTemplate, 'id'>>): Promise<CourseTemplate> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const index = courseTemplates.findIndex(ct => ct.id === id);
+    if (index === -1) throw new Error("Course template not found");
+    courseTemplates[index] = { ...courseTemplates[index], ...data };
+    return courseTemplates[index];
+}
+
+export async function deleteCourseTemplate(id: string): Promise<{ id: string }> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    courseTemplates = courseTemplates.filter(ct => ct.id !== id);
+    return { id };
 }
 
 export async function getStudents(): Promise<Student[]> {
@@ -176,8 +200,9 @@ export async function updateLessonStatus(id: string, status: Lesson['status']): 
     // If lesson is paid, but has no payment info, add some mock payment
     if (status === 'paid' && !lessons[lessonIndex].paymentAmount) {
         lessons[lessonIndex].paymentAmount = lessons[lessonIndex].rate;
-        const lessonType = lessonTypes.find(lt => lt.name === lessons[lessonIndex].title);
-        lessons[lessonIndex].paymentCurrency = lessonType?.currency || 'USD';
+        // Mock currency based on student, in a real app this would be more robust
+        const student = students.find(s => s.id === lessons[lessonIndex].studentId);
+        lessons[lessonIndex].paymentCurrency = student?.prepaidPackage.currency || 'USD';
     }
 
     return lessons[lessonIndex];

@@ -39,9 +39,13 @@ export interface Availability {
   isAvailable: boolean;
 }
 
-export interface LessonType {
+export interface CourseTemplate {
   id: string;
-  name: string;
-  rate: number;
-  currency: string;
+  title: string;
+  duration: 30 | 60;
+  pitch: string;
+  description: string;
+  rate: number; // in teacher's default currency
+  thumbnailUrl: string;
+  imageUrl: string;
 }

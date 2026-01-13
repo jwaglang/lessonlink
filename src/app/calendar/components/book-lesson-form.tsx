@@ -18,23 +18,23 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { addLesson } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
-import type { Lesson, Student, LessonType } from '@/lib/types';
+import type { Lesson, Student, CourseTemplate } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
-  lessonTypeId: z.string({ required_error: 'Please select a lesson type.' }),
+  courseTemplateId: z.string({ required_error: 'Please select a course.' }),
 });
 
 interface BookLessonFormProps {
   students: Student[];
-  lessonTypes: LessonType[];
+  courseTemplates: CourseTemplate[];
   onSuccess: (newLesson: Lesson) => void;
   selectedDate: Date;
   selectedTime: string;
 }
 
-export default function BookLessonForm({ students, lessonTypes, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
+export default function BookLessonForm({ students, courseTemplates, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -46,17 +46,20 @@ export default function BookLessonForm({ students, lessonTypes, onSuccess, selec
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
       try {
+        const courseTemplate = courseTemplates.find(ct => ct.id === values.courseTemplateId);
+        if (!courseTemplate) throw new Error('Selected course not found');
+
         const startTime = selectedTime;
         const startHour = parseInt(startTime.split(':')[0]);
-        const endTime = `${(startHour + 1).toString().padStart(2, '0')}:00`;
-
-        const lessonType = lessonTypes.find(lt => lt.id === values.lessonTypeId);
-        if (!lessonType) throw new Error('Selected lesson type not found');
+        // Duration is now from the course template
+        const endHour = startHour + Math.floor(courseTemplate.duration / 60);
+        const endMinutes = (courseTemplate.duration % 60).toString().padStart(2,'0');
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes}`;
 
         const newLessonData = {
           studentId: values.studentId,
-          title: lessonType.name,
-          rate: lessonType.rate,
+          title: courseTemplate.title,
+          rate: courseTemplate.rate,
           date: selectedDate.toISOString(),
           startTime,
           endTime,
@@ -109,27 +112,24 @@ export default function BookLessonForm({ students, lessonTypes, onSuccess, selec
         />
         <FormField
           control={form.control}
-          name="lessonTypeId"
+          name="courseTemplateId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Lesson</FormLabel>
+              <FormLabel>Course</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a lesson type" />
+                    <SelectValue placeholder="Select a course" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {lessonTypes.map(lessonType => (
-                    <SelectItem key={lessonType.id} value={lessonType.id}>
-                      {lessonType.name} ({lessonType.rate} {lessonType.currency})
+                  {courseTemplates.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>
-                You will be able to create and manage these lessons later.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
