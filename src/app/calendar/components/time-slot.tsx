@@ -7,12 +7,14 @@ interface TimeSlotProps {
   time: string;
   isAvailable: boolean;
   onClick: (date: Date, time: string) => void;
+  onDoubleClick: (date: Date, time: string) => void;
 }
 
-export default function TimeSlot({ date, time, isAvailable, onClick }: TimeSlotProps) {
+export default function TimeSlot({ date, time, isAvailable, onClick, onDoubleClick }: TimeSlotProps) {
   return (
     <div
       onClick={() => onClick(date, time)}
+      onDoubleClick={() => onDoubleClick(date, time)}
       className={cn(
         "border-b border-r h-10 cursor-pointer transition-colors",
         isAvailable 

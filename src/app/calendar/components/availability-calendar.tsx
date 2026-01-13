@@ -30,7 +30,12 @@ function parseISO(isoString: string) {
     return new Date(year, month - 1, day);
 }
 
-export default function AvailabilityCalendar({ initialAvailability }: { initialAvailability: Availability[] }) {
+interface AvailabilityCalendarProps {
+  initialAvailability: Availability[];
+  onSlotDoubleClick: (date: Date, time: string) => void;
+}
+
+export default function AvailabilityCalendar({ initialAvailability, onSlotDoubleClick }: AvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
 
@@ -103,6 +108,7 @@ export default function AvailabilityCalendar({ initialAvailability }: { initialA
                             time={hour}
                             isAvailable={slot?.isAvailable ?? false}
                             onClick={handleSlotClick}
+                            onDoubleClick={onSlotDoubleClick}
                         />
                     )
                 })}

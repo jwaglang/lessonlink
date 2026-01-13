@@ -5,8 +5,6 @@ import PageHeader from "@/components/page-header";
 import WeeklyCalendar from "./components/weekly-calendar";
 import { getLessons, getStudents, getAvailability } from "@/lib/data";
 import type { Lesson, Student, Availability } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import BookLessonForm from './components/book-lesson-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +15,7 @@ export default function CalendarPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [availability, setAvailability] = useState<Availability[]>([]);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -35,17 +34,17 @@ export default function CalendarPage() {
         setIsSheetOpen(false);
     };
 
+    const handleSlotDoubleClick = (date: Date, time: string) => {
+        setSelectedSlot({ date, time });
+        setIsSheetOpen(true);
+    };
+
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader 
                 title="Calendar"
                 description="Manage your lessons and set your availability."
-            >
-                <Button onClick={() => setIsSheetOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    <span>Book Lesson</span>
-                </Button>
-            </PageHeader>
+            />
             <Tabs defaultValue="lessons">
                 <TabsList className='mb-4'>
                     <TabsTrigger value="lessons">Lesson Calendar</TabsTrigger>
@@ -55,7 +54,10 @@ export default function CalendarPage() {
                     <WeeklyCalendar lessons={lessons} setLessons={setLessons} students={students} />
                 </TabsContent>
                 <TabsContent value="availability">
-                    <AvailabilityCalendar initialAvailability={availability} />
+                    <AvailabilityCalendar 
+                        initialAvailability={availability} 
+                        onSlotDoubleClick={handleSlotDoubleClick}
+                    />
                 </TabsContent>
             </Tabs>
             
@@ -64,7 +66,14 @@ export default function CalendarPage() {
                     <SheetHeader>
                         <SheetTitle>Book a New Lesson</SheetTitle>
                     </SheetHeader>
-                    <BookLessonForm students={students} onSuccess={handleLessonBooked} />
+                    {selectedSlot && (
+                        <BookLessonForm 
+                            students={students} 
+                            onSuccess={handleLessonBooked} 
+                            selectedDate={selectedSlot.date}
+                            selectedTime={selectedSlot.time}
+                        />
+                    )}
                 </SheetContent>
             </Sheet>
         </div>

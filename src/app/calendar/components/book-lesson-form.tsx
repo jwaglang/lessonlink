@@ -4,7 +4,7 @@ import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, parse } from 'date-fns';
+import { format, parse, addHours } from 'date-fns';
 import {
   Form,
   FormControl,
@@ -18,28 +18,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { addLesson } from '@/lib/data';
-import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { Lesson, Student } from '@/lib/types';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
   title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
-  date: z.date({ required_error: 'A date is required.' }),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:mm).' }),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Invalid time format (HH:mm).' }),
   rate: z.coerce.number().min(0, { message: 'Rate must be a positive number.' }),
 });
 
 interface BookLessonFormProps {
   students: Student[];
   onSuccess: (newLesson: Lesson) => void;
+  selectedDate: Date;
+  selectedTime: string;
 }
 
-export default function BookLessonForm({ students, onSuccess }: BookLessonFormProps) {
+export default function BookLessonForm({ students, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -47,8 +43,6 @@ export default function BookLessonForm({ students, onSuccess }: BookLessonFormPr
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      startTime: '10:00',
-      endTime: '11:00',
       rate: 25,
     },
   });
@@ -56,9 +50,15 @@ export default function BookLessonForm({ students, onSuccess }: BookLessonFormPr
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
       try {
+        const startTime = selectedTime;
+        const startHour = parseInt(startTime.split(':')[0]);
+        const endTime = `${(startHour + 1).toString().padStart(2, '0')}:00`;
+
         const newLessonData = {
           ...values,
-          date: values.date.toISOString(),
+          date: selectedDate.toISOString(),
+          startTime,
+          endTime,
         };
         const newLesson = await addLesson(newLessonData);
         toast({
@@ -79,6 +79,9 @@ export default function BookLessonForm({ students, onSuccess }: BookLessonFormPr
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
+        <div className="p-4 bg-muted/50 rounded-lg text-sm">
+            <p><strong>Booking for:</strong> {format(selectedDate, 'PPP')} at {selectedTime}</p>
+        </div>
         <FormField
           control={form.control}
           name="studentId"
@@ -112,77 +115,13 @@ export default function BookLessonForm({ students, onSuccess }: BookLessonFormPr
               <FormControl>
                 <Input placeholder="e.g., Algebra II" {...field} />
               </FormControl>
+              <FormDescription>
+                We will later replace this with a pre-defined lesson selector.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date("1900-01-01")}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="startTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="endTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
         <FormField
           control={form.control}
           name="rate"
