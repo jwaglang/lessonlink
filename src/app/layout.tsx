@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 import { cn } from '@/lib/utils';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'LessonLink',
@@ -23,15 +24,22 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
       </head>
       <body className={cn('font-body antialiased')}>
-        <SidebarProvider>
-          <Sidebar variant="sidebar" collapsible="icon">
-            <AppSidebar />
-          </Sidebar>
-          <SidebarInset>
-            <main>{children}</main>
-          </SidebarInset>
-        </SidebarProvider>
-        <Toaster />
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+          <SidebarProvider>
+            <Sidebar variant="sidebar" collapsible="icon">
+              <AppSidebar />
+            </Sidebar>
+            <SidebarInset>
+              <main>{children}</main>
+            </SidebarInset>
+          </SidebarProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

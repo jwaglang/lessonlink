@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from 'next-themes';
 
 export default function SettingsPage() {
     const { toast } = useToast();
+    const { theme, setTheme } = useTheme();
     const [name, setName] = useState('Tutor Name');
     const [email, setEmail] = useState('tutor@lessonlink.com');
 
@@ -63,7 +65,11 @@ export default function SettingsPage() {
                                     Toggle between light and dark themes.
                                 </p>
                             </div>
-                            <Switch id="dark-mode" />
+                            <Switch 
+                                id="dark-mode" 
+                                checked={theme === 'dark'}
+                                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                            />
                         </div>
                     </CardContent>
                 </Card>
