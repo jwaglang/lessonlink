@@ -58,7 +58,8 @@ export default function CalendarPage() {
                 </TabsContent>
                 <TabsContent value="availability">
                     <AvailabilityCalendar 
-                        initialAvailability={availability} 
+                        initialAvailability={availability}
+                        lessons={lessons}
                         onSlotDoubleClick={handleSlotDoubleClick}
                     />
                 </TabsContent>

@@ -8,11 +8,13 @@ import {
   format,
   startOfWeek,
   subDays,
+  parseISO,
+  startOfDay,
 } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Availability } from '@/lib/types';
+import type { Availability, Lesson } from '@/lib/types';
 import TimeSlot from './time-slot';
 import { toggleAvailability } from '@/lib/data';
 
@@ -25,17 +27,14 @@ function isSameDay(d1: Date, d2: Date) {
            d1.getDate() === d2.getDate();
 }
 
-function parseISO(isoString: string) {
-    const [year, month, day] = isoString.split('T')[0].split('-').map(Number);
-    return new Date(year, month - 1, day);
-}
 
 interface AvailabilityCalendarProps {
   initialAvailability: Availability[];
+  lessons: Lesson[];
   onSlotDoubleClick: (date: Date, time: string) => void;
 }
 
-export default function AvailabilityCalendar({ initialAvailability, onSlotDoubleClick }: AvailabilityCalendarProps) {
+export default function AvailabilityCalendar({ initialAvailability, lessons, onSlotDoubleClick }: AvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
 
@@ -46,7 +45,9 @@ export default function AvailabilityCalendar({ initialAvailability, onSlotDouble
   const handleSlotClick = async (date: Date, time: string) => {
     const updatedSlot = await toggleAvailability(date, time);
     setAvailability(prev => {
-        const existingIndex = prev.findIndex(a => a.id === updatedSlot.id);
+        // use startOfDay to prevent timezone issues
+        const updatedDate = startOfDay(new Date(updatedSlot.date));
+        const existingIndex = prev.findIndex(a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updatedSlot.time);
         if (existingIndex > -1) {
             const newAvail = [...prev];
             newAvail[existingIndex] = updatedSlot;
@@ -55,6 +56,7 @@ export default function AvailabilityCalendar({ initialAvailability, onSlotDouble
         return [...prev, updatedSlot];
     });
   };
+  
 
   return (
     <Card>
@@ -100,13 +102,16 @@ export default function AvailabilityCalendar({ initialAvailability, onSlotDouble
             <>
                 <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs" key={`${hour}-label`}>{hour}</div>
                 {days.map(day => {
-                    const slot = availability.find(a => isSameDay(parseISO(a.date), day) && a.time === hour);
+                    const bookedLesson = lessons.find(l => isSameDay(parseISO(l.date), day) && l.startTime === hour);
+                    const availableSlot = availability.find(a => isSameDay(startOfDay(parseISO(a.date)), day) && a.time === hour);
+                    
                     return (
                         <TimeSlot
                             key={`${day.toString()}-${hour}`}
                             date={day}
                             time={hour}
-                            isAvailable={slot?.isAvailable ?? false}
+                            isAvailable={availableSlot?.isAvailable ?? false}
+                            isBooked={!!bookedLesson}
                             onClick={handleSlotClick}
                             onDoubleClick={onSlotDoubleClick}
                         />
