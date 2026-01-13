@@ -1,12 +1,29 @@
+'use client';
 
+import { useState } from 'react';
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
+    const { toast } = useToast();
+    const [name, setName] = useState('Tutor Name');
+    const [email, setEmail] = useState('tutor@lessonlink.com');
+
+    const handleSaveChanges = () => {
+        // Here you would typically call an API to save the changes.
+        // For now, we'll just show a toast notification.
+        console.log('Saving profile:', { name, email });
+        toast({
+            title: 'Profile Updated',
+            description: 'Your personal information has been saved.',
+        });
+    };
+
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader 
@@ -22,15 +39,15 @@ export default function SettingsPage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="name">Name</Label>
-                            <Input id="name" defaultValue="Tutor Name" />
+                            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" defaultValue="tutor@lessonlink.com" />
+                            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                         </div>
                     </CardContent>
                     <CardFooter className="border-t pt-6">
-                        <Button>Save Changes</Button>
+                        <Button onClick={handleSaveChanges}>Save Changes</Button>
                     </CardFooter>
                 </Card>
                 <Card>
