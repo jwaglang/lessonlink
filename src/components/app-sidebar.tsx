@@ -51,10 +51,10 @@ const AppSidebar = () => {
                 isActive={pathname === item.href}
                 tooltip={item.label}
               >
-                <>
+                <a href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
-                </>
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
