@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { CourseTemplate } from '@/lib/types';
@@ -71,13 +72,13 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                     <p className="font-semibold text-muted-foreground">Packages:</p>
                     <div className="flex justify-between w-full items-center">
                         <div>
-                            <p>5 Lessons <Badge variant="secondary" className='ml-1'>10% off</Badge></p>
+                            <div>5 Lessons <Badge variant="secondary" className='ml-1'>10% off</Badge></div>
                         </div>
                         <p className="font-semibold">{currencySymbol}{package5Price.toFixed(2)}</p>
                     </div>
                     <div className="flex justify-between w-full items-center">
                         <div>
-                             <p>10 Lessons <Badge variant="secondary" className='ml-1'>15% off</Badge></p>
+                             <div>10 Lessons <Badge variant="secondary" className='ml-1'>15% off</Badge></div>
                         </div>
                         <p className="font-semibold">{currencySymbol}{package10Price.toFixed(2)}</p>
                     </div>
