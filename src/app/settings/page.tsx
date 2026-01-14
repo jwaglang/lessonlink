@@ -170,19 +170,9 @@ export default function SettingsPage() {
                         <CardDescription>Customize the look and feel of the application.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <Label htmlFor="dark-mode">Dark Mode</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Toggle between light and dark themes.
-                                </p>
-                            </div>
-                            <Switch 
-                                id="dark-mode" 
-                                checked={theme === 'dark'}
-                                onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
-                            />
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Theme controls are now in the sidebar.
+                        </p>
                     </CardContent>
                 </Card>
                  <Card>
