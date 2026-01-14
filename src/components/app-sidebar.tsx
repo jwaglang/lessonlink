@@ -19,6 +19,7 @@ import {
   Library,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
+import { ThemeToggle } from './theme-toggle';
 
 const AppSidebar = () => {
   const pathname = usePathname();
@@ -63,6 +64,7 @@ const AppSidebar = () => {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
+        <ThemeToggle />
       </SidebarFooter>
     </>
   );
