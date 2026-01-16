@@ -8,6 +8,7 @@ import {
   isUsernameAvailable,
 } from '@/lib/firestore';
 import { seedTeacherJonProfile } from '@/lib/seed-teacher-profile';
+import { seedTeacherJonReviews } from '@/lib/seed-reviews';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -226,6 +227,22 @@ export default function ProfileEditorPage() {
     }
   }
 
+  const [seedingReviews, setSeedingReviews] = useState(false);
+
+  async function handleSeedReviews() {
+    setSeedingReviews(true);
+    setSaveMessage(null);
+    
+    try {
+      const count = await seedTeacherJonReviews();
+      setSaveMessage({ type: 'success', text: `Seeded ${count} reviews from iTalki!` });
+    } catch (error: any) {
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to seed reviews' });
+    } finally {
+      setSeedingReviews(false);
+    }
+  }
+
   async function handleSave() {
     // Validate
     if (!profile.username || profile.username.length < 3) {
@@ -331,7 +348,11 @@ export default function ProfileEditorPage() {
           )}
           <Button variant="outline" onClick={handleSeedFromItalki} disabled={seeding}>
             {seeding ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Seed from iTalki
+            Seed Profile
+          </Button>
+          <Button variant="outline" onClick={handleSeedReviews} disabled={seedingReviews || !profileId}>
+            {seedingReviews ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Seed Reviews (86)
           </Button>
           <Button onClick={handleSave} disabled={saving || usernameStatus === 'taken'}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
