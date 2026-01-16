@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
-import AppSidebar from '@/components/app-sidebar';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
+import { AuthProvider } from '@/components/auth-provider';
 
 export const metadata: Metadata = {
   title: 'LessonLink',
@@ -30,14 +29,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-          <SidebarProvider>
-            <Sidebar variant="sidebar" collapsible="icon">
-              <AppSidebar />
-            </Sidebar>
-            <SidebarInset>
-              <main>{children}</main>
-            </SidebarInset>
-          </SidebarProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>

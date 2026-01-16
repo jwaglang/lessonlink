@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { addLesson } from '@/lib/data';
+import { addLesson } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
 import type { Lesson, Student, CourseTemplate } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

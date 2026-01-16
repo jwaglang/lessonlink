@@ -17,7 +17,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Availability, Lesson } from '@/lib/types';
 import TimeSlot from './time-slot';
-import { toggleAvailability } from '@/lib/data';
+import { toggleAvailability } from '@/lib/firestore';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 

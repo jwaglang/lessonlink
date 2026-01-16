@@ -10,7 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/page-header';
-import { getStudents, getLessons } from '@/lib/data';
+import { getStudents, getLessons } from '@/lib/firestore';
 import { BarChart, Clock, Users, DollarSign } from 'lucide-react';
 import { format, isFuture, parseISO } from 'date-fns';
 import RevenueChart from './reports/components/revenue-chart';

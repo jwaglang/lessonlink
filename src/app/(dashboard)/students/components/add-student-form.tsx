@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { updateStudent } from '@/lib/data';
+import { addStudent } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
@@ -24,36 +24,35 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
 });
 
-interface EditStudentFormProps {
-  student: Student;
-  onSuccess: (updatedStudent: Student) => void;
+interface AddStudentFormProps {
+  onSuccess: (newStudent: Student) => void;
 }
 
-export default function EditStudentForm({ student, onSuccess }: EditStudentFormProps) {
+export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: student.name,
-      email: student.email,
+      name: '',
+      email: '',
     },
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
       try {
-        const updatedStudent = await updateStudent(student.id, values);
+        const newStudent = await addStudent(values);
         toast({
-          title: 'Student Updated',
-          description: `${updatedStudent.name}'s information has been saved.`,
+          title: 'Student Added',
+          description: `${newStudent.name} has been added to your roster.`,
         });
-        onSuccess(updatedStudent);
+        onSuccess(newStudent);
       } catch (error) {
         toast({
           title: 'Error',
-          description: 'Failed to update student. Please try again.',
+          description: 'Failed to add student. Please try again.',
           variant: 'destructive',
         });
       }
@@ -90,7 +89,7 @@ export default function EditStudentForm({ student, onSuccess }: EditStudentFormP
           )}
         />
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+          {isPending ? <Loader2 className="animate-spin" /> : 'Add Student'}
         </Button>
       </form>
     </Form>

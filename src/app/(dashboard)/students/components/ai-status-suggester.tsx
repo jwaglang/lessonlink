@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Wand2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { updateStudentStatus } from '@/lib/data';
+import { updateStudentStatus } from '@/lib/firestore';
 
 interface AIStatusSuggesterProps {
   student: Student;

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from 'lucide-react';
-import { getCourseTemplates, addCourseTemplate, updateCourseTemplate, deleteCourseTemplate } from '@/lib/data';
+import { getCourseTemplates, addCourseTemplate, updateCourseTemplate, deleteCourseTemplate } from '@/lib/firestore';
 import type { CourseTemplate } from '@/lib/types';
 import CourseList from './components/course-list';
 import CourseForm from './components/course-form';
