@@ -1054,3 +1054,27 @@ export async function deleteReview(reviewId: string): Promise<void> {
   const docRef = doc(db, 'reviews', reviewId);
   await deleteDoc(docRef);
 }
+
+export async function getReviewByLessonId(lessonId: string): Promise<Review | null> {
+  const q = query(reviewsCollection, where('lessonId', '==', lessonId));
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    return null;
+  }
+  
+  const doc = snapshot.docs[0];
+  return {
+    id: doc.id,
+    ...doc.data(),
+  } as Review;
+}
+
+export async function getReviewedLessonIds(studentId: string): Promise<string[]> {
+  const q = query(reviewsCollection, where('studentId', '==', studentId));
+  const snapshot = await getDocs(q);
+  
+  return snapshot.docs
+    .map(doc => doc.data().lessonId)
+    .filter((id): id is string => !!id);
+}

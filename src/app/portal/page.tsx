@@ -10,6 +10,9 @@ import {
   getAvailableSlots,
   rescheduleLesson,
   cancelLesson,
+  createReview,
+  getReviewedLessonIds,
+  getTeacherProfileByEmail,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +42,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare } from 'lucide-react';
 import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
 import type { Lesson, Student, Availability } from '@/lib/types';
 import Link from 'next/link';
@@ -70,6 +74,14 @@ export default function StudentPortalPage() {
     message: string;
   } | null>(null);
 
+  // Review state
+  const [reviewLesson, setReviewLesson] = useState<Lesson | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewedLessonIds, setReviewedLessonIds] = useState<string[]>([]);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
@@ -84,6 +96,17 @@ export default function StudentPortalPage() {
         
         const studentLessons = await getLessonsByStudentId(studentRecord.id);
         setLessons(studentLessons);
+        
+        // Fetch reviewed lesson IDs
+        const reviewedIds = await getReviewedLessonIds(studentRecord.id);
+        setReviewedLessonIds(reviewedIds);
+        
+        // Fetch teacher ID (hardcoded teacher email for now)
+        const teacherProfile = await getTeacherProfileByEmail('teacher@lessonlink.com');
+        if (teacherProfile) {
+          setTeacherId(teacherProfile.id);
+        }
+        
         setLoadingData(false);
       }
     }
@@ -202,6 +225,46 @@ export default function StudentPortalPage() {
       });
     } finally {
       setIsCancelling(false);
+    }
+  }
+
+  async function handleSubmitReview() {
+    if (!reviewLesson || !student || !teacherId) return;
+    
+    setIsSubmittingReview(true);
+    
+    try {
+      await createReview({
+        lessonId: reviewLesson.id,
+        studentId: student.id,
+        studentName: student.name || user?.email || 'Student',
+        teacherId: teacherId,
+        rating: reviewRating,
+        comment: reviewComment,
+      });
+      
+      // Add to reviewed list
+      setReviewedLessonIds(prev => [...prev, reviewLesson.id]);
+      
+      setNotification({
+        type: 'success',
+        title: 'Review Submitted',
+        message: 'Thank you for your feedback!'
+      });
+      
+      // Reset and close
+      setReviewLesson(null);
+      setReviewRating(5);
+      setReviewComment('');
+    } catch (error) {
+      console.error('Review submission failed:', error);
+      setNotification({
+        type: 'warning',
+        title: 'Submission Failed',
+        message: 'Something went wrong. Please try again.'
+      });
+    } finally {
+      setIsSubmittingReview(false);
     }
   }
 
@@ -373,20 +436,39 @@ export default function StudentPortalPage() {
                 <p className="text-muted-foreground">Loading...</p>
               ) : pastLessons.length > 0 ? (
                 <div className="space-y-4">
-                  {pastLessons.slice(0, 5).map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      className="flex items-center justify-between p-3 rounded-lg border"
-                    >
-                      <div>
-                        <p className="font-medium">{lesson.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(parseISO(lesson.date), 'EEEE, MMM d')} at {lesson.startTime}
-                        </p>
+                  {pastLessons.slice(0, 5).map((lesson) => {
+                    const hasReviewed = reviewedLessonIds.includes(lesson.id);
+                    return (
+                      <div
+                        key={lesson.id}
+                        className="flex items-center justify-between p-3 rounded-lg border"
+                      >
+                        <div>
+                          <p className="font-medium">{lesson.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(parseISO(lesson.date), 'EEEE, MMM d')} at {lesson.startTime}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {hasReviewed ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Reviewed
+                            </Badge>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setReviewLesson(lesson)}
+                            >
+                              <Star className="h-4 w-4 mr-1" />
+                              Review
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant={statusColors[lesson.status]}>{lesson.status}</Badge>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-muted-foreground">No past lessons yet</p>
@@ -484,6 +566,79 @@ export default function StudentPortalPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Review Dialog */}
+      <Dialog open={!!reviewLesson} onOpenChange={() => {
+        setReviewLesson(null);
+        setReviewRating(5);
+        setReviewComment('');
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave a Review</DialogTitle>
+            <DialogDescription>
+              {reviewLesson && (
+                <>
+                  How was your {reviewLesson.title} lesson on{' '}
+                  {format(parseISO(reviewLesson.date), 'EEEE, MMM d')}?
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            {/* Star Rating */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Rating</label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    className="p-1 hover:scale-110 transition-transform"
+                  >
+                    <Star
+                      className={`h-8 w-8 ${
+                        star <= reviewRating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Comment */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Your Review (optional)</label>
+              <Textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Share your experience..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setReviewLesson(null);
+              setReviewRating(5);
+              setReviewComment('');
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmitReview}
+              disabled={isSubmittingReview}
+            >
+              {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Notification Dialog */}
       <Dialog open={!!notification} onOpenChange={() => setNotification(null)}>
