@@ -40,7 +40,7 @@ import type { TeacherProfile, TeacherCertificate, TeacherExperience } from '@/li
 import Link from 'next/link';
 
 // Default teacher email - in a full app, this would come from auth
-const TEACHER_EMAIL = 'teacher@lessonlink.com';
+const TEACHER_EMAIL = 'jwag.lang@gmail.com';
 
 // Default empty profile structure
 const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'> = {

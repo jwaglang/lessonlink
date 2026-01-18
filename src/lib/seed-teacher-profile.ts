@@ -10,7 +10,7 @@ import type { TeacherProfile } from '@/lib/types';
 
 export const teacherJonProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'> = {
   username: 'teacherjon',
-  email: 'teacher@lessonlink.com',
+  email: 'jwag.lang@gmail.com',
   name: '👨🏫 Teacher Jon 🎓',
   headline: '🌟 Fluency Specialist for All Ages 🌟',
   avatarUrl: 'https://imagesavatar-static01.italki.com/9T010801680_Avatar_1.jpg',

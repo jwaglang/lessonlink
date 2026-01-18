@@ -102,7 +102,7 @@ export default function StudentPortalPage() {
         setReviewedLessonIds(reviewedIds);
         
         // Fetch teacher ID (hardcoded teacher email for now)
-        const teacherProfile = await getTeacherProfileByEmail('teacher@lessonlink.com');
+        const teacherProfile = await getTeacherProfileByEmail('jwag.lang@gmail.com');
         if (teacherProfile) {
           setTeacherId(teacherProfile.id);
         }
