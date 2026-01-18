@@ -21,7 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 
 // Admin email - in production, check against a list or role
-const ADMIN_EMAIL = 'teacher@lessonlink.com';
+const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
