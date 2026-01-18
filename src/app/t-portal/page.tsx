@@ -64,8 +64,6 @@ export default function DashboardPage() {
                 if (conversion) {
                     return sum + (l.paymentAmount! * conversion.rate);
                 }
-                // If no conversion rate is found, we don't add it to the total for now.
-                // You might want to handle this case differently, e.g., show a warning.
                 return sum;
             }, 0);
         

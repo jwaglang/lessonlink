@@ -19,8 +19,10 @@ import {
   BookOpenCheck,
   Library,
   ClipboardCheck,
+  Shield,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
+import { auth } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { getApprovalRequests } from '@/lib/firestore';
@@ -28,7 +30,9 @@ import { getApprovalRequests } from '@/lib/firestore';
 const AppSidebar = () => {
   const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  
   useEffect(() => {
     async function fetchPendingCount() {
       const pending = await getApprovalRequests('pending');
@@ -41,15 +45,27 @@ const AppSidebar = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsAdmin(user?.email === 'jwag.lang@gmail.com');
+    });
+    return () => unsubscribe();
+  }, []);
+
   const menuItems = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/students', label: 'Students', icon: Users },
-    { href: '/calendar', label: 'Calendar', icon: Calendar },
-    { href: '/courses', label: 'Courses', icon: Library },
-    { href: '/approvals', label: 'Approvals', icon: ClipboardCheck, badge: pendingCount },
-    { href: '/reports', label: 'Reports', icon: BarChart2 },
-    { href: '/settings', label: 'Settings', icon: Settings },
+    { href: '/t-portal', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/t-portal/students', label: 'Students', icon: Users },
+    { href: '/t-portal/calendar', label: 'Calendar', icon: Calendar },
+    { href: '/t-portal/courses', label: 'Courses', icon: Library },
+    { href: '/t-portal/approvals', label: 'Approvals', icon: ClipboardCheck, badge: pendingCount },
+    { href: '/t-portal/reports', label: 'Reports', icon: BarChart2 },
+    { href: '/t-portal/settings', label: 'Settings', icon: Settings },
   ];
+
+  if (isAdmin) {
+    menuItems.push({ href: '/admin', label: 'Admin', icon: Shield });
+  }
+
 
   return (
     <>

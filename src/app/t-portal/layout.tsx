@@ -1,7 +1,7 @@
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 
-export default function DashboardLayout({
+export default function TeacherPortalLayout({
   children,
 }: {
   children: React.ReactNode;
