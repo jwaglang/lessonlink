@@ -84,7 +84,7 @@ export default function StudentPortalPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/');
     }
   }, [user, loading, router]);
 
@@ -115,7 +115,7 @@ export default function StudentPortalPage() {
 
   async function handleLogout() {
     await logOut();
-    router.push('/login');
+    router.push('/');
   }
 
   function handleTimezoneSet(tz: string) {
@@ -331,7 +331,7 @@ export default function StudentPortalPage() {
             <h1 className="text-3xl font-headline font-bold">Welcome back{student?.name ? `, ${student.name}` : ''}!</h1>
             <p className="text-muted-foreground">Here's an overview of your lessons</p>
           </div>
-          <Link href="/portal/book">
+          <Link href="/s-portal/book">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
               Book a Lesson
@@ -417,7 +417,7 @@ export default function StudentPortalPage() {
               ) : (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground mb-4">No upcoming lessons</p>
-                  <Link href="/portal/book">
+                  <Link href="/s-portal/book">
                     <Button variant="outline">Book Your First Lesson</Button>
                   </Link>
                 </div>

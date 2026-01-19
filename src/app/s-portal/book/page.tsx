@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { LogOut, GraduationCap, Calendar, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { LogOut, GraduationCap, Calendar, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Star } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
 import type { Availability, CourseTemplate, Student } from '@/lib/types';
 import Link from 'next/link';
@@ -52,10 +52,14 @@ export default function BookingPage() {
     type: 'success' | 'pending_approval';
     message: string;
   } | null>(null);
+  // Find a Tutor dialog state
+  const [findTutorOpen, setFindTutorOpen] = useState(false);
+  // Profile viewer state
+  const [profileViewOpen, setProfileViewOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/');
     }
   }, [user, loading, router]);
 
@@ -83,7 +87,7 @@ export default function BookingPage() {
 
   async function handleLogout() {
     await logOut();
-    router.push('/login');
+    router.push('/');
   }
 
   async function handleBookLesson() {
@@ -204,7 +208,7 @@ export default function BookingPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <Link href="/portal">
+          <Link href="/s-portal">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Portal
@@ -212,15 +216,26 @@ export default function BookingPage() {
           </Link>
         </div>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-headline font-bold">Book a Lesson</h1>
-          <p className="text-muted-foreground">Select an available time slot to book your lesson</p>
-          {isNew && (
-            <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              As a new student, your first booking will require teacher approval.
-            </p>
-          )}
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+          <div className="flex items-center gap-3 mb-2">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <GraduationCap className="h-6 w-6 text-primary" />
+        </div>
+      <h1 className="text-3xl font-headline font-bold">Book a Lesson with Teacher Jon</h1>
+    </div>
+            <p className="text-muted-foreground">Select an available time slot to book your lesson</p>
+            {isNew && (
+              <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                As a new student, your first booking will require teacher approval.
+              </p>
+            )}
+          </div>
+          <Button onClick={() => setFindTutorOpen(true)}>
+            <GraduationCap className="h-4 w-4 mr-2" />
+            Find a Tutor
+          </Button>
         </div>
 
         {/* Week Navigation */}
@@ -371,8 +386,124 @@ export default function BookingPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => router.push('/portal')}>
+            <Button onClick={() => router.push('/s-portal')}>
               {bookingResult?.type === 'success' ? 'View My Lessons' : 'Back to Portal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Find a Tutor Dialog */}
+      <Dialog open={findTutorOpen} onOpenChange={setFindTutorOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Find a Tutor</DialogTitle>
+            <DialogDescription>
+              Choose your tutor and select a lesson package
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Currently showing: <span className="font-semibold">Teacher Jon</span>
+            </p>
+            
+            <Card className="mb-4">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                    <GraduationCap className="h-10 w-10 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">Teacher Jon</h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Experienced English teacher
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => {
+                    setFindTutorOpen(false);
+                    setProfileViewOpen(true);
+                    }}>
+                      View Full Profile
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <p className="text-sm font-medium mb-2">Select Package Options</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Multi-teacher support and package purchasing coming soon!
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFindTutorOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setFindTutorOpen(false);
+              // Future: Open package purchase dialog
+            }}>
+              Book with Teacher Jon
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Profile Viewer Dialog */}
+      <Dialog open={profileViewOpen} onOpenChange={setProfileViewOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-headline primary-gradient-text">
+              Teacher Jon's Profile
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {/* Profile Header */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <GraduationCap className="h-10 w-10 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold">Teacher Jon</h3>
+                <p className="text-muted-foreground">Experienced English teacher</p>
+                <div className="flex gap-4 mt-2 text-sm">
+                  <span className="flex items-center gap-1">
+                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                    <span className="font-bold">4.9</span>
+                  </span>
+                  <span>1,500+ lessons</span>
+                  <span>200+ students</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Placeholder content */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">About Me</h4>
+                <p className="text-sm text-muted-foreground">
+                  This is a placeholder profile. Full profile integration coming soon!
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Teaching Experience</h4>
+                <p className="text-sm text-muted-foreground">
+                  10+ years teaching English online to students worldwide.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfileViewOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setProfileViewOpen(false);
+              setFindTutorOpen(true);
+            }}>
+              Back to Booking
             </Button>
           </DialogFooter>
         </DialogContent>
