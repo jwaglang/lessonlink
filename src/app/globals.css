@@ -54,7 +54,7 @@
     --background: 224 71% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 224 71% 10%;
+    --card: 224 71% 20%;
     --card-foreground: 0 0% 98%;
 
     --popover: 224 71% 8%;
@@ -85,7 +85,7 @@
     --chart-4: 231 40% 58%;
     --chart-5: 291 30% 70%;
 
-    --sidebar-background: 224 71% 6%;
+    --sidebar-background: 224 71% 16%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 231 48% 48%;
     --sidebar-primary-foreground: 0 0% 98%;
