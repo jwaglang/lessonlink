@@ -21,17 +21,20 @@ import {
   ClipboardCheck,
   Shield,
   LogOut,
+  BookOpen,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
-import { auth, logOut } from '@/lib/auth';
+import { logOut } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { getApprovalRequests } from '@/lib/firestore';
 import { Button } from './ui/button';
+import { useAuth } from './auth-provider';
 
 const AppSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -48,11 +51,12 @@ const AppSidebar = () => {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setIsAdmin(user?.email === 'jwag.lang@gmail.com');
-    });
-    return () => unsubscribe();
-  }, []);
+    if (user) {
+      setIsAdmin(user.email === 'jwag.lang@gmail.com');
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
 
   async function handleLogout() {
     await logOut();
@@ -111,16 +115,27 @@ const AppSidebar = () => {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-        <ThemeToggle />
-        <SidebarMenuButton
-          onClick={handleLogout}
-          className="w-full justify-start"
-          tooltip="Log Out"
-        >
-          <LogOut />
-          <span>Log Out</span>
-        </SidebarMenuButton>
+      <SidebarFooter className="p-0 gap-0">
+        <div className="p-2">
+          <ThemeToggle />
+        </div>
+        {user && !loading && (
+          <div className="p-4 border-t border-sidebar-border">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">Tutor</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Log Out
+            </Button>
+          </div>
+        )}
       </SidebarFooter>
     </>
   );
