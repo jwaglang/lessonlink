@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GraduationCap, BookOpen, BookOpenCheck } from 'lucide-react';
 import { GradientIcon } from '@/components/gradient-icon';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -86,7 +87,10 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
 {/* Hero Section */}
 <div className="text-center mb-12 max-w-3xl">
         <div className="flex items-center justify-center gap-3 mb-6">
