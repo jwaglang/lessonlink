@@ -34,7 +34,7 @@ const StudentAppSidebar = () => {
 
   async function handleLogout() {
     await logOut();
-    router.push('/login');
+    router.push('/');
   }
 
   const menuItems = [

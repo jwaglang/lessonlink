@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/');
     } else if (!loading && user && user.email !== ADMIN_EMAIL) {
       // Not an admin
       router.push('/');
@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   async function handleLogout() {
     await logOut();
-    router.push('/login');
+    router.push('/');
   }
 
   if (loading) {

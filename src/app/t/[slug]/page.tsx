@@ -127,7 +127,7 @@ export default function PublicProfilePage() {
       date: selectedSlot?.date,
       time: selectedSlot?.time,
     };
-    router.push(`/login?redirect=/portal/book&booking=${encodeURIComponent(JSON.stringify(bookingInfo))}`);
+    router.push(`/?redirect=/portal/book&booking=${encodeURIComponent(JSON.stringify(bookingInfo))}`);
   }
 
   if (loading) {
@@ -183,7 +183,7 @@ export default function PublicProfilePage() {
             <GraduationCap className="h-6 w-6 text-primary" />
             <span className="font-headline text-xl primary-gradient-text">LessonLink</span>
           </Link>
-          <Link href="/login">
+          <Link href="/">
             <Button>Sign In</Button>
           </Link>
         </div>

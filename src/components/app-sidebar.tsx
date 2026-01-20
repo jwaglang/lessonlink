@@ -61,7 +61,7 @@ const AppSidebar = () => {
 
   async function handleLogout() {
     await logOut();
-    router.push('/login');
+    router.push('/');
   }
 
   const menuItems = [
@@ -135,7 +135,7 @@ const AppSidebar = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="w-full dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:hover:bg-sidebar-accent/80"
+              className="w-full dark-mode-solid-button"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-2" />
