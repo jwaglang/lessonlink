@@ -122,8 +122,8 @@ const AppSidebar = () => {
         {user && !loading && (
           <div className="p-4 border-t border-sidebar-border">
             <div className="flex items-center gap-3 mb-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <BookOpen className="h-4 w-4 text-primary" />
+              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">Tutor</p>
@@ -131,9 +131,9 @@ const AppSidebar = () => {
               </div>
             </div>
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
-              className="w-full dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
+              className="w-full"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-2" />

@@ -400,10 +400,7 @@ export default function StudentPortalPage() {
                 <div className="text-center py-6">
                   <p className="text-muted-foreground mb-4">No upcoming lessons</p>
                   <Link href="/s-portal/book">
-                    <Button
-                      variant="outline"
-                      className="dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
-                    >
+                    <Button variant="secondary">
                       Book Your First Lesson
                     </Button>
                   </Link>

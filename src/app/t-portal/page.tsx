@@ -17,6 +17,8 @@ import RevenueChart from './reports/components/revenue-chart';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useEffect, useState } from 'react';
 import type { Student, Lesson } from '@/lib/types';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 type ConversionRate = {
     from: string;
