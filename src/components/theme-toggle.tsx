@@ -32,7 +32,7 @@ export function ThemeToggle({
       <Button
         variant={variant}
         size="icon"
-        className={cn("h-24 w-24", className)}
+        className={cn("h-12 w-12", className)}
         disabled
       />
     )
@@ -47,17 +47,17 @@ export function ThemeToggle({
       variant={variant}
       size="icon"
       onClick={toggleTheme}
-      className={cn("h-24 w-24", className)}
+      className={cn("h-12 w-12", className)}
     >
       <Sun
         className={cn(
-          "h-20 w-20 rotate-0 scale-100 text-yellow-500 transition-all dark:-rotate-90 dark:scale-0",
+          "h-10 w-10 rotate-0 scale-100 text-yellow-500 transition-all dark:-rotate-90 dark:scale-0",
           iconClassName
         )}
       />
       <Moon
         className={cn(
-          "absolute h-20 w-20 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100",
+          "absolute h-10 w-10 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100",
           iconClassName
         )}
       />
