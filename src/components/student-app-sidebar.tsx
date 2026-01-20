@@ -19,6 +19,7 @@ import {
   ClipboardCheck,
   LogOut,
   GraduationCap,
+  MessageSquare,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { ThemeToggle } from './theme-toggle';
@@ -38,8 +39,9 @@ const StudentAppSidebar = () => {
 
   const menuItems = [
     { href: '/s-portal', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/s-portal/tutors', label: 'Tutors', icon: Users },
     { href: '/s-portal/book', label: 'Calendar', icon: Calendar },
+    { href: '/s-portal/chat', label: 'Chat', icon: MessageSquare },
+    { href: '/s-portal/tutors', label: 'Tutors', icon: Users },
     { href: '/s-portal/feedback', label: 'Feedback', icon: Library },
     { href: '/s-portal/evaluations', label: 'Evaluations', icon: ClipboardCheck },
     { href: '/s-portal/settings', label: 'Settings', icon: Settings },
@@ -95,7 +97,7 @@ const StudentAppSidebar = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="w-full"
+              className="w-full dark-mode-solid-button"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-2" />
