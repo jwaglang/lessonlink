@@ -89,10 +89,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative">
       <div className="absolute top-4 right-4">
-        <ThemeToggle
-          variant="outline"
-          className="bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300"
-        />
+        <ThemeToggle />
       </div>
 {/* Hero Section */}
 <div className="text-center mb-12 max-w-3xl">

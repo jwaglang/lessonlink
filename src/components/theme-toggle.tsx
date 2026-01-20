@@ -16,7 +16,7 @@ type ThemeToggleProps = {
 export function ThemeToggle({
   className,
   iconClassName,
-  variant = "secondary",
+  variant = "outline",
 }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
@@ -32,7 +32,7 @@ export function ThemeToggle({
       <Button
         variant={variant}
         size="icon"
-        className={cn("h-12 w-12", className)}
+        className={cn("h-12 w-12", "bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300", className)}
         disabled
       />
     )
@@ -47,7 +47,7 @@ export function ThemeToggle({
       variant={variant}
       size="icon"
       onClick={toggleTheme}
-      className={cn("h-12 w-12", className)}
+      className={cn("h-12 w-12", "bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300", className)}
     >
       <Sun
         className={cn(
