@@ -38,6 +38,7 @@ import { format, parseISO } from 'date-fns';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Review } from '@/lib/types';
+import PageHeader from '@/components/page-header';
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -200,12 +201,10 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-headline font-bold">Reviews</h1>
-        <p className="text-muted-foreground">
-          Moderate and manage student reviews ({reviews.length} total)
-        </p>
-      </div>
+      <PageHeader
+        title="Reviews"
+        description={`Moderate and manage student reviews (${reviews.length} total)`}
+      />
 
       {/* Notification */}
       {notification && (

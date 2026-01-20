@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import PageHeader from '@/components/page-header';
 
 interface DashboardStats {
   totalStudents: number;
@@ -112,10 +113,10 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-headline font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your LessonLink activity</p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Overview of your LessonLink activity"
+      />
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
