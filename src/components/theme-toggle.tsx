@@ -4,9 +4,20 @@ import * as React from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { Button, type ButtonProps } from "@/components/ui/button"
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  className?: string
+  iconClassName?: string
+  variant?: ButtonProps["variant"]
+}
+
+export function ThemeToggle({
+  className,
+  iconClassName,
+  variant = "secondary",
+}: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
@@ -17,7 +28,14 @@ export function ThemeToggle() {
 
   if (!mounted) {
     // return a placeholder to avoid hydration issues
-    return <Button variant="secondary" size="icon" className="h-24 w-24" disabled />
+    return (
+      <Button
+        variant={variant}
+        size="icon"
+        className={cn("h-24 w-24", className)}
+        disabled
+      />
+    )
   }
 
   const toggleTheme = () => {
@@ -25,9 +43,24 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button variant="secondary" size="icon" onClick={toggleTheme} className="h-24 w-24">
-      <Sun className="h-20 w-20 rotate-0 scale-100 text-yellow-500 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-20 w-20 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+    <Button
+      variant={variant}
+      size="icon"
+      onClick={toggleTheme}
+      className={cn("h-24 w-24", className)}
+    >
+      <Sun
+        className={cn(
+          "h-20 w-20 rotate-0 scale-100 text-yellow-500 transition-all dark:-rotate-90 dark:scale-0",
+          iconClassName
+        )}
+      />
+      <Moon
+        className={cn(
+          "absolute h-20 w-20 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100",
+          iconClassName
+        )}
+      />
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
