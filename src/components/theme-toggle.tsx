@@ -17,7 +17,7 @@ export function ThemeToggle() {
 
   if (!mounted) {
     // return a placeholder to avoid hydration issues
-    return <Button variant="ghost" size="icon" className="h-[3.75rem] w-[3.75rem]" disabled />
+    return <Button variant="ghost" size="icon" className="h-24 w-24" disabled />
   }
 
   const toggleTheme = () => {
@@ -25,9 +25,9 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-[3.75rem] w-[3.75rem]">
-      <Sun className="h-14 w-14 rotate-0 scale-100 text-yellow-500 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-14 w-14 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+    <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-24 w-24">
+      <Sun className="h-20 w-20 rotate-0 scale-100 text-yellow-500 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-20 w-20 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
