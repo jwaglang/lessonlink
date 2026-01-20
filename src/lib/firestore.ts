@@ -604,8 +604,9 @@ export async function resolveApprovalRequest(
       // Get course info to determine duration and rate
       const courses = await getCourseTemplates();
       const course = courses.find(c => c.title === request.lessonTitle);
-      const duration = course?.duration || 60;
-      const rate = course?.rate || 0;
+      // Default to 60 minutes and calculate rate from hourlyRate
+      const duration = 60;
+      const rate = course ? (course.hourlyRate * (course.discount60min ? (1 - course.discount60min / 100) : 1)) : 0;
       
       const startHour = parseInt(request.lessonTime.split(':')[0]);
       const endTime = `${(startHour + (duration / 60)).toString().padStart(2, '0')}:00`;

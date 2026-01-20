@@ -14,7 +14,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GraduationCap, BookOpen } from 'lucide-react';
+import { GraduationCap, BookOpen, BookOpenCheck } from 'lucide-react';
+import { GradientIcon } from '@/components/gradient-icon';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -86,11 +87,14 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      {/* Hero Section */}
-      <div className="text-center mb-12 max-w-3xl">
-        <h1 className="text-6xl md:text-7xl font-headline font-bold primary-gradient-text mb-6">
-          LessonLink
-        </h1>
+{/* Hero Section */}
+<div className="text-center mb-12 max-w-3xl">
+        <div className="flex items-center justify-center gap-3 mb-6">
+        <GradientIcon icon={BookOpenCheck} id="landing-logo" className="w-16 h-16 md:w-20 md:h-20"/>
+          <h1 className="text-6xl md:text-7xl font-headline font-bold primary-gradient-text">
+            LessonLink
+          </h1>
+        </div>
         <p className="text-xl md:text-2xl text-foreground font-body">
           Sit back and learn.
           <br />

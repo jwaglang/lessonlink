@@ -50,11 +50,10 @@ export interface PackageOption {
 export interface CourseTemplate {
   id: string;
   title: string;
-  duration: 30 | 60;
   pitch: string;
   description: string;
-  rate: number; // single lesson rate in teacher's default currency
-  packageOptions?: PackageOption[];
+  hourlyRate: number; // Base hourly rate (e.g., $50/hour)
+  discount60min?: number; // Optional % discount for 60-min lessons (0-100)
   thumbnailUrl: string;
   imageUrl: string;
 }
@@ -200,4 +199,18 @@ export interface Review {
   // For imported reviews
   imported?: boolean;
   importSource?: string; // e.g., "italki"
+}
+// Helper function to calculate lesson price based on duration
+export function calculateLessonPrice(
+  hourlyRate: number,
+  duration: 30 | 60,
+  discount60?: number
+): number {
+  if (duration === 30) {
+    return hourlyRate / 2; // Always half of hourly rate, no discount
+  }
+  if (duration === 60 && discount60) {
+    return hourlyRate * (1 - discount60 / 100); // Apply discount
+  }
+  return hourlyRate; // Full hourly rate for 60-min
 }

@@ -32,6 +32,7 @@ import {
 import { LogOut, GraduationCap, Calendar, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Star } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
 import type { Availability, CourseTemplate, Student } from '@/lib/types';
+import { calculateLessonPrice } from '@/lib/types';
 import Link from 'next/link';
 
 export default function BookingPage() {
@@ -47,6 +48,7 @@ export default function BookingPage() {
   // Booking dialog state
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingResult, setBookingResult] = useState<{
     type: 'success' | 'pending_approval';
@@ -98,7 +100,8 @@ export default function BookingPage() {
     const course = courses.find(c => c.id === selectedCourse);
     if (!course) return;
 
-    const endHour = parseInt(selectedSlot.time.split(':')[0]) + (course.duration / 60);
+    const lessonPrice = calculateLessonPrice(course.hourlyRate, selectedDuration, course.discount60min);
+    const endHour = parseInt(selectedSlot.time.split(':')[0]) + (selectedDuration / 60);
     const endTime = `${endHour.toString().padStart(2, '0')}:00`;
 
     try {
@@ -127,7 +130,7 @@ export default function BookingPage() {
           date: selectedSlot.date,
           startTime: selectedSlot.time,
           endTime: endTime,
-          rate: course.rate,
+          rate: lessonPrice,
         });
         
         // Remove the booked slot from available slots
@@ -148,6 +151,7 @@ export default function BookingPage() {
   function closeDialog() {
     setSelectedSlot(null);
     setSelectedCourse('');
+    setSelectedDuration(60);
     setBookingResult(null);
   }
 
@@ -327,23 +331,63 @@ export default function BookingPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <label className="text-sm font-medium mb-2 block">Select a Course</label>
-            <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a course..." />
-              </SelectTrigger>
-              <SelectContent>
-                {courses.map(course => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.title} ({course.duration} min) - ${course.rate}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Select a Course</label>
+              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a course..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedCourse && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Select Duration</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[30, 60].map(duration => {
+                    const course = courses.find(c => c.id === selectedCourse);
+                    if (!course) return null;
+                    
+                    const price = calculateLessonPrice(
+                      course.hourlyRate, 
+                      duration as 30 | 60, 
+                      course.discount60min
+                    );
+                    const hasDiscount = duration === 60 && course.discount60min && course.discount60min > 0;
+                    
+                    return (
+                      <Button
+                        key={duration}
+                        variant={selectedDuration === duration ? 'default' : 'outline'}
+                        className="h-auto py-3 flex flex-col items-start"
+                        onClick={() => setSelectedDuration(duration as 30 | 60)}
+                      >
+                        <span className="font-semibold">{duration} minutes</span>
+                        <span className="text-sm">
+                          ${price.toFixed(2)}
+                          {hasDiscount && (
+                            <span className="text-xs ml-1">
+                              ({course.discount60min}% off! 🥳)
+                            </span>
+                          )}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             {isNew && (
-              <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
+              <p className="text-xs text-amber-600 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
                 This booking will require teacher approval.
               </p>

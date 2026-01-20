@@ -20,13 +20,13 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
-  title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
-  pitch: z.string().max(100, { message: 'Pitch must be 100 characters or less.' }).optional(),
-  description: z.string().optional(),
-  rate: z.coerce.number().positive({ message: 'Rate must be a positive number.' }),
-  duration: z.enum(['30', '60']),
-  thumbnailUrl: z.string().optional(),
-});
+    title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
+    pitch: z.string().max(100, { message: 'Pitch must be 100 characters or less.' }).optional(),
+    description: z.string().optional(),
+    hourlyRate: z.coerce.number().positive({ message: 'Hourly rate must be a positive number.' }),
+    discount60min: z.coerce.number().min(0).max(100).optional(),
+    thumbnailUrl: z.string().optional(),
+  });
 
 interface CourseFormProps {
     courseTemplate: CourseTemplate | null;
@@ -47,8 +47,8 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
             title: courseTemplate?.title || '',
             pitch: courseTemplate?.pitch || '',
             description: courseTemplate?.description || '',
-            rate: courseTemplate?.rate || 0,
-            duration: courseTemplate?.duration?.toString() as '30' | '60' || '60',
+            hourlyRate: courseTemplate?.hourlyRate || 0,
+            discount60min: courseTemplate?.discount60min || undefined,
             thumbnailUrl: courseTemplate?.thumbnailUrl || '',
         },
     });
@@ -62,7 +62,6 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                 
                 const templateData = {
                     ...values,
-                    duration: parseInt(values.duration, 10) as 30 | 60,
                     thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
                     imageUrl: newHeroUrl,
                 };
@@ -133,44 +132,41 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                 />
                  <FormField
                     control={form.control}
-                    name="rate"
+                    name="hourlyRate"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Rate (per lesson)</FormLabel>
+                            <FormLabel>Hourly Rate</FormLabel>
                             <FormControl>
-                                <Input type="number" step="0.01" placeholder="25.00" {...field} />
+                                <Input type="number" step="0.01" placeholder="50.00" {...field} />
                             </FormControl>
+                            <FormDescription>
+                                30-min lessons will be half this rate. 60-min lessons will use this rate (or discounted rate if set below).
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
-                    name="duration"
+                    name="discount60min"
                     render={({ field }) => (
-                        <FormItem className="space-y-3">
-                        <FormLabel>Duration (in minutes)</FormLabel>
-                        <FormControl>
-                            <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex items-center space-x-4"
-                            >
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="30" />
-                                </FormControl>
-                                <Label className="font-normal">30</Label>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
-                                <FormControl>
-                                <RadioGroupItem value="60" />
-                                </FormControl>
-                                <Label className="font-normal">60</Label>
-                            </FormItem>
-                            </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
+                        <FormItem>
+                            <FormLabel>60-Min Discount (Optional)</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    type="number" 
+                                    step="1" 
+                                    min="0" 
+                                    max="100" 
+                                    placeholder="e.g., 10 for 10% off" 
+                                    {...field} 
+                                    value={field.value || ''}
+                                />
+                            </FormControl>
+                            <FormDescription>
+                                Optional percentage discount for 60-minute lessons only (0-100%). Leave blank for no discount.
+                            </FormDescription>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
