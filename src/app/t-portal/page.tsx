@@ -90,7 +90,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8">
-      <PageHeader title="Dashboard" />
+      <PageHeader title="Tutor Dashboard" />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
