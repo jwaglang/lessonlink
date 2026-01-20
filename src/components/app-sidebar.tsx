@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   SidebarHeader,
@@ -20,19 +20,21 @@ import {
   Library,
   ClipboardCheck,
   Shield,
+  LogOut,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
-import { auth } from '@/lib/auth';
+import { auth, logOut } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { getApprovalRequests } from '@/lib/firestore';
+import { Button } from './ui/button';
 
 const AppSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [pendingCount, setPendingCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  
   useEffect(() => {
     async function fetchPendingCount() {
       const pending = await getApprovalRequests('pending');
@@ -51,6 +53,11 @@ const AppSidebar = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  async function handleLogout() {
+    await logOut();
+    router.push('/login');
+  }
 
   const menuItems = [
     { href: '/t-portal', label: 'Dashboard', icon: LayoutDashboard },
@@ -106,6 +113,14 @@ const AppSidebar = () => {
       </SidebarContent>
       <SidebarFooter>
         <ThemeToggle />
+        <SidebarMenuButton
+          onClick={handleLogout}
+          className="w-full justify-start"
+          tooltip="Log Out"
+        >
+          <LogOut />
+          <span>Log Out</span>
+        </SidebarMenuButton>
       </SidebarFooter>
     </>
   );

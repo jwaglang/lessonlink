@@ -114,7 +114,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="p-6 lg:p-8 space-y-8">
       <PageHeader
-        title="Dashboard"
+        title="Admin Panel"
         description="Overview of your LessonLink activity"
       />
 

@@ -17,8 +17,10 @@ import {
   Shield,
   Menu,
   X,
+  BookOpenCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GradientIcon } from '@/components/gradient-icon';
 
 // Admin email - in production, check against a list or role
 const ADMIN_EMAIL = 'jwag.lang@gmail.com';
@@ -71,8 +73,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="lg:hidden border-b sticky top-0 bg-background z-50">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl">Admin</span>
+            <GradientIcon icon={BookOpenCheck} id="logo-admin-mobile" className="w-8 h-8"/>
+            <h1 className="text-xl font-headline font-bold primary-gradient-text">
+                LessonLink
+            </h1>
           </div>
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -91,8 +95,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex flex-col h-full">
             {/* Logo */}
             <div className="hidden lg:flex items-center gap-2 p-6 border-b">
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="font-headline text-xl">Admin Panel</span>
+              <GradientIcon icon={BookOpenCheck} id="logo-admin-desktop" className="w-8 h-8"/>
+              <h1 className="text-xl font-headline font-bold primary-gradient-text">
+                  LessonLink
+              </h1>
             </div>
 
             {/* Navigation */}

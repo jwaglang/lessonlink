@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarHeader,
   SidebarMenu,
@@ -17,12 +17,20 @@ import {
   BookOpenCheck,
   Library,
   ClipboardCheck,
+  LogOut,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { ThemeToggle } from './theme-toggle';
+import { logOut } from '@/lib/auth';
 
 const StudentAppSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await logOut();
+    router.push('/login');
+  }
 
   const menuItems = [
     { href: '/s-portal', label: 'Dashboard', icon: LayoutDashboard },
@@ -67,6 +75,14 @@ const StudentAppSidebar = () => {
       </SidebarContent>
       <SidebarFooter>
         <ThemeToggle />
+        <SidebarMenuButton
+          onClick={handleLogout}
+          className="w-full justify-start"
+          tooltip="Log Out"
+        >
+          <LogOut />
+          <span>Log Out</span>
+        </SidebarMenuButton>
       </SidebarFooter>
     </>
   );
