@@ -22,6 +22,7 @@ import {
   Shield,
   LogOut,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
@@ -65,8 +66,9 @@ const AppSidebar = () => {
 
   const menuItems = [
     { href: '/t-portal', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/t-portal/students', label: 'Students', icon: Users },
     { href: '/t-portal/calendar', label: 'Calendar', icon: Calendar },
+    { href: '/t-portal/chat', label: 'Chat', icon: MessageSquare },
+    { href: '/t-portal/students', label: 'Students', icon: Users },
     { href: '/t-portal/courses', label: 'Courses', icon: Library },
     { href: '/t-portal/approvals', label: 'Approvals', icon: ClipboardCheck, badge: pendingCount },
     { href: '/t-portal/reports', label: 'Reports', icon: BarChart2 },
@@ -122,8 +124,8 @@ const AppSidebar = () => {
         {user && !loading && (
           <div className="p-4 border-t border-sidebar-border">
             <div className="flex items-center gap-3 mb-3">
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                <BookOpen className="h-4 w-4 text-primary-foreground" />
+              <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center">
+                <BookOpen className="h-4 w-4 text-sidebar-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">Tutor</p>
@@ -133,7 +135,7 @@ const AppSidebar = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="w-full"
+              className="w-full dark:bg-sidebar-accent dark:text-sidebar-accent-foreground dark:hover:bg-sidebar-accent/80"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-2" />
