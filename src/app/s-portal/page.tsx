@@ -310,7 +310,7 @@ export default function StudentPortalPage() {
       {/* Main Content */}
       <main className="p-4 md:p-8">
         <PageHeader
-          title={`Welcome back${student?.name ? `, ${student.name}` : ''}!`}
+          title="Learner Portal"
           description="Here's an overview of your lessons"
         >
             <Link href="/s-portal/book">
