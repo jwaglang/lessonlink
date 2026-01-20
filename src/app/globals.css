@@ -54,7 +54,7 @@
     --background: 224 71% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 224 71% 21%;
+    --card: 224 71% 11%;
     --card-foreground: 0 0% 98%;
 
     --popover: 224 71% 8%;
@@ -63,7 +63,7 @@
     --primary: 231 48% 48%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 224 71% 31%;
+    --secondary: 224 71% 26%;
     --secondary-foreground: 0 0% 98%;
 
     --muted: 224 71% 12%;
@@ -85,7 +85,7 @@
     --chart-4: 231 40% 58%;
     --chart-5: 291 30% 70%;
 
-    --sidebar-background: 224 71% 21%;
+    --sidebar-background: 224 71% 11%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 231 48% 48%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -113,5 +113,8 @@
   }
   .primary-gradient-text {
     @apply bg-gradient-to-r from-[#3F51B5] to-[#9C27B0] bg-clip-text text-transparent;
+  }
+  .dark .dark-mode-solid-button {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
 }
