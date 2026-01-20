@@ -92,7 +92,12 @@ const StudentAppSidebar = () => {
                 <p className="text-xs text-muted-foreground truncate">{user.email}</p>
               </div>
             </div>
-            <Button size="sm" className="w-full" onClick={handleLogout}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
+              onClick={handleLogout}
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Log Out
             </Button>
