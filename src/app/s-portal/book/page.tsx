@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
-import { logOut } from '@/lib/auth';
 import {
   getOrCreateStudentByEmail,
   getAvailableSlots,
@@ -29,11 +28,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { LogOut, GraduationCap, Calendar, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Star } from 'lucide-react';
+import { GraduationCap, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Star } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
 import type { Availability, CourseTemplate, Student } from '@/lib/types';
 import { calculateLessonPrice } from '@/lib/types';
 import Link from 'next/link';
+import PageHeader from '@/components/page-header';
 
 export default function BookingPage() {
   const { user, loading } = useAuth();
@@ -86,11 +86,6 @@ export default function BookingPage() {
     }
     fetchData();
   }, [user]);
-
-  async function handleLogout() {
-    await logOut();
-    router.push('/');
-  }
 
   async function handleBookLesson() {
     if (!selectedSlot || !selectedCourse || !student) return;
@@ -192,58 +187,36 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl">LessonLink</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Log Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="p-4 md:p-8">
         <div className="mb-6">
           <Link href="/s-portal">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Portal
+              Back to Dashboard
             </Button>
           </Link>
         </div>
 
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-          <div className="flex items-center gap-3 mb-2">
-          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <GraduationCap className="h-6 w-6 text-primary" />
-        </div>
-      <h1 className="text-3xl font-headline font-bold">Book a Lesson with Teacher Jon</h1>
-    </div>
-            <p className="text-muted-foreground">Select an available time slot to book your lesson</p>
-            {isNew && (
-              <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
-                <AlertCircle className="h-4 w-4" />
-                As a new student, your first booking will require teacher approval.
-              </p>
-            )}
-          </div>
-          <Button onClick={() => setFindTutorOpen(true)}>
-            <GraduationCap className="h-4 w-4 mr-2" />
-            Find a Tutor
-          </Button>
-        </div>
+        <PageHeader
+            title="Book a Lesson with Teacher Jon"
+            description="Select an available time slot to book your lesson"
+        >
+            <Button onClick={() => setFindTutorOpen(true)}>
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Find a Tutor
+            </Button>
+        </PageHeader>
+
+        {isNew && (
+            <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            As a new student, your first booking will require teacher approval.
+            </p>
+        )}
 
         {/* Week Navigation */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between my-8">
           <h2 className="text-xl font-semibold">
             {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
           </h2>
@@ -309,7 +282,7 @@ export default function BookingPage() {
         {futureSlots.length === 0 && (
           <Card className="mt-8">
             <CardContent className="py-8 text-center">
-              <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <GraduationCap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">No available time slots at the moment.</p>
               <p className="text-sm text-muted-foreground">Please check back later!</p>
             </CardContent>

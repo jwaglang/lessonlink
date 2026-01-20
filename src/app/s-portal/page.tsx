@@ -48,6 +48,7 @@ import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
 import type { Lesson, Student, Availability } from '@/lib/types';
 import Link from 'next/link';
 import TimezonePrompt from '@/components/timezone-prompt';
+import PageHeader from '@/components/page-header';
 
 export default function StudentPortalPage() {
   const { user, loading } = useAuth();
@@ -112,11 +113,6 @@ export default function StudentPortalPage() {
     }
     fetchStudentData();
   }, [user]);
-
-  async function handleLogout() {
-    await logOut();
-    router.push('/');
-  }
 
   function handleTimezoneSet(tz: string) {
     setTimezone(tz);
@@ -276,8 +272,12 @@ export default function StudentPortalPage() {
     );
   }
 
-  if (!user) {
-    return null;
+  if (!user || loadingData) {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <p>Loading student data...</p>
+        </div>
+    );
   }
 
   const upcomingLessons = lessons
@@ -307,39 +307,21 @@ export default function StudentPortalPage() {
         />
       )}
 
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl">LessonLink</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Log Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-headline font-bold">Welcome back{student?.name ? `, ${student.name}` : ''}!</h1>
-            <p className="text-muted-foreground">Here's an overview of your lessons</p>
-          </div>
-          <Link href="/s-portal/book">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Book a Lesson
-            </Button>
-          </Link>
-        </div>
+      <main className="p-4 md:p-8">
+        <PageHeader
+          title={`Welcome back${student?.name ? `, ${student.name}` : ''}!`}
+          description="Here's an overview of your lessons"
+        >
+            <Link href="/s-portal/book">
+                <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Book a Lesson
+                </Button>
+            </Link>
+        </PageHeader>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-3 my-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Upcoming Lessons</CardTitle>
