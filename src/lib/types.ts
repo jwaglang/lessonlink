@@ -1,3 +1,4 @@
+
 export type StudentStatus = 'currently enrolled' | 'unenrolled (package over)' | 'unenrolled (goal met)' | 'MIA';
 
 export interface Student {
@@ -206,6 +207,10 @@ export function calculateLessonPrice(
   duration: 30 | 60,
   discount60?: number
 ): number {
+  // Guard against old data model that may not have hourlyRate
+  if (typeof hourlyRate !== 'number' || isNaN(hourlyRate)) {
+    return 0;
+  }
   if (duration === 30) {
     return hourlyRate / 2; // Always half of hourly rate, no discount
   }
