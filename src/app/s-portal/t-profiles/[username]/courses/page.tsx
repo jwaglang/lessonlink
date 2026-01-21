@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,7 +16,7 @@ import Loading from '@/app/loading';
 import { calculateLessonPrice } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 
-export default function TeacherCoursesPage() {
+function TeacherCoursesPageContent() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
@@ -112,4 +112,12 @@ export default function TeacherCoursesPage() {
 
     </div>
   );
+}
+
+export default function TeacherCoursesPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <TeacherCoursesPageContent />
+    </Suspense>
+  )
 }
