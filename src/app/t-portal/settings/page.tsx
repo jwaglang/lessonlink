@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -744,11 +745,16 @@ export default function ProfileEditorPage() {
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div>
                 <p className="font-medium">Publish Profile</p>
-                <p className="text-sm text-muted-foreground">Make your profile visible to students at /t/{profile.username || 'username'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {profileId
+                    ? `Make your profile visible at /t/${profile.username || 'username'}`
+                    : 'You must save your profile at least once to publish it.'}
+                </p>
               </div>
               <Switch
                 checked={profile.isPublished}
                 onCheckedChange={(checked) => updateField('isPublished', checked)}
+                disabled={!profileId}
               />
             </div>
           </CardContent>
