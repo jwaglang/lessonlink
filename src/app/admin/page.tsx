@@ -200,7 +200,7 @@ export default function AdminDashboardPage() {
                 )}
               </Button>
             </Link>
-            <Link href="/settings/profile" className="block">
+            <Link href="/t-portal/settings" className="block">
               <Button variant="outline" className="w-full justify-start">
                 <Users className="h-4 w-4 mr-2" />
                 Edit Public Profile

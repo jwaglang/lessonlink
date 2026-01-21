@@ -38,14 +38,11 @@ import {
 } from 'lucide-react';
 import type { TeacherProfile, TeacherCertificate, TeacherExperience } from '@/lib/types';
 import Link from 'next/link';
-
-// Default teacher email - in a full app, this would come from auth
-const TEACHER_EMAIL = 'teacher@lessonlink.com';
+import { useAuth } from '@/components/auth-provider';
 
 // Default empty profile structure
-const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'> = {
+const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt' | 'email'> = {
   username: '',
-  email: TEACHER_EMAIL,
   name: '',
   headline: '',
   avatarUrl: '',
@@ -77,7 +74,8 @@ const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'> = {
 };
 
 export default function ProfileEditorPage() {
-  const [profile, setProfile] = useState<Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'>>(emptyProfile);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'>>({ ...emptyProfile, email: '' });
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,8 +95,13 @@ export default function ProfileEditorPage() {
   const [interestsInput, setInterestsInput] = useState('');
 
   useEffect(() => {
+    if (!user?.email) {
+      if (!loading) setLoading(true);
+      return;
+    }
+
     async function loadProfile() {
-      const existingProfile = await getTeacherProfileByEmail(TEACHER_EMAIL);
+      const existingProfile = await getTeacherProfileByEmail(user.email!);
       
       if (existingProfile) {
         setProfileId(existingProfile.id);
@@ -133,13 +136,15 @@ export default function ProfileEditorPage() {
         setLanguagesInput(existingProfile.otherLanguages?.join(', ') || '');
         setSpecialtiesInput(existingProfile.specialties?.join(', ') || '');
         setInterestsInput(existingProfile.interests?.join(', ') || '');
+      } else {
+        setProfile({ ...emptyProfile, email: user.email! });
       }
       
       setLoading(false);
     }
 
     loadProfile();
-  }, []);
+  }, [user, loading]);
 
   // Check username availability with debounce
   useEffect(() => {
@@ -147,14 +152,14 @@ export default function ProfileEditorPage() {
       setUsernameStatus('idle');
       return;
     }
+    if (!user?.email) return;
 
     const timer = setTimeout(async () => {
       setUsernameStatus('checking');
       const available = await isUsernameAvailable(profile.username);
       
-      // If editing existing profile with same username, it's available
       if (profileId) {
-        const existingProfile = await getTeacherProfileByEmail(TEACHER_EMAIL);
+        const existingProfile = await getTeacherProfileByEmail(user.email!);
         if (existingProfile?.username === profile.username) {
           setUsernameStatus('available');
           return;
@@ -165,7 +170,7 @@ export default function ProfileEditorPage() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [profile.username, profileId]);
+  }, [profile.username, profileId, user]);
 
   function updateField<K extends keyof typeof profile>(field: K, value: typeof profile[K]) {
     setProfile(prev => ({ ...prev, [field]: value }));
@@ -244,6 +249,10 @@ export default function ProfileEditorPage() {
   }
 
   async function handleSave() {
+    if (!user?.email) {
+      setSaveMessage({ type: 'error', text: 'You must be logged in to save.' });
+      return;
+    }
     // Validate
     if (!profile.username || profile.username.length < 3) {
       setSaveMessage({ type: 'error', text: 'Username must be at least 3 characters' });
@@ -264,6 +273,7 @@ export default function ProfileEditorPage() {
     // Parse array inputs
     const profileData = {
       ...profile,
+      email: user.email,
       username: profile.username.toLowerCase(),
       teachingMaterials: parseArrayInput(materialsInput),
       otherLanguages: parseArrayInput(languagesInput),
