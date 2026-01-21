@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import WeeklyCalendar from "./components/weekly-calendar";
-import { getLessons, getStudents, getAvailability, getCourseTemplates } from "@/lib/data";
+import { getLessons, getStudents, getAvailability, getCourseTemplates } from "@/lib/firestore";
 import type { Lesson, Student, Availability, CourseTemplate } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import BookLessonForm from './components/book-lesson-form';
