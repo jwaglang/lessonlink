@@ -39,9 +39,9 @@ const StudentAppSidebar = () => {
 
   const menuItems = [
     { href: '/s-portal', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/s-portal/book', label: 'Calendar', icon: Calendar },
+    { href: '/s-portal/calendar', label: 'Calendar', icon: Calendar },
     { href: '/s-portal/chat', label: 'Chat', icon: MessageSquare },
-    { href: '/s-portal/tutors', label: 'Tutors', icon: Users },
+    { href: '/s-portal/t-profiles', label: 'Tutors', icon: Users },
     { href: '/s-portal/feedback', label: 'Feedback', icon: Library },
     { href: '/s-portal/evaluations', label: 'Evaluations', icon: ClipboardCheck },
     { href: '/s-portal/settings', label: 'Settings', icon: Settings },

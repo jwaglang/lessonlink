@@ -313,7 +313,7 @@ export default function StudentPortalPage() {
           title="Learner Portal"
           description="Here's an overview of your lessons"
         >
-            <Link href="/s-portal/book">
+            <Link href="/s-portal/calendar">
                 <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Book a Lesson
@@ -399,7 +399,7 @@ export default function StudentPortalPage() {
               ) : (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground mb-4">No upcoming lessons</p>
-                  <Link href="/s-portal/book">
+                  <Link href="/s-portal/calendar">
                     <Button variant="secondary">
                       Book Your First Lesson
                     </Button>

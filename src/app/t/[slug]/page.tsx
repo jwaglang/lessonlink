@@ -127,7 +127,7 @@ export default function PublicProfilePage() {
       date: selectedSlot?.date,
       time: selectedSlot?.time,
     };
-    router.push(`/?redirect=/portal/book&booking=${encodeURIComponent(JSON.stringify(bookingInfo))}`);
+    router.push(`/?redirect=/s-portal/calendar&booking=${encodeURIComponent(JSON.stringify(bookingInfo))}`);
   }
 
   if (loading) {
