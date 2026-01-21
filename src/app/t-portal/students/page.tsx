@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Student } from '@/lib/types';
-import { getStudents } from "@/lib/data";
+import { getStudents } from "@/lib/firestore";
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
