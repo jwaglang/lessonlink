@@ -75,7 +75,7 @@ const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt' | 'ema
 };
 
 export default function ProfileEditorPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'>>({ ...emptyProfile, email: '' });
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,8 +96,7 @@ export default function ProfileEditorPage() {
   const [interestsInput, setInterestsInput] = useState('');
 
   useEffect(() => {
-    if (!user?.email) {
-      if (!loading) setLoading(true);
+    if (authLoading || !user?.email) {
       return;
     }
 
@@ -145,7 +144,7 @@ export default function ProfileEditorPage() {
     }
 
     loadProfile();
-  }, [user, loading]);
+  }, [user, authLoading]);
 
   // Check username availability with debounce
   useEffect(() => {
@@ -746,15 +745,12 @@ export default function ProfileEditorPage() {
               <div>
                 <p className="font-medium">Publish Profile</p>
                 <p className="text-sm text-muted-foreground">
-                  {profileId
-                    ? `Make your profile visible at /t/${profile.username || 'username'}`
-                    : 'You must save your profile at least once to publish it.'}
+                  Make your profile visible at /t/{profile.username || 'username'}
                 </p>
               </div>
               <Switch
                 checked={profile.isPublished}
                 onCheckedChange={(checked) => updateField('isPublished', checked)}
-                disabled={!profileId}
               />
             </div>
           </CardContent>
