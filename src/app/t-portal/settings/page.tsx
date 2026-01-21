@@ -282,14 +282,28 @@ export default function ProfileEditorPage() {
     };
 
     try {
+      let savedProfile: TeacherProfile;
       if (profileId) {
-        await updateTeacherProfile(profileId, profileData);
+        savedProfile = await updateTeacherProfile(profileId, profileData);
         setSaveMessage({ type: 'success', text: 'Profile saved!' });
       } else {
-        const created = await createTeacherProfile(profileData);
-        setProfileId(created.id);
+        savedProfile = await createTeacherProfile(profileData);
         setSaveMessage({ type: 'success', text: 'Profile created!' });
       }
+
+      // Deconstruct to get the ID and the rest of the data for the profile state
+      const { id, createdAt, updatedAt, ...profileStateData } = savedProfile;
+
+      // Update the component's state to trigger a re-render
+      setProfileId(id);
+      setProfile(profileStateData);
+      
+      // Also update the array input fields to match the newly saved (and cleaned) data
+      setMaterialsInput(savedProfile.teachingMaterials?.join(', ') || '');
+      setLanguagesInput(savedProfile.otherLanguages?.join(', ') || '');
+      setSpecialtiesInput(savedProfile.specialties?.join(', ') || '');
+      setInterestsInput(savedProfile.interests?.join(', ') || '');
+
     } catch (error: any) {
       setSaveMessage({ type: 'error', text: error.message || 'Failed to save profile' });
     } finally {
