@@ -7,6 +7,7 @@ import {
   createTeacherProfile,
   updateTeacherProfile,
   isUsernameAvailable,
+  getTeacherProfileByUsername,
 } from '@/lib/firestore';
 import { seedTeacherJonProfile } from '@/lib/seed-teacher-profile';
 import { seedTeacherJonReviews } from '@/lib/seed-reviews';
@@ -40,6 +41,9 @@ import {
 import type { TeacherProfile, TeacherCertificate, TeacherExperience } from '@/lib/types';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
+
+// Admin email for special fallbacks
+const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 
 // Default empty profile structure
 const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt' | 'email'> = {
@@ -101,41 +105,24 @@ export default function ProfileEditorPage() {
     }
 
     async function loadProfile() {
-      const existingProfile = await getTeacherProfileByEmail(user.email!);
+      let existingProfile = await getTeacherProfileByEmail(user.email!);
+
+      // Fallback for admin user to load the main teacher profile by username
+      if (!existingProfile && user.email === ADMIN_EMAIL) {
+        console.log('Admin user detected, attempting to load profile by username "teacherjon"');
+        existingProfile = await getTeacherProfileByUsername('teacherjon');
+      }
       
       if (existingProfile) {
         setProfileId(existingProfile.id);
-        setProfile({
-          username: existingProfile.username,
-          email: existingProfile.email,
-          name: existingProfile.name,
-          headline: existingProfile.headline,
-          avatarUrl: existingProfile.avatarUrl,
-          coverImageUrl: existingProfile.coverImageUrl || '',
-          videoUrl: existingProfile.videoUrl || '',
-          aboutMe: existingProfile.aboutMe,
-          teachingPhilosophy: existingProfile.teachingPhilosophy || '',
-          lessonStyle: existingProfile.lessonStyle || '',
-          teachingMaterials: existingProfile.teachingMaterials || [],
-          nativeLanguage: existingProfile.nativeLanguage,
-          otherLanguages: existingProfile.otherLanguages || [],
-          specialties: existingProfile.specialties || [],
-          interests: existingProfile.interests || [],
-          countryFrom: existingProfile.countryFrom,
-          cityLiving: existingProfile.cityLiving,
-          timezone: existingProfile.timezone,
-          teachingSince: existingProfile.teachingSince || '',
-          certificates: existingProfile.certificates || [],
-          experience: existingProfile.experience || [],
-          stats: existingProfile.stats,
-          isOnline: existingProfile.isOnline || false,
-          isPublished: existingProfile.isPublished,
-        });
-        // Set array inputs
-        setMaterialsInput(existingProfile.teachingMaterials?.join(', ') || '');
-        setLanguagesInput(existingProfile.otherLanguages?.join(', ') || '');
-        setSpecialtiesInput(existingProfile.specialties?.join(', ') || '');
-        setInterestsInput(existingProfile.interests?.join(', ') || '');
+        const { id, createdAt, updatedAt, ...profileData } = existingProfile;
+        setProfile(profileData);
+        
+        // Set array inputs from loaded profile
+        setMaterialsInput(profileData.teachingMaterials?.join(', ') || '');
+        setLanguagesInput(profileData.otherLanguages?.join(', ') || '');
+        setSpecialtiesInput(profileData.specialties?.join(', ') || '');
+        setInterestsInput(profileData.interests?.join(', ') || '');
       } else {
         setProfile({ ...emptyProfile, email: user.email! });
       }
@@ -159,7 +146,7 @@ export default function ProfileEditorPage() {
       const available = await isUsernameAvailable(profile.username);
       
       if (profileId) {
-        const existingProfile = await getTeacherProfileByEmail(user.email!);
+        const existingProfile = await getTeacherProfileById(profileId);
         if (existingProfile?.username === profile.username) {
           setUsernameStatus('available');
           return;
@@ -188,41 +175,17 @@ export default function ProfileEditorPage() {
     
     try {
       const seededProfile = await seedTeacherJonProfile();
-      setProfileId(seededProfile.id);
       
       // Update local state with seeded data
-      setProfile({
-        username: seededProfile.username,
-        email: seededProfile.email,
-        name: seededProfile.name,
-        headline: seededProfile.headline,
-        avatarUrl: seededProfile.avatarUrl,
-        coverImageUrl: seededProfile.coverImageUrl || '',
-        videoUrl: seededProfile.videoUrl || '',
-        aboutMe: seededProfile.aboutMe,
-        teachingPhilosophy: seededProfile.teachingPhilosophy || '',
-        lessonStyle: seededProfile.lessonStyle || '',
-        teachingMaterials: seededProfile.teachingMaterials || [],
-        nativeLanguage: seededProfile.nativeLanguage,
-        otherLanguages: seededProfile.otherLanguages || [],
-        specialties: seededProfile.specialties || [],
-        interests: seededProfile.interests || [],
-        countryFrom: seededProfile.countryFrom,
-        cityLiving: seededProfile.cityLiving,
-        timezone: seededProfile.timezone,
-        teachingSince: seededProfile.teachingSince || '',
-        certificates: seededProfile.certificates || [],
-        experience: seededProfile.experience || [],
-        stats: seededProfile.stats,
-        isOnline: seededProfile.isOnline || false,
-        isPublished: seededProfile.isPublished,
-      });
+      const { id, createdAt, updatedAt, ...profileData } = seededProfile;
+      setProfileId(id);
+      setProfile(profileData);
       
       // Update array inputs
-      setMaterialsInput(seededProfile.teachingMaterials?.join(', ') || '');
-      setLanguagesInput(seededProfile.otherLanguages?.join(', ') || '');
-      setSpecialtiesInput(seededProfile.specialties?.join(', ') || '');
-      setInterestsInput(seededProfile.interests?.join(', ') || '');
+      setMaterialsInput(profileData.teachingMaterials?.join(', ') || '');
+      setLanguagesInput(profileData.otherLanguages?.join(', ') || '');
+      setSpecialtiesInput(profileData.specialties?.join(', ') || '');
+      setInterestsInput(profileData.interests?.join(', ') || '');
       
       setSaveMessage({ type: 'success', text: 'Profile seeded from iTalki data!' });
     } catch (error: any) {
@@ -765,6 +728,7 @@ export default function ProfileEditorPage() {
               <Switch
                 checked={profile.isPublished}
                 onCheckedChange={(checked) => updateField('isPublished', checked)}
+                disabled={!profileId}
               />
             </div>
           </CardContent>

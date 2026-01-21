@@ -1,3 +1,4 @@
+
 'use client';
 
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
@@ -25,27 +26,36 @@ export default function TeacherPortalLayout({
       return; // Wait for Firebase auth to initialize
     }
 
-    if (!user) {
+    if (!user || !user.email) {
       router.push('/');
       return;
     }
 
     // Check if the user is a teacher or admin
-    getTeacherProfileByEmail(user.email).then(teacherProfile => {
-      const isAdmin = user.email === ADMIN_EMAIL;
+    async function checkAuthorization() {
+      try {
+        const teacherProfile = await getTeacherProfileByEmail(user.email!);
+        const isAdmin = user.email === ADMIN_EMAIL;
 
-      if (teacherProfile || isAdmin) {
-        setIsAuthorized(true);
-      } else {
-        // Not a teacher or admin, boot them
+        if (teacherProfile || isAdmin) {
+          setIsAuthorized(true);
+        } else {
+          // Not a teacher or admin, boot them
+          router.push('/');
+        }
+      } catch (error) {
+        console.error("Authorization check failed:", error);
         router.push('/');
+      } finally {
+        setIsChecking(false);
       }
-      setIsChecking(false);
-    });
+    }
+
+    checkAuthorization();
 
   }, [user, authLoading, router]);
 
-  if (isChecking) {
+  if (isChecking || authLoading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="flex items-center gap-2">
