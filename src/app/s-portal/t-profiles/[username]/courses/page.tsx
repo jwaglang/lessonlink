@@ -75,7 +75,7 @@ export default function TeacherCoursesPage() {
               <Card key={course.id} className="flex flex-col">
                 <CardHeader className="p-0">
                   <div className="relative h-40 w-full">
-                    <Image src={thumbnailUrl} alt={course.title} layout="fill" objectFit="cover" className="rounded-t-lg" />
+                    <Image src={thumbnailUrl} alt={course.title} fill style={{ objectFit: 'cover' }} className="rounded-t-lg" />
                   </div>
                   <div className="p-6 pb-2">
                     <CardTitle className="font-headline text-xl mb-2">{course.title}</CardTitle>
