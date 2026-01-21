@@ -16,7 +16,7 @@ type ThemeToggleProps = {
 export function ThemeToggle({
   className,
   iconClassName,
-  variant = "outline",
+  variant = "ghost",
 }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
@@ -26,20 +26,27 @@ export function ThemeToggle({
     setMounted(true)
   }, [])
 
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  }
+  
+  // Consolidate class names to ensure they are identical for server and client
+  const buttonClassName = cn(
+    "h-12 w-12",
+    "bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300",
+    className
+  );
+
   if (!mounted) {
-    // return a placeholder to avoid hydration issues
+    // return a placeholder with identical classes to avoid hydration issues
     return (
       <Button
         variant={variant}
         size="icon"
-        className={cn("h-12 w-12", "bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300", className)}
+        className={buttonClassName}
         disabled
       />
     )
-  }
-
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark")
   }
 
   return (
@@ -47,7 +54,7 @@ export function ThemeToggle({
       variant={variant}
       size="icon"
       onClick={toggleTheme}
-      className={cn("h-12 w-12", "bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300", className)}
+      className={buttonClassName}
     >
       <Sun
         className={cn(
