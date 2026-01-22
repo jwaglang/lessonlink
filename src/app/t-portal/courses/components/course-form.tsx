@@ -23,7 +23,7 @@ const formSchema = z.object({
     title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
     pitch: z.string().max(100, { message: 'Pitch must be 100 characters or less.' }).optional(),
     description: z.string().optional(),
-    hourlyRate: z.coerce.number().min(0, { message: 'Hourly rate cannot be negative.' }),
+    hourlyRate: z.coerce.number().min(0, { message: 'Hourly rate must be 0 or a positive number.' }),
     discount60min: z.coerce.number().min(0).max(100).optional(),
     thumbnailUrl: z.string().optional(),
   });
@@ -47,7 +47,7 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
             title: courseTemplate?.title || '',
             pitch: courseTemplate?.pitch || '',
             description: courseTemplate?.description || '',
-            hourlyRate: courseTemplate?.hourlyRate || 0,
+            hourlyRate: courseTemplate?.hourlyRate ?? 0,
             discount60min: courseTemplate?.discount60min ?? undefined,
             thumbnailUrl: courseTemplate?.thumbnailUrl || '',
         },
@@ -77,7 +77,10 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                     title: `Course Template ${courseTemplate ? 'Updated' : 'Created'}`,
                     description: `"${savedTemplate.title}" has been saved.`,
                 });
-                onSuccess(savedTemplate);
+                
+                // Schedule the success callback to run after the current transition, making it an urgent update.
+                setTimeout(() => onSuccess(savedTemplate), 0);
+
             } catch (error) {
                 toast({
                     title: 'Error',
@@ -87,6 +90,8 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
             }
         });
     };
+    
+    const pitchValue = form.watch('pitch') || '';
 
     return (
         <Form {...form}>
@@ -113,8 +118,8 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                             <FormControl>
                                 <Input placeholder="A brief, catchy summary." {...field} />
                             </FormControl>
-                            <FormDescription className={cn((field.value?.length || 0) > 100 && "text-destructive")}>
-                                {`${field.value?.length || 0} / 100 characters`}
+                            <FormDescription className={cn(pitchValue.length > 100 && "text-destructive")}>
+                                {`${pitchValue.length} / 100 characters`}
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
