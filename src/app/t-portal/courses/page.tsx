@@ -20,15 +20,19 @@ export default function CoursesPage() {
 
     useEffect(() => {
         let unsubscribe: () => void;
-        // Only listen for real-time updates when not editing to prevent race conditions.
+        let timeoutId: NodeJS.Timeout;
+
         if (!isDialogOpen) {
-            unsubscribe = onCourseTemplatesUpdate((data) => {
-                setTemplates(data);
-            });
+            // Wait 500ms AFTER dialog closes before re-attaching listener
+            timeoutId = setTimeout(() => {
+                unsubscribe = onCourseTemplatesUpdate((data) => {
+                    setTemplates(data);
+                });
+            }, 500);
         }
-    
-        // Cleanup listener on unmount or when dialog opens.
+
         return () => {
+            clearTimeout(timeoutId);
             if (unsubscribe) {
                 unsubscribe();
             }
@@ -56,20 +60,6 @@ export default function CoursesPage() {
     
     const handleFormSuccess = (savedTemplate: CourseTemplate) => {
         setIsDialogOpen(false);
-        // Manually update the local state to reflect the change immediately
-        // This ensures a smooth UX since the listener is paused.
-        setTemplates(prev => {
-            const index = prev.findIndex(t => t.id === savedTemplate.id);
-            if (index > -1) {
-                // It's an update
-                const newTemplates = [...prev];
-                newTemplates[index] = savedTemplate;
-                return newTemplates;
-            } else {
-                // It's a new addition
-                return [savedTemplate, ...prev];
-            }
-        });
     };
 
     return (
