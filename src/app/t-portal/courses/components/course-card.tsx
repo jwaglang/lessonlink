@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import type { CourseTemplate } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
@@ -8,9 +9,10 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { calculateLessonPrice } from '@/lib/types';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface CourseCardProps {
     template: CourseTemplate;
@@ -19,12 +21,21 @@ interface CourseCardProps {
 }
 
 export default function CourseCard({ template, onEdit, onDelete }: CourseCardProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
     const thumbnailUrl = PlaceHolderImages.find(p => p.id === template.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
     
     const currencySymbol = '$';
 
     const price30min = calculateLessonPrice(template.hourlyRate, 30);
     const price60min = calculateLessonPrice(template.hourlyRate, 60, template.discount60min);
+
+    // Split description into first paragraph and the rest
+    const description = template.description || '';
+    const paraBreak = description.indexOf('\n\n');
+    const firstParagraph = paraBreak === -1 ? description : description.substring(0, paraBreak);
+    const restOfDescription = paraBreak === -1 ? null : description.substring(paraBreak).trim();
+
 
     return (
         <Card className="flex flex-col overflow-hidden">
@@ -57,7 +68,23 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                 </div>
             </CardHeader>
             <CardContent className="flex-grow p-6 pt-2">
-                <p className="mt-4 text-sm text-muted-foreground whitespace-pre-line">{template.description}</p>
+                 <div className="mt-4 text-sm text-muted-foreground whitespace-pre-line">
+                    <p>{firstParagraph}</p>
+                    
+                    {restOfDescription && (
+                        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                            <CollapsibleContent>
+                                <p className="mt-4">{restOfDescription}</p>
+                            </CollapsibleContent>
+                            <CollapsibleTrigger asChild>
+                                <Button variant="link" className="p-0 h-auto text-sm mt-2 flex items-center">
+                                    <span>{isExpanded ? 'Read less' : 'Read more'}</span>
+                                    {isExpanded ? <ChevronUp className="ml-1" /> : <ChevronDown className="ml-1" />}
+                                </Button>
+                            </CollapsibleTrigger>
+                        </Collapsible>
+                    )}
+                </div>
             </CardContent>
             <CardFooter className="flex-col items-start bg-muted/50 p-4 space-y-2">
                 <div className="flex justify-between w-full items-center">
