@@ -164,7 +164,7 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                                     step="1" 
                                     min="0" 
                                     max="100" 
-                                    placeholder="e.g., 10 for 10% off" 
+                                    placeholder="e.g., 10 for 10%" 
                                     {...field} 
                                     value={field.value ?? ''}
                                 />
