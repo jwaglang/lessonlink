@@ -113,6 +113,9 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                             <FormControl>
                                 <Input placeholder="A brief, catchy summary." {...field} />
                             </FormControl>
+                            <FormDescription className={cn((field.value?.length || 0) > 100 && "text-destructive")}>
+                                {`${field.value?.length || 0} / 100 characters`}
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
