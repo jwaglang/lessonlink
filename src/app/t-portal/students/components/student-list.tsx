@@ -87,11 +87,11 @@ export default function StudentList({ students, setStudents }: { students: Stude
     try {
       await deleteStudent(studentIdToDelete);
       
-      // Update the student list which causes a re-render
-      setStudents(prev => prev.filter(s => s.id !== studentIdToDelete));
-
-      // Close the dialog AFTER the list is updated to prevent UI freeze
+      // Close the dialog first to prevent animation race conditions
       setStudentToDelete(null);
+      
+      // Then update the student list
+      setStudents(prev => prev.filter(s => s.id !== studentIdToDelete));
       
       toast({
         title: 'Student Deleted',
