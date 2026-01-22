@@ -12,6 +12,7 @@ import {
   Timestamp,
   setDoc,
   limit,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Student, Lesson, Availability, CourseTemplate, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review } from './types';
@@ -30,6 +31,18 @@ const reviewsCollection = collection(db, 'reviews');
 // ============================================
 // COURSE TEMPLATES
 // ============================================
+
+export function onCourseTemplatesUpdate(callback: (templates: CourseTemplate[]) => void) {
+  const q = query(courseTemplatesCollection, orderBy('title', 'asc'));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const templates = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as CourseTemplate));
+    callback(templates);
+  });
+  return unsubscribe;
+}
 
 export async function getCourseTemplates(): Promise<CourseTemplate[]> {
   const snapshot = await getDocs(courseTemplatesCollection);

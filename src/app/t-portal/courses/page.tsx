@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from 'lucide-react';
-import { getCourseTemplates, addCourseTemplate, updateCourseTemplate, deleteCourseTemplate } from '@/lib/firestore';
+import { onCourseTemplatesUpdate, deleteCourseTemplate } from '@/lib/firestore';
 import type { CourseTemplate } from '@/lib/types';
 import CourseList from './components/course-list';
 import CourseForm from './components/course-form';
@@ -18,12 +18,21 @@ export default function CoursesPage() {
     const { toast } = useToast();
 
     useEffect(() => {
-        const fetchTemplates = async () => {
-            const data = await getCourseTemplates();
-            setTemplates(data);
+        let unsubscribe: () => void;
+        // Only listen for real-time updates when not editing.
+        if (!isDialogOpen) {
+            unsubscribe = onCourseTemplatesUpdate((data) => {
+                setTemplates(data);
+            });
+        }
+    
+        // Cleanup listener on unmount or when dialog opens.
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
         };
-        fetchTemplates();
-    }, []);
+    }, [isDialogOpen]);
 
     const handleAddClick = () => {
         setSelectedTemplate(null);
@@ -38,7 +47,6 @@ export default function CoursesPage() {
     const handleDelete = async (id: string) => {
         try {
             await deleteCourseTemplate(id);
-            setTemplates(prev => prev.filter(t => t.id !== id));
             toast({ title: 'Success', description: 'Course template deleted.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Could not delete template.', variant: 'destructive' });
@@ -47,13 +55,6 @@ export default function CoursesPage() {
     
     const handleFormSuccess = (template: CourseTemplate) => {
         setIsDialogOpen(false);
-        if (selectedTemplate) {
-            // Update
-            setTemplates(prev => prev.map(t => t.id === template.id ? template : t));
-        } else {
-            // Add
-            setTemplates(prev => [template, ...prev]);
-        }
     };
 
     return (
