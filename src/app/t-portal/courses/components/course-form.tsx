@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
     title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
-    pitch: z.string().max(100, { message: 'Pitch must be 100 characters or less.' }).optional(),
+    pitch: z.string().max(200, { message: 'Pitch must be 200 characters or less.' }).optional(),
     description: z.string().optional(),
     hourlyRate: z.coerce.number().positive({ message: 'Hourly rate must be a positive number.' }),
     discount60min: z.coerce.number().min(0).max(100).optional(),
