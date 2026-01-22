@@ -75,18 +75,18 @@ export default function TProfilesPage() {
                 </div>
               </CardContent>
               <div className="p-6 pt-0 grid grid-cols-2 gap-2">
-                <Link href={`/t/${profile.username}`} target="_blank" className="w-full">
-                  <Button variant="outline" className="w-full">
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={`/t/${profile.username}`} target="_blank">
                     <Eye className="h-4 w-4 mr-2" />
                     View Profile
-                  </Button>
-                </Link>
-                <Link href={`/s-portal/t-profiles/${profile.username}/courses`} className="w-full">
-                  <Button className="w-full">
+                  </Link>
+                </Button>
+                <Button asChild className="w-full">
+                  <Link href={`/s-portal/t-profiles/${profile.username}/courses`}>
                     <Library className="h-4 w-4 mr-2" />
                     View Courses
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </Card>
           ))}
