@@ -47,17 +47,13 @@ export default function CoursesPage() {
     
     const handleFormSuccess = (template: CourseTemplate) => {
         setIsDialogOpen(false);
-        // Delay state update to allow dialog to close smoothly.
-        // The delay must be longer than the dialog's exit animations (overlay fade-out is ~300ms).
-        setTimeout(() => {
-            if (selectedTemplate) {
-                // Update
-                setTemplates(prev => prev.map(t => t.id === template.id ? template : t));
-            } else {
-                // Add
-                setTemplates(prev => [template, ...prev]);
-            }
-        }, 400);
+        if (selectedTemplate) {
+            // Update
+            setTemplates(prev => prev.map(t => t.id === template.id ? template : t));
+        } else {
+            // Add
+            setTemplates(prev => [template, ...prev]);
+        }
     };
 
     return (

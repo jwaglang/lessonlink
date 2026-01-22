@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState } from 'react';
+import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -38,7 +37,7 @@ const courseThumbnails = PlaceHolderImages.filter(p => p.id.startsWith('course-t
 
 
 export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProps) {
-    const [isPending, setIsPending] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -53,42 +52,41 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
         },
     });
 
-    const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        setIsPending(true);
-        try {
-            // If we are editing, we preserve the original imageUrl (hero image)
-            // If we are creating a new one, we derive it from the selected thumbnail.
-            const newHeroUrl = courseTemplate?.imageUrl || values.thumbnailUrl?.replace('thumb', 'hero') || 'course-hero1';
-            
-            const templateData = {
-                ...values,
-                thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
-                imageUrl: newHeroUrl,
-            };
+    const onSubmit = (values: z.infer<typeof formSchema>) => {
+        startTransition(async () => {
+            try {
+                // If we are editing, we preserve the original imageUrl (hero image)
+                // If we are creating a new one, we derive it from the selected thumbnail.
+                const newHeroUrl = courseTemplate?.imageUrl || values.thumbnailUrl?.replace('thumb', 'hero') || 'course-hero1';
+                
+                const templateData = {
+                    ...values,
+                    thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
+                    imageUrl: newHeroUrl,
+                };
 
-            let savedTemplate;
-            if (courseTemplate) {
-                savedTemplate = await updateCourseTemplate(courseTemplate.id, templateData);
-            } else {
-                savedTemplate = await addCourseTemplate(templateData);
+                let savedTemplate;
+                if (courseTemplate) {
+                    savedTemplate = await updateCourseTemplate(courseTemplate.id, templateData);
+                } else {
+                    savedTemplate = await addCourseTemplate(templateData);
+                }
+                
+                toast({
+                    title: `Course Template ${courseTemplate ? 'Updated' : 'Created'}`,
+                    description: `"${savedTemplate.title}" has been saved.`,
+                });
+                
+                onSuccess(savedTemplate);
+
+            } catch (error) {
+                toast({
+                    title: 'Error',
+                    description: `Failed to ${courseTemplate ? 'update' : 'create'} template.`,
+                    variant: 'destructive',
+                });
             }
-            
-            toast({
-                title: `Course Template ${courseTemplate ? 'Updated' : 'Created'}`,
-                description: `"${savedTemplate.title}" has been saved.`,
-            });
-            
-            onSuccess(savedTemplate);
-
-        } catch (error) {
-            toast({
-                title: 'Error',
-                description: `Failed to ${courseTemplate ? 'update' : 'create'} template.`,
-                variant: 'destructive',
-            });
-        } finally {
-            setIsPending(false);
-        }
+        });
     };
     
     const pitchValue = form.watch('pitch') || '';
