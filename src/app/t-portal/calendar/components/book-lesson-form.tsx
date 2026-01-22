@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useTransition } from 'react';
@@ -20,10 +21,13 @@ import { addLesson } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
 import type { Lesson, Student, CourseTemplate } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { calculateLessonPrice } from '@/lib/types';
 
 const formSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
   courseTemplateId: z.string({ required_error: 'Please select a course.' }),
+  duration: z.coerce.number({ required_error: 'Please select a duration.' }),
 });
 
 interface BookLessonFormProps {
@@ -40,7 +44,9 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: {
+        duration: 60,
+    },
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -51,15 +57,17 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
 
         const startTime = selectedTime;
         const startHour = parseInt(startTime.split(':')[0]);
-        // Duration is now from the course template
-        const endHour = startHour + Math.floor(courseTemplate.duration / 60);
-        const endMinutes = (courseTemplate.duration % 60).toString().padStart(2,'0');
+        const duration = values.duration;
+        const endHour = startHour + Math.floor(duration / 60);
+        const endMinutes = (duration % 60).toString().padStart(2,'0');
         const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes}`;
+
+        const lessonPrice = calculateLessonPrice(courseTemplate.hourlyRate, duration as 30 | 60, courseTemplate.discount60min);
 
         const newLessonData = {
           studentId: values.studentId,
           title: courseTemplate.title,
-          rate: courseTemplate.rate,
+          rate: lessonPrice,
           date: selectedDate.toISOString(),
           startTime,
           endTime,
@@ -133,6 +141,36 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
               <FormMessage />
             </FormItem>
           )}
+        />
+        <FormField
+            control={form.control}
+            name="duration"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Duration</FormLabel>
+                    <FormControl>
+                        <RadioGroup
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                            defaultValue={String(field.value)}
+                            className="flex items-center gap-4 pt-2"
+                        >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                    <RadioGroupItem value="30" />
+                                </FormControl>
+                                <FormLabel className="font-normal">30 minutes</FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                    <RadioGroupItem value="60" />
+                                </FormControl>
+                                <FormLabel className="font-normal">60 minutes</FormLabel>
+                            </FormItem>
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
         />
         <Button type="submit" disabled={isPending} className="w-full">
           {isPending ? <Loader2 className="animate-spin" /> : 'Book Lesson'}

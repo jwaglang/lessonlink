@@ -23,7 +23,6 @@ const formSchema = z.object({
     title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
     pitch: z.string().max(100, { message: 'Pitch must be 100 characters or less.' }).optional(),
     description: z.string().optional(),
-    duration: z.coerce.number({ required_error: 'A duration is required.' }),
     hourlyRate: z.coerce.number().positive({ message: 'Hourly rate must be a positive number.' }),
     discount60min: z.coerce.number().min(0).max(100).optional(),
     thumbnailUrl: z.string().optional(),
@@ -48,7 +47,6 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
             title: courseTemplate?.title || '',
             pitch: courseTemplate?.pitch || '',
             description: courseTemplate?.description || '',
-            duration: courseTemplate?.duration || 60,
             hourlyRate: courseTemplate?.hourlyRate || 0,
             discount60min: courseTemplate?.discount60min ?? undefined,
             thumbnailUrl: courseTemplate?.thumbnailUrl || '',
@@ -127,36 +125,6 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                             <FormLabel>Full Description</FormLabel>
                             <FormControl>
                                 <Textarea placeholder="Describe the course in detail." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="duration"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Duration</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                    onValueChange={(value) => field.onChange(parseInt(value))}
-                                    defaultValue={String(field.value)}
-                                    className="flex items-center gap-4 pt-2"
-                                >
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                            <RadioGroupItem value="30" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">30 minutes</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                        <FormControl>
-                                            <RadioGroupItem value="60" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">60 minutes</FormLabel>
-                                    </FormItem>
-                                </RadioGroup>
                             </FormControl>
                             <FormMessage />
                         </FormItem>

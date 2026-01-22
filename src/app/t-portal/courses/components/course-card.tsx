@@ -21,10 +21,10 @@ interface CourseCardProps {
 export default function CourseCard({ template, onEdit, onDelete }: CourseCardProps) {
     const thumbnailUrl = PlaceHolderImages.find(p => p.id === template.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
     
-    // In a real app, this would come from user settings
     const currencySymbol = '$';
 
-    const price = calculateLessonPrice(template.hourlyRate, template.duration as 30 | 60, template.discount60min);
+    const price30min = calculateLessonPrice(template.hourlyRate, 30);
+    const price60min = calculateLessonPrice(template.hourlyRate, 60, template.discount60min);
 
     return (
         <Card className="flex flex-col overflow-hidden">
@@ -57,22 +57,23 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                 </div>
             </CardHeader>
             <CardContent className="flex-grow p-6 pt-2">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline">{template.duration} min</Badge>
-                </div>
                 <p className="mt-4 text-sm text-muted-foreground">{template.description}</p>
             </CardContent>
-            <CardFooter className="flex-col items-start bg-muted/50 p-4">
+            <CardFooter className="flex-col items-start bg-muted/50 p-4 space-y-2">
                 <div className="flex justify-between w-full items-center">
-                    <p className='font-semibold'>Price per lesson</p>
-                    <p className="text-lg font-bold font-headline">{currencySymbol}{price.toFixed(2)}</p>
+                    <p className='font-medium'>30 min lesson</p>
+                    <p className="text-lg font-bold font-headline">{currencySymbol}{price30min.toFixed(2)}</p>
                 </div>
-                {template.duration === 60 && template.discount60min && template.discount60min > 0 && (
-                    <div className="w-full">
-                        <Separator className="my-2" />
-                        <Badge variant="secondary">{template.discount60min}% off for 60-min lesson!</Badge>
+                <Separator/>
+                <div className="flex justify-between w-full items-center">
+                    <div>
+                        <p className='font-medium'>60 min lesson</p>
+                        {template.discount60min && template.discount60min > 0 && (
+                             <Badge variant="secondary" className="text-xs">{template.discount60min}% off!</Badge>
+                        )}
                     </div>
-                )}
+                    <p className="text-lg font-bold font-headline">{currencySymbol}{price60min.toFixed(2)}</p>
+                </div>
             </CardFooter>
         </Card>
     );

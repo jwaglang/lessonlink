@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -84,7 +85,7 @@ function TeacherCoursesPageContent() {
                 </CardHeader>
                 <CardContent className="flex-grow p-6 pt-2 space-y-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">30 min - ${calculateLessonPrice(course.hourlyRate, 30, course.discount60min).toFixed(2)}</Badge>
+                    <Badge variant="outline">30 min - ${calculateLessonPrice(course.hourlyRate, 30).toFixed(2)}</Badge>
                     <Badge variant="outline">60 min - ${calculateLessonPrice(course.hourlyRate, 60, course.discount60min).toFixed(2)}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-3">{course.description}</p>
