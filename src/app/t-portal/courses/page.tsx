@@ -20,7 +20,7 @@ export default function CoursesPage() {
 
     useEffect(() => {
         let unsubscribe: () => void;
-        // Only listen for real-time updates when not editing.
+        // Only listen for real-time updates when not editing to prevent race conditions.
         if (!isDialogOpen) {
             unsubscribe = onCourseTemplatesUpdate((data) => {
                 setTemplates(data);
@@ -54,8 +54,22 @@ export default function CoursesPage() {
         }
     };
     
-    const handleFormSuccess = (template: CourseTemplate) => {
+    const handleFormSuccess = (savedTemplate: CourseTemplate) => {
         setIsDialogOpen(false);
+        // Manually update the local state to reflect the change immediately
+        // This ensures a smooth UX since the listener is paused.
+        setTemplates(prev => {
+            const index = prev.findIndex(t => t.id === savedTemplate.id);
+            if (index > -1) {
+                // It's an update
+                const newTemplates = [...prev];
+                newTemplates[index] = savedTemplate;
+                return newTemplates;
+            } else {
+                // It's a new addition
+                return [savedTemplate, ...prev];
+            }
+        });
     };
 
     return (
