@@ -46,14 +46,17 @@ export default function CoursesPage() {
     };
     
     const handleFormSuccess = (template: CourseTemplate) => {
-        if (selectedTemplate) {
-            // Update
-            setTemplates(prev => prev.map(t => t.id === template.id ? template : t));
-        } else {
-            // Add
-            setTemplates(prev => [template, ...prev]);
-        }
         setIsDialogOpen(false);
+        // Delay state update to allow dialog to close smoothly
+        setTimeout(() => {
+            if (selectedTemplate) {
+                // Update
+                setTemplates(prev => prev.map(t => t.id === template.id ? template : t));
+            } else {
+                // Add
+                setTemplates(prev => [template, ...prev]);
+            }
+        }, 150);
     };
 
     return (
