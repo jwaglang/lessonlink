@@ -202,6 +202,25 @@ export async function getOrCreateStudentByEmail(email: string, name?: string): P
   };
 }
 
+export async function deleteStudent(studentId: string): Promise<void> {
+  // 1. Find and delete all lessons for this student
+  const lessonsQuery = query(lessonsCollection, where('studentId', '==', studentId));
+  const lessonsSnapshot = await getDocs(lessonsQuery);
+  const deletePromises: Promise<void>[] = [];
+  lessonsSnapshot.forEach((doc) => {
+    deletePromises.push(deleteDoc(doc.ref));
+  });
+  await Promise.all(deletePromises);
+
+  // 2. Delete the student document itself
+  const studentRef = doc(db, 'students', studentId);
+  await deleteDoc(studentRef);
+}
+
+// ============================================
+// LESSONS
+// ============================================
+
 export async function getLessonsByStudentId(studentId: string): Promise<Lesson[]> {
   const q = query(lessonsCollection, where('studentId', '==', studentId));
   const snapshot = await getDocs(q);
