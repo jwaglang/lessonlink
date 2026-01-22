@@ -56,7 +56,7 @@ export default function CoursesPage() {
                 // Add
                 setTemplates(prev => [template, ...prev]);
             }
-        }, 150);
+        }, 300);
     };
 
     return (
