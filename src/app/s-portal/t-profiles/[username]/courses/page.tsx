@@ -88,7 +88,7 @@ function TeacherCoursesPageContent() {
                     <Badge variant="outline">30 min - ${calculateLessonPrice(course.hourlyRate, 30).toFixed(2)}</Badge>
                     <Badge variant="outline">60 min - ${calculateLessonPrice(course.hourlyRate, 60, course.discount60min).toFixed(2)}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-3">{course.description}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{course.description}</p>
                 </CardContent>
                 <div className="p-6 pt-0">
                    <Link href={`/s-portal/calendar?courseId=${course.id}`}>

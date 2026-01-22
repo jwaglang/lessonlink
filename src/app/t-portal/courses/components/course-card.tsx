@@ -57,7 +57,7 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                 </div>
             </CardHeader>
             <CardContent className="flex-grow p-6 pt-2">
-                <p className="mt-4 text-sm text-muted-foreground">{template.description}</p>
+                <p className="mt-4 text-sm text-muted-foreground whitespace-pre-line">{template.description}</p>
             </CardContent>
             <CardFooter className="flex-col items-start bg-muted/50 p-4 space-y-2">
                 <div className="flex justify-between w-full items-center">
