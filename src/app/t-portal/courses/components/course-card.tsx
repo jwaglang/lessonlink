@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { calculateLessonPrice } from '@/lib/types';
 
 interface CourseCardProps {
     template: CourseTemplate;
@@ -23,8 +24,7 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
     // In a real app, this would come from user settings
     const currencySymbol = '$';
 
-    const package5Price = template.rate * 5 * 0.9; // 10% discount
-    const package10Price = template.rate * 10 * 0.85; // 15% discount
+    const price = calculateLessonPrice(template.hourlyRate, template.duration as 30 | 60, template.discount60min);
 
     return (
         <Card className="flex flex-col overflow-hidden">
@@ -64,25 +64,15 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
             </CardContent>
             <CardFooter className="flex-col items-start bg-muted/50 p-4">
                 <div className="flex justify-between w-full items-center">
-                    <p className='font-semibold'>Single Lesson</p>
-                    <p className="text-lg font-bold font-headline">{currencySymbol}{template.rate.toFixed(2)}</p>
+                    <p className='font-semibold'>Price per lesson</p>
+                    <p className="text-lg font-bold font-headline">{currencySymbol}{price.toFixed(2)}</p>
                 </div>
-                <Separator className="my-2" />
-                 <div className="w-full space-y-1 text-sm">
-                    <p className="font-semibold text-muted-foreground">Packages:</p>
-                    <div className="flex justify-between w-full items-center">
-                        <div>
-                            <div>5 Lessons <Badge variant="secondary" className='ml-1'>10% off</Badge></div>
-                        </div>
-                        <p className="font-semibold">{currencySymbol}{package5Price.toFixed(2)}</p>
+                {template.duration === 60 && template.discount60min && template.discount60min > 0 && (
+                    <div className="w-full">
+                        <Separator className="my-2" />
+                        <Badge variant="secondary">{template.discount60min}% off for 60-min lesson!</Badge>
                     </div>
-                    <div className="flex justify-between w-full items-center">
-                        <div>
-                             <div>10 Lessons <Badge variant="secondary" className='ml-1'>15% off</Badge></div>
-                        </div>
-                        <p className="font-semibold">{currencySymbol}{package10Price.toFixed(2)}</p>
-                    </div>
-                 </div>
+                )}
             </CardFooter>
         </Card>
     );

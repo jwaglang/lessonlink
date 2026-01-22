@@ -1,4 +1,5 @@
 
+
 export type StudentStatus = 'currently enrolled' | 'unenrolled (package over)' | 'unenrolled (goal met)' | 'MIA';
 
 export interface Student {
@@ -53,6 +54,7 @@ export interface CourseTemplate {
   title: string;
   pitch: string;
   description: string;
+  duration: number; // in minutes
   hourlyRate: number; // Base hourly rate (e.g., $50/hour)
   discount60min?: number; // Optional % discount for 60-min lessons (0-100)
   thumbnailUrl: string;
