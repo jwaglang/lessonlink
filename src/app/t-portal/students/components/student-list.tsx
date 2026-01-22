@@ -78,13 +78,23 @@ export default function StudentList({ students, setStudents }: { students: Stude
 
   const handleConfirmDelete = async () => {
     if (!studentToDelete) return;
+
     setIsDeleting(true);
+    const studentIdToDelete = studentToDelete.id;
+    const studentNameToDelete = studentToDelete.name;
+
     try {
-      await deleteStudent(studentToDelete.id);
-      setStudents(prev => prev.filter(s => s.id !== studentToDelete.id));
+      await deleteStudent(studentIdToDelete);
+      
+      // Close the dialog first to prevent the UI freeze
+      setStudentToDelete(null);
+      
+      // Then update the student list which causes a re-render
+      setStudents(prev => prev.filter(s => s.id !== studentIdToDelete));
+      
       toast({
         title: 'Student Deleted',
-        description: `${studentToDelete.name} has been removed from your roster.`,
+        description: `${studentNameToDelete} has been removed from your roster.`,
       });
     } catch (error) {
       console.error('Error deleting student:', error);
@@ -93,9 +103,10 @@ export default function StudentList({ students, setStudents }: { students: Stude
         description: 'Failed to delete student.',
         variant: 'destructive',
       });
+      // Also close dialog on error
+      setStudentToDelete(null);
     } finally {
       setIsDeleting(false);
-      setStudentToDelete(null);
     }
   };
 
