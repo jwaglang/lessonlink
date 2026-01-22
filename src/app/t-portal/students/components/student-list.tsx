@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -86,17 +85,21 @@ export default function StudentList({ students, setStudents }: { students: Stude
 
     try {
       await deleteStudent(studentIdToDelete);
-      
-      // Close the dialog first to prevent animation race conditions
+
+      // Close the dialog.
       setStudentToDelete(null);
-      
-      // Then update the student list
-      setStudents(prev => prev.filter(s => s.id !== studentIdToDelete));
       
       toast({
         title: 'Student Deleted',
         description: `${studentNameToDelete} has been removed from your roster.`,
       });
+      
+      // Update the student list after a short delay to allow the dialog to close.
+      setTimeout(() => {
+        setStudents(prev => prev.filter(s => s.id !== studentIdToDelete));
+        setIsDeleting(false); // Set deleting to false AFTER the list is updated.
+      }, 200);
+
     } catch (error) {
       console.error('Error deleting student:', error);
       toast({
@@ -104,9 +107,8 @@ export default function StudentList({ students, setStudents }: { students: Stude
         description: 'Failed to delete student.',
         variant: 'destructive',
       });
-      // Also close dialog on error
+      // Reset state on error
       setStudentToDelete(null);
-    } finally {
       setIsDeleting(false);
     }
   };
