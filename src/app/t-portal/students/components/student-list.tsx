@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -86,11 +87,11 @@ export default function StudentList({ students, setStudents }: { students: Stude
     try {
       await deleteStudent(studentIdToDelete);
       
-      // Close the dialog first to prevent the UI freeze
-      setStudentToDelete(null);
-      
-      // Then update the student list which causes a re-render
+      // Update the student list which causes a re-render
       setStudents(prev => prev.filter(s => s.id !== studentIdToDelete));
+
+      // Close the dialog AFTER the list is updated to prevent UI freeze
+      setStudentToDelete(null);
       
       toast({
         title: 'Student Deleted',
