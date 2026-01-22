@@ -23,7 +23,7 @@ const formSchema = z.object({
     title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
     pitch: z.string().max(100, { message: 'Pitch must be 100 characters or less.' }).optional(),
     description: z.string().optional(),
-    hourlyRate: z.coerce.number().positive({ message: 'Hourly rate must be a positive number.' }),
+    hourlyRate: z.coerce.number().min(0, { message: 'Hourly rate cannot be negative.' }),
     discount60min: z.coerce.number().min(0).max(100).optional(),
     thumbnailUrl: z.string().optional(),
   });
@@ -163,7 +163,7 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                                     max="100" 
                                     placeholder="e.g., 10 for 10% off" 
                                     {...field} 
-                                    value={field.value || ''}
+                                    value={field.value ?? ''}
                                 />
                             </FormControl>
                             <FormDescription>
