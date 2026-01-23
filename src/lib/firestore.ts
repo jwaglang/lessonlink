@@ -28,6 +28,7 @@ const studentPackagesCollection = collection(db, 'studentPackages');
 const teacherProfilesCollection = collection(db, 'teacherProfiles');
 const reviewsCollection = collection(db, 'reviews');
 const unitsCollection = collection(db, 'units');
+const sessionsCollection = collection(db, 'sessions');
 
 // ============================================
 // COURSE TEMPLATES
@@ -1152,6 +1153,20 @@ export function onUnitsUpdate(courseId: string, callback: (units: any[]) => void
   return unsubscribe;
 }
 
+export async function getUnitById(id: string): Promise<any | undefined> {
+  const docRef = doc(db, 'units', id);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) {
+    return undefined;
+  }
+
+  return {
+    id: docSnap.id,
+    ...docSnap.data()
+  };
+}
+
 export async function addUnit(data: any): Promise<any> {
   const docRef = await addDoc(unitsCollection, {
     ...data,
@@ -1179,5 +1194,60 @@ export async function updateUnit(id: string, data: any): Promise<any> {
 
 export async function deleteUnit(id: string): Promise<void> {
   const docRef = doc(db, 'units', id);
+  await deleteDoc(docRef);
+}
+
+// ============================================
+// SESSIONS
+// ============================================
+
+export async function getSessionsByUnitId(unitId: string): Promise<any[]> {
+  const q = query(sessionsCollection, where('unitId', '==', unitId), orderBy('order', 'asc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+}
+
+export function onSessionsUpdate(unitId: string, callback: (sessions: any[]) => void) {
+  const q = query(sessionsCollection, where('unitId', '==', unitId), orderBy('order', 'asc'));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const sessions = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(sessions);
+  });
+  return unsubscribe;
+}
+
+export async function addSession(data: any): Promise<any> {
+  const docRef = await addDoc(sessionsCollection, {
+    ...data,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now()
+  });
+  return {
+    id: docRef.id,
+    ...data
+  };
+}
+
+export async function updateSession(id: string, data: any): Promise<any> {
+  const docRef = doc(db, 'sessions', id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: Timestamp.now()
+  });
+  const updated = await getDoc(docRef);
+  return {
+    id: updated.id,
+    ...updated.data()
+  };
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  const docRef = doc(db, 'sessions', id);
   await deleteDoc(docRef);
 }
