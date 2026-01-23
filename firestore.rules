@@ -1,0 +1,134 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===================================
+    // Helper Functions
+    // ===================================
+    function isAdmin() {
+      // The user with this email has full admin privileges.
+      return request.auth.token.email == 'jwag.lang@gmail.com';
+    }
+
+    function isAuthenticated() {
+      // Checks if the user is signed in.
+      return request.auth != null;
+    }
+
+    function isTeacher() {
+      // A user is a teacher if a profile document exists with their UID as the document ID.
+      // This assumes your app saves teacher profiles using the UID.
+      return isAuthenticated() && exists(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid));
+    }
+
+    function isOwner(uid) {
+      // Checks if the requesting user is the owner of the document.
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // ===================================
+    // Collection Rules
+    // ===================================
+
+    // --- Core App Collections ---
+    match /students/{studentId} {
+      allow read: if isAdmin() || isTeacher() || isOwner(studentId);
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /lessons/{lessonId} {
+      // NOTE: Student writes (booking, cancelling) are blocked by these rules.
+      // This functionality should be moved to a secure backend (e.g., Cloud Functions).
+      allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /availability/{availId} {
+      // Anyone can read availability for booking purposes.
+      allow read: if true;
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /courseTemplates/{courseId} {
+      // Anyone can read course templates.
+      allow read: if true;
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /teacherProfiles/{teacherId} {
+      // Anyone can read published profiles. The owner or admin can access unpublished ones.
+      allow read: if resource.data.isPublished == true || isOwner(teacherId) || isAdmin();
+      allow write: if isOwner(teacherId) || isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      // Visible reviews are public. Students create their own. Admin/Teachers manage all.
+      allow read: if resource.data.visible == true || isAdmin() || isTeacher();
+      allow create: if isOwner(request.resource.data.studentId);
+      allow update, delete: if isAdmin() || isTeacher();
+    }
+
+    match /approvalRequests/{reqId} {
+      // Students create/read their own requests. Admin/Teachers manage all.
+      allow create: if isOwner(request.resource.data.studentId);
+      allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow update, delete: if isAdmin() || isTeacher();
+    }
+
+    match /userSettings/{settingId} {
+      // Users manage their own settings. Admin manages all.
+      allow read, write: if isAdmin() || (isAuthenticated() && resource.data.userIdOrEmail == request.auth.token.email);
+    }
+    
+    match /studentPackages/{pkgId} {
+        allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+        allow write: if isAdmin() || isTeacher();
+    }
+
+    // --- New Gamification/Curriculum Collections ---
+
+    match /units/{unitId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /homeworks/{homeworkId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /homeworkSubmissions/{submissionId} {
+      // This is the one collection students have broad write access to.
+      allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow create: if isOwner(request.resource.data.studentId);
+      allow update: if isOwner(resource.data.studentId) || isAdmin() || isTeacher();
+      allow delete: if isAdmin() || isTeacher();
+    }
+
+    match /studentProgress/{progressId} {
+      allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /studentRewards/{rewardId} {
+      allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin() || isTeacher();
+    }
+
+    match /assessmentReports/{reportId} {
+      allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin() || isTeacher();
+    }
+  }
+}
