@@ -60,6 +60,12 @@ export default function CoursesPage() {
     
     const handleFormSuccess = (savedTemplate: CourseTemplate) => {
         setIsDialogOpen(false);
+        
+        // CRITICAL FIX: Force cleanup of body pointer-events
+        // Radix Dialog sets pointer-events: none on body but fails to cleanup
+        setTimeout(() => {
+            document.body.style.pointerEvents = '';
+        }, 500);
     };
 
     return (
