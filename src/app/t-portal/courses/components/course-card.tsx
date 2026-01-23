@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +8,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { MoreVertical, Edit, Trash2, ChevronDown, ChevronUp, ListOrdered } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { calculateLessonPrice } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -53,6 +52,10 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                                 <DropdownMenuItem onClick={() => onEdit(template)}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.location.href = `/t-portal/courses/${template.id}/units`}>
+                                    <ListOrdered className="mr-2 h-4 w-4" />
+                                    Manage Units
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onDelete(template.id)} className="text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" />
