@@ -1,5 +1,5 @@
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
-import StudentAppSidebar from '@/components/student-app-sidebar';
+import StudentAppSidebar from '@/components/s-app-sidebar';
 
 export default function StudentPortalLayout({
   children,
