@@ -28,7 +28,7 @@ import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 import { Badge } from '@/components/ui/badge';
-import { getApprovalRequests } from '@/lib/firestore';
+import { getApprovalRequests, onCourseTemplatesUpdate, getUnitsByCourseId, getSessionsByUnitId } from '@/lib/firestore';
 import { Button } from './ui/button';
 import { useAuth } from './auth-provider';
 
@@ -38,6 +38,14 @@ const AppSidebar = () => {
   const { user, loading } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Nested navigation state
+  const [courses, setCourses] = useState<any[]>([]);
+  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+  const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
+  const [courseUnits, setCourseUnits] = useState<{ [key: string]: any[] }>({});
+  const [unitSessions, setUnitSessions] = useState<{ [key: string]: any[] }>({});
+  const [showCourses, setShowCourses] = useState(false);
 
   useEffect(() => {
     async function fetchPendingCount() {
@@ -59,26 +67,54 @@ const AppSidebar = () => {
     }
   }, [user]);
 
+  // Load courses on mount
+  useEffect(() => {
+    const unsubscribe = onCourseTemplatesUpdate((templates) => {
+      setCourses(templates);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load units when course is hovered
+  async function handleCourseHover(courseId: string) {
+    if (expandedCourse === courseId) return; // Already loaded
+    setExpandedCourse(courseId);
+    
+    if (!courseUnits[courseId]) {
+      const units = await getUnitsByCourseId(courseId);
+      setCourseUnits(prev => ({ ...prev, [courseId]: units }));
+    }
+  }
+
+  // Load sessions when unit is hovered
+  async function handleUnitHover(unitId: string) {
+    if (expandedUnit === unitId) return; // Already loaded
+    setExpandedUnit(unitId);
+    
+    if (!unitSessions[unitId]) {
+      const sessions = await getSessionsByUnitId(unitId);
+      setUnitSessions(prev => ({ ...prev, [unitId]: sessions }));
+    }
+  }
+
   async function handleLogout() {
     await logOut();
     router.push('/');
   }
 
-  const menuItems = [
+  const staticMenuItems = [
     { href: '/t-portal', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/t-portal/calendar', label: 'Calendar', icon: Calendar },
     { href: '/t-portal/chat', label: 'Chat', icon: MessageSquare },
     { href: '/t-portal/students', label: 'Students', icon: Users },
-    { href: '/t-portal/courses', label: 'Courses', icon: Library },
     { href: '/t-portal/approvals', label: 'Approvals', icon: ClipboardCheck, badge: pendingCount },
     { href: '/t-portal/reports', label: 'Reports', icon: BarChart2 },
     { href: '/t-portal/settings', label: 'Settings', icon: Settings },
   ];
 
   if (isAdmin) {
-    menuItems.push({ href: '/admin', label: 'Admin', icon: Shield });
+    staticMenuItems.push({ href: '/admin', label: 'Admin', icon: Shield });
   }
-
 
   return (
     <>
@@ -92,7 +128,7 @@ const AppSidebar = () => {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {menuItems.map((item) => (
+          {staticMenuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
@@ -115,6 +151,103 @@ const AppSidebar = () => {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+
+          {/* Courses with nested Units and Sessions */}
+          <SidebarMenuItem>
+            <div
+              onMouseEnter={() => setShowCourses(true)}
+              onMouseLeave={() => {
+                setShowCourses(false);
+                setExpandedCourse(null);
+                setExpandedUnit(null);
+              }}
+            >
+              <SidebarMenuButton
+                asChild
+                // @ts-ignore
+                href="/t-portal/courses"
+                isActive={pathname === '/t-portal/courses'}
+                tooltip="Courses"
+              >
+                <a href="/t-portal/courses" className="flex items-center gap-2">
+                  <Library className="h-4 w-4" />
+                  <span>Courses</span>
+                </a>
+              </SidebarMenuButton>
+
+              {/* Nested Courses - only show when hovering over Courses */}
+              {showCourses && courses.map((course) => (
+                <div key={course.id}>
+                  <div
+                    onMouseEnter={() => handleCourseHover(course.id)}
+                    onMouseLeave={() => setExpandedCourse(null)}
+                    className="relative"
+                  >
+                    <SidebarMenuButton
+                      asChild
+                      // @ts-ignore
+                      href={`/t-portal/courses/${course.id}/units`}
+                      isActive={pathname.includes(`/courses/${course.id}`)}
+                      tooltip={course.title}
+                      className="pl-8"
+                    >
+                      <a href={`/t-portal/courses/${course.id}/units`} className="flex items-center gap-2 text-sm">
+                        <span className="truncate">{course.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+
+                    {/* Nested Units */}
+                    {expandedCourse === course.id && courseUnits[course.id] && (
+                      <div className="ml-4">
+                        {courseUnits[course.id].map((unit) => (
+                          <div key={unit.id}>
+                            <div
+                              onMouseEnter={() => handleUnitHover(unit.id)}
+                              onMouseLeave={() => setExpandedUnit(null)}
+                            >
+                              <SidebarMenuButton
+                                asChild
+                                // @ts-ignore
+                                href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`}
+                                isActive={pathname.includes(`/units/${unit.id}`)}
+                                tooltip={unit.title}
+                                className="pl-12 text-xs"
+                              >
+                                <a href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`} className="truncate">
+                                  {unit.title}
+                                </a>
+                              </SidebarMenuButton>
+
+                              {/* Nested Sessions */}
+                              {expandedUnit === unit.id && unitSessions[unit.id] && (
+                                <div className="ml-4">
+                                  {unitSessions[unit.id].map((session) => (
+                                    <SidebarMenuButton
+                                      key={session.id}
+                                      asChild
+                                      // @ts-ignore
+                                      href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`}
+                                      isActive={false}
+                                      tooltip={session.title}
+                                      className="pl-16 text-xs"
+                                    >
+                                      <a href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`} className="truncate">
+                                        {session.title}
+                                      </a>
+                                    </SidebarMenuButton>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-0 gap-0">

@@ -49,7 +49,7 @@ export interface PackageOption {
   discount?: number; // percentage discount
 }
 
-export interface CourseTemplate {
+export interface Course {
   id: string;
   title: string;
   pitch: string;
@@ -58,6 +58,47 @@ export interface CourseTemplate {
   discount60min?: number; // Optional % discount for 60-min lessons (0-100)
   thumbnailUrl: string;
   imageUrl: string;
+}
+
+export interface Level {
+    id: string;
+    courseId: string;
+    title: string;
+    gseRange: string;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Unit {
+    id: string;
+    courseTemplateId: string;
+    levelId?: string;
+    title: string;
+    bigQuestion: string;
+    description: string;
+    order: number;
+    estimatedHours: number;
+    thumbnailUrl: string;
+    initialAssessmentId?: string | null;
+    finalEvaluationId?: string | null;
+    finalProjectId?: string | null;
+    finalProjectType?: string | null;
+}
+
+export interface Session {
+    id: string;
+    unitId: string;
+    courseTemplateId: string;
+    levelId?: string;
+    title: string;
+    littleQuestion: string;
+    description: string;
+    order: number;
+    duration: number;
+    thumbnailUrl: string;
+    materials: string[];
+    homeworkId?: string | null;
 }
 
 export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request';
@@ -93,6 +134,7 @@ export interface StudentPackage {
   id: string;
   studentId: string;
   courseId: string;
+  levelId?: string;
   courseTitle: string;
   totalLessons: number;
   lessonsRemaining: number;
@@ -106,6 +148,27 @@ export interface StudentPackage {
   pauseEnd?: string; // ISO string
   status: 'active' | 'expired' | 'completed' | 'paused';
 }
+
+export interface StudentProgress {
+    studentId: string;
+    courseTemplateId: string;
+    levelId?: string;
+    totalHoursCompleted: number;
+    targetHours: number;
+    percentComplete: number;
+    unitsCompleted: number;
+    unitsTotal: number;
+    sessionsCompleted: number;
+    sessionsTotal: number;
+    homeworkAccuracyAvg?: number | null;
+    assessmentScoreAvg?: number | null;
+    evaluationScoreAvg?: number | null;
+    overallAccuracy?: number | null;
+    lastActivityAt: string;
+    startedAt: string;
+    completedAt?: string | null;
+}
+
 
 // ============================================
 // TEACHER PROFILE

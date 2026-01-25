@@ -29,6 +29,9 @@ export default function SessionsPage() {
     useEffect(() => {
         if (!unitId) return;
 
+        // Safety: Force cleanup of any stuck pointer-events
+        document.body.style.pointerEvents = '';
+
         // Fetch parent unit details
         getUnitById(unitId).then(unitData => {
             if (unitData) {
@@ -151,7 +154,14 @@ export default function SessionsPage() {
                 </div>
             )}
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    setIsDialogOpen(open);
+                    if (!open) {
+                        setTimeout(() => {
+                            document.body.style.pointerEvents = '';
+                        }, 500);
+                    }
+                }}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{selectedSession ? 'Edit' : 'Add'} Session</DialogTitle>

@@ -6,7 +6,7 @@ import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered } from 'lucide-react';
 import Link from 'next/link';
-import { onUnitsUpdate, getCourseTemplateById, deleteUnit } from '@/lib/firestore';
+import { onUnitsUpdate, getCourseTemplateById, deleteUnit, getSessionsByUnitId } from '@/lib/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UnitForm from './components/unit-form';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,9 @@ export default function UnitsPage() {
     const [courseName, setCourseName] = useState('Loading...');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
+    const [viewingUnit, setViewingUnit] = useState<any>(null);
+    const [unitSessions, setUnitSessions] = useState<any[]>([]);
+    const [loadingSessions, setLoadingSessions] = useState(false);
 
     useEffect(() => {
         // Fetch course name
@@ -67,6 +70,27 @@ export default function UnitsPage() {
             document.body.style.pointerEvents = '';
         }, 500);
     };
+    const handleCardClick = async (unit: any) => {
+        setViewingUnit(unit);
+        setLoadingSessions(true);
+        try {
+            const sessions = await getSessionsByUnitId(unit.id);
+            setUnitSessions(sessions);
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to load sessions.', variant: 'destructive' });
+        } finally {
+            setLoadingSessions(false);
+        }
+    };
+
+    const handleSessionClick = (unitId: string) => {
+        router.push(`/t-portal/courses/${courseId}/units/${unitId}/sessions`);
+    };
+
+    const handleCloseModal = () => {
+        setViewingUnit(null);
+        setUnitSessions([]);
+    };
 
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
@@ -77,7 +101,7 @@ export default function UnitsPage() {
                     </Button>
                 </Link>
                 <PageHeader
-                    title={`Units: ${courseName}`}
+                    title={courseName}
                     description="Manage units for this course. Each unit contains 4-5 sessions."
                 >
                     <Button onClick={handleAddClick}>
@@ -97,26 +121,30 @@ export default function UnitsPage() {
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {units.map(unit => (
-                        <Card key={unit.id} className="flex flex-col">
+                        <Card 
+                            key={unit.id} 
+                            className="flex flex-col cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => handleCardClick(unit)}
+                        >
                             <CardHeader>
                                 <div className="flex items-start justify-between">
                                     <CardTitle className="font-headline text-lg mb-2">{unit.title}</CardTitle>
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
+                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2">
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleEditClick(unit)}>
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(unit); }}>
                                                 <Edit className="mr-2 h-4 w-4" />
                                                 Edit
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => router.push(`/t-portal/courses/${courseId}/units/${unit.id}/sessions`)}>
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/t-portal/courses/${courseId}/units/${unit.id}/sessions`); }}>
                                                 <ListOrdered className="mr-2 h-4 w-4" />
                                                 Manage Sessions
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(unit.id)} className="text-destructive">
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(unit.id); }} className="text-destructive">
                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                 Delete
                                             </DropdownMenuItem>
@@ -140,7 +168,14 @@ export default function UnitsPage() {
                 </div>
             )}
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) {
+                    setTimeout(() => {
+                        document.body.style.pointerEvents = '';
+                    }, 500);
+                }
+            }}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{selectedUnit ? 'Edit' : 'Add'} Unit</DialogTitle>
@@ -150,6 +185,64 @@ export default function UnitsPage() {
                         unit={selectedUnit}
                         onSuccess={handleFormSuccess}
                     />
+                </DialogContent>
+            </Dialog>
+            {/* Sessions Preview Modal */}
+            <Dialog open={!!viewingUnit} onOpenChange={(open) => {
+                if (!open) {
+                    handleCloseModal();
+                    setTimeout(() => {
+                        document.body.style.pointerEvents = '';
+                    }, 500);
+                }
+            }}>
+                <DialogContent className="sm:max-w-[800px]">
+                    <DialogHeader>
+                        <DialogTitle>{viewingUnit?.title} - Sessions</DialogTitle>
+                    </DialogHeader>
+                    {loadingSessions ? (
+                        <div className="flex items-center justify-center p-12">
+                            <p className="text-muted-foreground">Loading sessions...</p>
+                        </div>
+                    ) : unitSessions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-12 text-center">
+                            <p className="text-muted-foreground">No sessions yet for this unit.</p>
+                            <Button 
+                                onClick={() => handleSessionClick(viewingUnit.id)} 
+                                className="mt-4"
+                                variant="outline"
+                            >
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Sessions
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2 max-h-[500px] overflow-y-auto p-2">
+                            {unitSessions.map(session => (
+                                <Card 
+                                    key={session.id}
+                                    className="cursor-pointer hover:shadow-md transition-shadow"
+                                    onClick={() => handleSessionClick(viewingUnit.id)}
+                                >
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base font-headline">{session.title}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {session.thumbnailUrl && (
+                                            <img 
+                                                src={session.thumbnailUrl} 
+                                                alt={session.title}
+                                                className="w-full h-32 object-cover rounded-md mb-3"
+                                            />
+                                        )}
+                                        <p className="text-xs text-primary font-medium">
+                                            🤔 {session.littleQuestion}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>

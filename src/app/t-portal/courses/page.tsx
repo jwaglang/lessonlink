@@ -86,7 +86,14 @@ export default function CoursesPage() {
                 onDelete={handleDelete}
             />
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) {
+                    setTimeout(() => {
+                        document.body.style.pointerEvents = '';
+                    }, 500);
+                }
+            }}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle>{selectedTemplate ? 'Edit' : 'Add'} Course Template</DialogTitle>
