@@ -33,7 +33,7 @@ export default function SessionForm({ courseId, unitId, session, onSuccess }: Se
 
         try {
             const sessionData = {
-                courseTemplateId: courseId,
+                courseId: courseId,
                 unitId: unitId,
                 title,
                 littleQuestion,

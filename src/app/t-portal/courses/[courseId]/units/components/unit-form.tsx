@@ -30,7 +30,7 @@ export default function UnitForm({ courseId, unit, onSuccess }: UnitFormProps) {
 
         try {
             const unitData = {
-                courseTemplateId: courseId,
+                courseId: courseId,
                 title,
                 bigQuestion,
                 description,

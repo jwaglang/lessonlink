@@ -1202,8 +1202,8 @@ export async function getUnitsByLevelId(levelId: string): Promise<any[]> {
   }));
 }
 
-export function onUnitsUpdate(levelId: string, callback: (units: any[]) => void) {
-  const q = query(unitsCollection, where('levelId', '==', levelId), orderBy('order', 'asc'));
+export function onUnitsUpdate(courseId: string, callback: (units: any[]) => void) {
+  const q = query(unitsCollection, where('courseId', '==', courseId), orderBy('order', 'asc'));
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const units = snapshot.docs.map(doc => ({
       id: doc.id,
