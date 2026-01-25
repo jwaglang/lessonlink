@@ -10,7 +10,7 @@ export async function seedNewCollections() {
     // Collection 2: sessions
     const sessionData = {
       unitId: "unit_sample_001",
-      courseTemplateId: "course_a1_sample",
+      courseId: "course_a1_sample",
       title: "Session 1: Food Vocabulary",
       littleQuestion: "What foods do you eat every day?",
       description: "Learn basic food vocabulary and discuss daily eating habits",
@@ -61,7 +61,7 @@ export async function seedNewCollections() {
     // Collection 5: studentProgress
     const studentProgressData = {
       studentId: "student_sample_001",
-      courseTemplateId: "course_a1_sample",
+      courseId: "course_a1_sample",
       totalHoursCompleted: 0,
       targetHours: 200,
       percentComplete: 0,
