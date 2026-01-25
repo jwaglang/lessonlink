@@ -1,4 +1,3 @@
-
 import {
   collection,
   doc,
@@ -37,8 +36,7 @@ const sessionsCollection = collection(db, 'sessions');
 // ============================================
 
 export function onCoursesUpdate(callback: (templates: Course[]) => void) {
-  const q = query(coursesCollection, orderBy('title', 'asc'));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+  const unsubscribe = onSnapshot(coursesCollection, (snapshot) => {
     const templates = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -1315,4 +1313,3 @@ export async function deleteSession(id: string): Promise<void> {
   const docRef = doc(db, 'sessions', id);
   await deleteDoc(docRef);
 }
-

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
@@ -116,10 +115,21 @@ const AppSidebar = () => {
   }, [user]);
 
   useEffect(() => {
+    console.log('🔵 SIDEBAR: Setting up courses listener');
+    let callCount = 0;
     const unsubscribe = onCoursesUpdate((templates) => {
+      callCount++;
+      console.log(`🟢 SIDEBAR: Courses updated (#${callCount}):`, templates.length, 'courses');
+      if (callCount > 10) {
+        console.error('🔴 SIDEBAR: INFINITE LOOP DETECTED! Stopping updates.');
+        return;
+      }
       setCourses(templates);
     });
-    return () => unsubscribe();
+    return () => {
+      console.log('🔴 SIDEBAR: Cleaning up courses listener');
+      unsubscribe();
+    };
   }, []);
 
   async function handleLogout() {
