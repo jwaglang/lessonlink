@@ -22,7 +22,7 @@ import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, Use
 const studentsCollection = collection(db, 'students');
 const lessonsCollection = collection(db, 'lessons');
 const availabilityCollection = collection(db, 'availability');
-const coursesCollection = collection(db, 'courses');
+const coursesCollection = collection(db, 'courseTemplates');
 const levelsCollection = collection(db, 'levels');
 const approvalRequestsCollection = collection(db, 'approvalRequests');
 const userSettingsCollection = collection(db, 'userSettings');
@@ -1231,6 +1231,7 @@ export async function getUnitById(id: string): Promise<any | undefined> {
 export async function addUnit(data: any): Promise<any> {
   const docRef = await addDoc(unitsCollection, {
     ...data,
+    levelId: data.levelId || null,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now()
   });
@@ -1286,6 +1287,7 @@ export function onSessionsUpdate(unitId: string, callback: (sessions: any[]) => 
 export async function addSession(data: any): Promise<any> {
   const docRef = await addDoc(sessionsCollection, {
     ...data,
+    courseTemplateId: undefined, // remove old field
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now()
   });
@@ -1299,6 +1301,7 @@ export async function updateSession(id: string, data: any): Promise<any> {
   const docRef = doc(db, 'sessions', id);
   await updateDoc(docRef, {
     ...data,
+    courseTemplateId: undefined, // remove old field
     updatedAt: Timestamp.now()
   });
   const updated = await getDoc(docRef);
@@ -1312,3 +1315,4 @@ export async function deleteSession(id: string): Promise<void> {
   const docRef = doc(db, 'sessions', id);
   await deleteDoc(docRef);
 }
+
