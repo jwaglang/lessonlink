@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import WeeklyCalendar from "./components/weekly-calendar";
-import { getLessons, getStudents, getAvailability, getCourseTemplates } from "@/lib/firestore";
-import type { Lesson, Student, Availability, CourseTemplate } from '@/lib/types';
+import { getLessons, getStudents, getAvailability, getCourses } from "@/lib/firestore";
+import type { Lesson, Student, Availability, Course } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import BookLessonForm from './components/book-lesson-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,7 +15,7 @@ export default function CalendarPage() {
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [availability, setAvailability] = useState<Availability[]>([]);
-    const [courseTemplates, setCourseTemplates] = useState<CourseTemplate[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
 
@@ -23,11 +24,11 @@ export default function CalendarPage() {
             const lessonData = await getLessons();
             const studentData = await getStudents();
             const availabilityData = await getAvailability();
-            const courseTemplateData = await getCourseTemplates();
+            const courseData = await getCourses();
             setLessons(lessonData);
             setStudents(studentData);
             setAvailability(availabilityData);
-            setCourseTemplates(courseTemplateData);
+            setCourses(courseData);
         };
         fetchData();
     }, []);
@@ -73,7 +74,7 @@ export default function CalendarPage() {
                     {selectedSlot && (
                         <BookLessonForm 
                             students={students}
-                            courseTemplates={courseTemplates}
+                            courses={courses}
                             onSuccess={handleLessonBooked} 
                             selectedDate={selectedSlot.date}
                             selectedTime={selectedSlot.time}

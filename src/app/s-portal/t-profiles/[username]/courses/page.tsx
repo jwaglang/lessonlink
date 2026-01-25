@@ -9,15 +9,15 @@ import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, BookOpen, Library, ChevronDown, ChevronUp } from 'lucide-react';
-import { getTeacherProfileByUsername, getCourseTemplates } from '@/lib/firestore';
-import type { TeacherProfile, CourseTemplate } from '@/lib/types';
+import { getTeacherProfileByUsername, getCourses } from '@/lib/firestore';
+import type { TeacherProfile, Course } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Loading from '@/app/loading';
 import { calculateLessonPrice } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-function CourseDisplayCard({ course }: { course: CourseTemplate }) {
+function CourseDisplayCard({ course }: { course: Course }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const thumbnailUrl = PlaceHolderImages.find(p => p.id === course.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
@@ -80,7 +80,7 @@ function TeacherCoursesPageContent() {
   const username = params.username as string;
 
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
-  const [courses, setCourses] = useState<CourseTemplate[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -89,7 +89,7 @@ function TeacherCoursesPageContent() {
     async function fetchData() {
       const [teacherProfile, courseList] = await Promise.all([
         getTeacherProfileByUsername(username),
-        getCourseTemplates() // Currently all courses are for Teacher Jon
+        getCourses() // Currently all courses are for Teacher Jon
       ]);
 
       if (!teacherProfile) {

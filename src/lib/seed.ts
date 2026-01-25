@@ -1,15 +1,16 @@
+
 import { collection, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { subDays, addDays, formatISO, startOfDay } from 'date-fns';
 
 const today = new Date();
 
-const courseTemplatesData = [
-  { title: 'Algebra II', duration: 60, rate: 25, pitch: 'Master advanced algebra concepts.', description: 'A full course on Algebra II.', thumbnailUrl: 'course-thumb1', imageUrl: 'course-hero1' },
-  { title: 'Creative Writing', duration: 60, rate: 35, pitch: 'Unleash your inner author.', description: 'Learn the art of storytelling.', thumbnailUrl: 'course-thumb2', imageUrl: 'course-hero2' },
-  { title: 'History 101', duration: 30, rate: 20, pitch: 'Journey through the ages.', description: 'An introduction to world history.', thumbnailUrl: 'course-thumb3', imageUrl: 'course-hero3' },
-  { title: 'Physics Fundamentals', duration: 60, rate: 40, pitch: 'Explore the laws of the universe.', description: 'Grasp the core principles of physics.', thumbnailUrl: 'course-thumb4', imageUrl: 'course-hero4' },
-  { title: 'Spanish for Beginners', duration: 30, rate: 15, pitch: 'Start speaking Spanish today.', description: 'A beginner-friendly introduction to Spanish.', thumbnailUrl: 'course-thumb5', imageUrl: 'course-hero5' },
+const coursesData = [
+  { title: 'Algebra II', hourlyRate: 50, discount60min: 10, pitch: 'Master advanced algebra concepts.', description: 'A full course on Algebra II.', thumbnailUrl: 'course-thumb1', imageUrl: 'course-hero1' },
+  { title: 'Creative Writing', hourlyRate: 70, discount60min: 15, pitch: 'Unleash your inner author.', description: 'Learn the art of storytelling.', thumbnailUrl: 'course-thumb2', imageUrl: 'course-hero2' },
+  { title: 'History 101', hourlyRate: 40, pitch: 'Journey through the ages.', description: 'An introduction to world history.', thumbnailUrl: 'course-thumb3', imageUrl: 'course-hero3' },
+  { title: 'Physics Fundamentals', hourlyRate: 80, pitch: 'Explore the laws of the universe.', description: 'Grasp the core principles of physics.', thumbnailUrl: 'course-thumb4', imageUrl: 'course-hero4' },
+  { title: 'Spanish for Beginners', hourlyRate: 30, pitch: 'Start speaking Spanish today.', description: 'A beginner-friendly introduction to Spanish.', thumbnailUrl: 'course-thumb5', imageUrl: 'course-hero5' },
 ];
 
 const studentsData = [
@@ -51,13 +52,13 @@ async function clearCollection(collectionName: string) {
 export async function seedDatabase() {
   console.log('🌱 Starting seed...');
 
-  await clearCollection('courseTemplates');
+  await clearCollection('courses');
   await clearCollection('students');
   await clearCollection('lessons');
   await clearCollection('availability');
 
-  for (const course of courseTemplatesData) {
-    await addDoc(collection(db, 'courseTemplates'), course);
+  for (const course of coursesData) {
+    await addDoc(collection(db, 'courses'), course);
   }
   console.log('✅ Courses added');
 

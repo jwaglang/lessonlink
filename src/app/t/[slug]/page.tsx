@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -5,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   getTeacherProfileByUsername,
   getReviewsByTeacher,
-  getCourseTemplates,
+  getCourses,
   getAvailableSlots,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ import {
   Pin,
 } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
-import type { TeacherProfile, Review, CourseTemplate, Availability } from '@/lib/types';
+import type { TeacherProfile, Review, Course, Availability } from '@/lib/types';
 import Link from 'next/link';
 
 export default function PublicProfilePage() {
@@ -57,13 +58,13 @@ export default function PublicProfilePage() {
 
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [courses, setCourses] = useState<CourseTemplate[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [availableSlots, setAvailableSlots] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
   // Booking dialog state
-  const [selectedCourse, setSelectedCourse] = useState<CourseTemplate | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [bookingStep, setBookingStep] = useState<'type' | 'time'>('type');
   const [selectedType, setSelectedType] = useState<'lesson' | 'package'>('lesson');
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
@@ -84,7 +85,7 @@ export default function PublicProfilePage() {
 
       const [teacherReviews, courseList, slots] = await Promise.all([
         getReviewsByTeacher(teacherProfile.id),
-        getCourseTemplates(),
+        getCourses(),
         getAvailableSlots(),
       ]);
 
@@ -97,7 +98,7 @@ export default function PublicProfilePage() {
     fetchData();
   }, [slug]);
 
-  function openBookingDialog(course: CourseTemplate) {
+  function openBookingDialog(course: Course) {
     setSelectedCourse(course);
     setBookingStep('type');
     setSelectedType('lesson');
@@ -290,7 +291,7 @@ export default function PublicProfilePage() {
                     onClick={() => openBookingDialog(course)}
                   >
                     <span className="truncate">{course.title}</span>
-                    <span className="text-primary font-bold">${course.rate}</span>
+                    <span className="text-primary font-bold">${course.hourlyRate}</span>
                   </Button>
                 ))}
                 <Button className="w-full" onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })}>
@@ -551,15 +552,14 @@ export default function PublicProfilePage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      {course.duration} min
+                      {/* Using a static duration for now */}
+                      60 min
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-bold text-primary">${course.rate}</span>
-                      {course.packageOptions && course.packageOptions.length > 0 && (
+                      <span className="text-2xl font-bold text-primary">${course.hourlyRate}</span>
                         <p className="text-xs text-muted-foreground">
-                          Package with {course.packageOptions[0].discount}% off
+                          / 60 min lesson
                         </p>
-                      )}
                     </div>
                   </div>
                   <Button className="w-full" onClick={() => openBookingDialog(course)}>
@@ -607,30 +607,12 @@ export default function PublicProfilePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-semibold">Single Lesson</h4>
-                    <p className="text-sm text-muted-foreground">{selectedCourse.duration} minutes</p>
+                    <p className="text-sm text-muted-foreground">60 minutes</p>
                   </div>
-                  <span className="text-xl font-bold text-primary">${selectedCourse.rate}</span>
+                  <span className="text-xl font-bold text-primary">${selectedCourse.hourlyRate}</span>
                 </div>
               </div>
 
-              {/* Package Options */}
-              {selectedCourse.packageOptions?.map((pkg, i) => (
-                <div
-                  key={i}
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${selectedType === 'package' && selectedPackage === i ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'}`}
-                  onClick={() => { setSelectedType('package'); setSelectedPackage(i); }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold">{pkg.lessons} Lesson Package</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {pkg.discount}% off · ${(pkg.price / pkg.lessons).toFixed(2)} per lesson
-                      </p>
-                    </div>
-                    <span className="text-xl font-bold text-primary">${pkg.price}</span>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
 

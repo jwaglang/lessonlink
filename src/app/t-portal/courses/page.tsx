@@ -5,17 +5,17 @@ import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from 'lucide-react';
-import { onCourseTemplatesUpdate, deleteCourseTemplate } from '@/lib/firestore';
-import type { CourseTemplate } from '@/lib/types';
+import { onCoursesUpdate, deleteCourse } from '@/lib/firestore';
+import type { Course } from '@/lib/types';
 import CourseList from './components/course-list';
 import CourseForm from './components/course-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CoursesPage() {
-    const [templates, setTemplates] = useState<CourseTemplate[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [selectedTemplate, setSelectedTemplate] = useState<CourseTemplate | null>(null);
+    const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -25,8 +25,8 @@ export default function CoursesPage() {
         if (!isDialogOpen) {
             // Wait 500ms AFTER dialog closes before re-attaching listener
             timeoutId = setTimeout(() => {
-                unsubscribe = onCourseTemplatesUpdate((data) => {
-                    setTemplates(data);
+                unsubscribe = onCoursesUpdate((data) => {
+                    setCourses(data);
                 });
             }, 500);
         }
@@ -40,25 +40,25 @@ export default function CoursesPage() {
     }, [isDialogOpen]);
 
     const handleAddClick = () => {
-        setSelectedTemplate(null);
+        setSelectedCourse(null);
         setIsDialogOpen(true);
     };
 
-    const handleEditClick = (template: CourseTemplate) => {
-        setSelectedTemplate(template);
+    const handleEditClick = (course: Course) => {
+        setSelectedCourse(course);
         setIsDialogOpen(true);
     };
 
     const handleDelete = async (id: string) => {
         try {
-            await deleteCourseTemplate(id);
-            toast({ title: 'Success', description: 'Course template deleted.' });
+            await deleteCourse(id);
+            toast({ title: 'Success', description: 'Course deleted.' });
         } catch (error) {
-            toast({ title: 'Error', description: 'Could not delete template.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'Could not delete course.', variant: 'destructive' });
         }
     };
     
-    const handleFormSuccess = (savedTemplate: CourseTemplate) => {
+    const handleFormSuccess = (savedCourse: Course) => {
         setIsDialogOpen(false);
         
         // CRITICAL FIX: Force cleanup of body pointer-events
@@ -76,12 +76,12 @@ export default function CoursesPage() {
             >
                 <Button onClick={handleAddClick}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    <span>Add Course Template</span>
+                    <span>Add Course</span>
                 </Button>
             </PageHeader>
             
             <CourseList 
-                templates={templates} 
+                courses={courses} 
                 onEdit={handleEditClick}
                 onDelete={handleDelete}
             />
@@ -96,10 +96,10 @@ export default function CoursesPage() {
             }}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>{selectedTemplate ? 'Edit' : 'Add'} Course Template</DialogTitle>
+                        <DialogTitle>{selectedCourse ? 'Edit' : 'Add'} Course</DialogTitle>
                     </DialogHeader>
                     <CourseForm 
-                        courseTemplate={selectedTemplate}
+                        course={selectedCourse}
                         onSuccess={handleFormSuccess}
                     />
                 </DialogContent>

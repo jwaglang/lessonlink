@@ -1,3 +1,4 @@
+
 import {
   collection,
   doc,
@@ -15,13 +16,14 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Student, Lesson, Availability, CourseTemplate, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review } from './types';
+import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review } from './types';
 
 // Collection references
 const studentsCollection = collection(db, 'students');
 const lessonsCollection = collection(db, 'lessons');
 const availabilityCollection = collection(db, 'availability');
-const courseTemplatesCollection = collection(db, 'courseTemplates');
+const coursesCollection = collection(db, 'courses');
+const levelsCollection = collection(db, 'levels');
 const approvalRequestsCollection = collection(db, 'approvalRequests');
 const userSettingsCollection = collection(db, 'userSettings');
 const studentPackagesCollection = collection(db, 'studentPackages');
@@ -31,31 +33,31 @@ const unitsCollection = collection(db, 'units');
 const sessionsCollection = collection(db, 'sessions');
 
 // ============================================
-// COURSE TEMPLATES
+// COURSES
 // ============================================
 
-export function onCourseTemplatesUpdate(callback: (templates: CourseTemplate[]) => void) {
-  const q = query(courseTemplatesCollection, orderBy('title', 'asc'));
+export function onCoursesUpdate(callback: (templates: Course[]) => void) {
+  const q = query(coursesCollection, orderBy('title', 'asc'));
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const templates = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    } as CourseTemplate));
+    } as Course));
     callback(templates);
   });
   return unsubscribe;
 }
 
-export async function getCourseTemplates(): Promise<CourseTemplate[]> {
-  const snapshot = await getDocs(courseTemplatesCollection);
+export async function getCourses(): Promise<Course[]> {
+  const snapshot = await getDocs(coursesCollection);
   return snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
-  } as CourseTemplate));
+  } as Course));
 }
 
-export async function getCourseTemplateById(id: string): Promise<CourseTemplate | undefined> {
-  const docRef = doc(db, 'courseTemplates', id);
+export async function getCourseById(id: string): Promise<Course | undefined> {
+  const docRef = doc(db, 'courses', id);
   const docSnap = await getDoc(docRef);
   
   if (!docSnap.exists()) {
@@ -65,32 +67,91 @@ export async function getCourseTemplateById(id: string): Promise<CourseTemplate 
   return {
     id: docSnap.id,
     ...docSnap.data()
-  } as CourseTemplate;
+  } as Course;
 }
 
-export async function addCourseTemplate(data: Omit<CourseTemplate, 'id'>): Promise<CourseTemplate> {
-  const docRef = await addDoc(courseTemplatesCollection, data);
+export async function addCourse(data: Omit<Course, 'id'>): Promise<Course> {
+  const docRef = await addDoc(coursesCollection, data);
   return {
     id: docRef.id,
     ...data
   };
 }
 
-export async function updateCourseTemplate(id: string, data: Partial<Omit<CourseTemplate, 'id'>>): Promise<CourseTemplate> {
-  const docRef = doc(db, 'courseTemplates', id);
+export async function updateCourse(id: string, data: Partial<Omit<Course, 'id'>>): Promise<Course> {
+  const docRef = doc(db, 'courses', id);
   await updateDoc(docRef, data);
   const updated = await getDoc(docRef);
   return {
     id: updated.id,
     ...updated.data()
-  } as CourseTemplate;
+  } as Course;
 }
 
-export async function deleteCourseTemplate(id: string): Promise<{ id: string }> {
-  const docRef = doc(db, 'courseTemplates', id);
+export async function deleteCourse(id: string): Promise<{ id: string }> {
+  const docRef = doc(db, 'courses', id);
   await deleteDoc(docRef);
   return { id };
 }
+
+// ============================================
+// LEVELS
+// ============================================
+
+export async function getLevelsByCourseId(courseId: string): Promise<Level[]> {
+  const q = query(levelsCollection, where('courseId', '==', courseId), orderBy('order', 'asc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as Level));
+}
+
+export function onLevelsUpdate(courseId: string, callback: (levels: Level[]) => void) {
+  const q = query(levelsCollection, where('courseId', '==', courseId), orderBy('order', 'asc'));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const levels = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Level));
+    callback(levels);
+  });
+  return unsubscribe;
+}
+
+export async function getLevelById(id: string): Promise<Level | undefined> {
+  const docRef = doc(db, 'levels', id);
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    return undefined;
+  }
+  return { id: docSnap.id, ...docSnap.data() } as Level;
+}
+
+export async function addLevel(data: any): Promise<Level> {
+  const docRef = await addDoc(levelsCollection, {
+    ...data,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now()
+  });
+  return { id: docRef.id, ...data } as Level;
+}
+
+export async function updateLevel(id: string, data: any): Promise<Level> {
+  const docRef = doc(db, 'levels', id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: Timestamp.now()
+  });
+  const updated = await getDoc(docRef);
+  return { id: updated.id, ...updated.data() } as Level;
+}
+
+export async function deleteLevel(id: string): Promise<void> {
+  const docRef = doc(db, 'levels', id);
+  await deleteDoc(docRef);
+}
+
 
 // ============================================
 // STUDENTS
@@ -650,7 +711,7 @@ export async function resolveApprovalRequest(
     if (request.type === 'new_student_booking' && request.lessonDate && request.lessonTime && request.lessonTitle) {
       // Create the lesson for the new student
       // Get course info to determine duration and rate
-      const courses = await getCourseTemplates();
+      const courses = await getCourses();
       const course = courses.find(c => c.title === request.lessonTitle);
       // Default to 60 minutes and calculate rate from hourlyRate
       const duration = 60;
@@ -1132,8 +1193,8 @@ export async function getReviewedLessonIds(studentId: string): Promise<string[]>
 // UNITS
 // ============================================
 
-export async function getUnitsByCourseId(courseId: string): Promise<any[]> {
-  const q = query(unitsCollection, where('courseTemplateId', '==', courseId), orderBy('order', 'asc'));
+export async function getUnitsByLevelId(levelId: string): Promise<any[]> {
+  const q = query(unitsCollection, where('levelId', '==', levelId), orderBy('order', 'asc'));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({
     id: doc.id,
@@ -1141,8 +1202,8 @@ export async function getUnitsByCourseId(courseId: string): Promise<any[]> {
   }));
 }
 
-export function onUnitsUpdate(courseId: string, callback: (units: any[]) => void) {
-  const q = query(unitsCollection, where('courseTemplateId', '==', courseId), orderBy('order', 'asc'));
+export function onUnitsUpdate(levelId: string, callback: (units: any[]) => void) {
+  const q = query(unitsCollection, where('levelId', '==', levelId), orderBy('order', 'asc'));
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const units = snapshot.docs.map(doc => ({
       id: doc.id,

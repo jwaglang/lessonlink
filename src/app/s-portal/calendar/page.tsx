@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -6,7 +7,7 @@ import { useAuth } from '@/components/auth-provider';
 import {
   getOrCreateStudentByEmail,
   getAvailableSlots,
-  getCourseTemplates,
+  getCourses,
   bookLesson,
   isNewStudent,
   createApprovalRequest,
@@ -30,7 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { GraduationCap, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
-import type { Availability, CourseTemplate, Student } from '@/lib/types';
+import type { Availability, Course, Student } from '@/lib/types';
 import { calculateLessonPrice } from '@/lib/types';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
@@ -44,7 +45,7 @@ function BookingPageContent() {
 
   const [student, setStudent] = useState<Student | null>(null);
   const [availableSlots, setAvailableSlots] = useState<Availability[]>([]);
-  const [courses, setCourses] = useState<CourseTemplate[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isNew, setIsNew] = useState(false);
@@ -84,7 +85,7 @@ function BookingPageContent() {
         const slots = await getAvailableSlots();
         setAvailableSlots(slots);
         
-        const courseList = await getCourseTemplates();
+        const courseList = await getCourses();
         setCourses(courseList);
         
         setLoadingData(false);

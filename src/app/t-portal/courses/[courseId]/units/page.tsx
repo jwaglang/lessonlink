@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered } from 'lucide-react';
 import Link from 'next/link';
-import { onUnitsUpdate, getCourseTemplateById, deleteUnit, getSessionsByUnitId } from '@/lib/firestore';
+import { onUnitsUpdate, getCourseById, deleteUnit, getSessionsByUnitId } from '@/lib/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UnitForm from './components/unit-form';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +30,7 @@ export default function UnitsPage() {
 
     useEffect(() => {
         // Fetch course name
-        getCourseTemplateById(courseId).then(course => {
+        getCourseById(courseId).then(course => {
             if (course) {
                 setCourseName(course.title);
             }

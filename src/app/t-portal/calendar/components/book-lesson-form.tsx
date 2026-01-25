@@ -19,26 +19,26 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { addLesson } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
-import type { Lesson, Student, CourseTemplate } from '@/lib/types';
+import type { Lesson, Student, Course } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { calculateLessonPrice } from '@/lib/types';
 
 const formSchema = z.object({
   studentId: z.string({ required_error: 'Please select a student.' }),
-  courseTemplateId: z.string({ required_error: 'Please select a course.' }),
+  courseId: z.string({ required_error: 'Please select a course.' }),
   duration: z.coerce.number({ required_error: 'Please select a duration.' }),
 });
 
 interface BookLessonFormProps {
   students: Student[];
-  courseTemplates: CourseTemplate[];
+  courses: Course[];
   onSuccess: (newLesson: Lesson) => void;
   selectedDate: Date;
   selectedTime: string;
 }
 
-export default function BookLessonForm({ students, courseTemplates, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
+export default function BookLessonForm({ students, courses, onSuccess, selectedDate, selectedTime }: BookLessonFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -52,8 +52,8 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
       try {
-        const courseTemplate = courseTemplates.find(ct => ct.id === values.courseTemplateId);
-        if (!courseTemplate) throw new Error('Selected course not found');
+        const course = courses.find(ct => ct.id === values.courseId);
+        if (!course) throw new Error('Selected course not found');
 
         const startTime = selectedTime;
         const startHour = parseInt(startTime.split(':')[0]);
@@ -62,11 +62,11 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
         const endMinutes = (duration % 60).toString().padStart(2,'0');
         const endTime = `${endHour.toString().padStart(2, '0')}:${endMinutes}`;
 
-        const lessonPrice = calculateLessonPrice(courseTemplate.hourlyRate, duration as 30 | 60, courseTemplate.discount60min);
+        const lessonPrice = calculateLessonPrice(course.hourlyRate, duration as 30 | 60, course.discount60min);
 
         const newLessonData = {
           studentId: values.studentId,
-          title: courseTemplate.title,
+          title: course.title,
           rate: lessonPrice,
           date: selectedDate.toISOString(),
           startTime,
@@ -120,7 +120,7 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
         />
         <FormField
           control={form.control}
-          name="courseTemplateId"
+          name="courseId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Course</FormLabel>
@@ -131,7 +131,7 @@ export default function BookLessonForm({ students, courseTemplates, onSuccess, s
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {courseTemplates.map(course => (
+                  {courses.map(course => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.title}
                     </SelectItem>

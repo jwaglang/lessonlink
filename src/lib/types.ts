@@ -72,7 +72,7 @@ export interface Level {
 
 export interface Unit {
     id: string;
-    courseTemplateId: string;
+    courseId: string;
     levelId?: string;
     title: string;
     bigQuestion: string;
@@ -89,7 +89,7 @@ export interface Unit {
 export interface Session {
     id: string;
     unitId: string;
-    courseTemplateId: string;
+    courseId: string;
     levelId?: string;
     title: string;
     littleQuestion: string;
@@ -151,7 +151,7 @@ export interface StudentPackage {
 
 export interface StudentProgress {
     studentId: string;
-    courseTemplateId: string;
+    courseId: string;
     levelId?: string;
     totalHoursCompleted: number;
     targetHours: number;

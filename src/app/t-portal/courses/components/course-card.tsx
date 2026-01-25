@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState } from 'react';
-import type { CourseTemplate } from '@/lib/types';
+import type { Course } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -14,23 +15,23 @@ import { calculateLessonPrice } from '@/lib/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface CourseCardProps {
-    template: CourseTemplate;
-    onEdit: (template: CourseTemplate) => void;
+    course: Course;
+    onEdit: (course: Course) => void;
     onDelete: (id: string) => void;
 }
 
-export default function CourseCard({ template, onEdit, onDelete }: CourseCardProps) {
+export default function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
 
-    const thumbnailUrl = PlaceHolderImages.find(p => p.id === template.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
+    const thumbnailUrl = PlaceHolderImages.find(p => p.id === course.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
     
     const currencySymbol = '$';
 
-    const price30min = calculateLessonPrice(template.hourlyRate, 30);
-    const price60min = calculateLessonPrice(template.hourlyRate, 60, template.discount60min);
+    const price30min = calculateLessonPrice(course.hourlyRate, 30);
+    const price60min = calculateLessonPrice(course.hourlyRate, 60, course.discount60min);
 
     // Split description into first paragraph and the rest
-    const description = template.description || '';
+    const description = course.description || '';
     const paraBreak = description.indexOf('\n\n');
     const firstParagraph = paraBreak === -1 ? description : description.substring(0, paraBreak);
     const restOfDescription = paraBreak === -1 ? null : description.substring(paraBreak).trim();
@@ -40,7 +41,7 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
         <Card className="flex flex-col overflow-hidden">
             <CardHeader className="p-0">
                 <div className="relative h-40 w-full">
-                    <Image src={thumbnailUrl} alt={template.title} layout="fill" objectFit="cover" />
+                    <Image src={thumbnailUrl} alt={course.title} layout="fill" objectFit="cover" />
                     <div className="absolute top-2 right-2">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -49,15 +50,15 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onEdit(template)}>
+                                <DropdownMenuItem onClick={() => onEdit(course)}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.location.href = `/t-portal/courses/${template.id}/units`}>
+                                <DropdownMenuItem onClick={() => window.location.href = `/t-portal/courses/${course.id}/units`}>
                                     <ListOrdered className="mr-2 h-4 w-4" />
                                     Manage Units
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onDelete(template.id)} className="text-destructive">
+                                <DropdownMenuItem onClick={() => onDelete(course.id)} className="text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
                                 </DropdownMenuItem>
@@ -66,8 +67,8 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                     </div>
                 </div>
                 <div className="p-6 pb-2">
-                    <CardTitle className="font-headline text-xl mb-2">{template.title}</CardTitle>
-                    <CardDescription>{template.pitch}</CardDescription>
+                    <CardTitle className="font-headline text-xl mb-2">{course.title}</CardTitle>
+                    <CardDescription>{course.pitch}</CardDescription>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow p-6 pt-2">
@@ -98,8 +99,8 @@ export default function CourseCard({ template, onEdit, onDelete }: CourseCardPro
                 <div className="flex justify-between w-full items-center">
                     <div>
                         <p className='font-medium'>60 min lesson</p>
-                        {template.discount60min && template.discount60min > 0 && (
-                             <Badge variant="secondary" className="text-xs">{template.discount60min}% off!</Badge>
+                        {course.discount60min && course.discount60min > 0 && (
+                             <Badge variant="secondary" className="text-xs">{course.discount60min}% off!</Badge>
                         )}
                     </div>
                     <p className="text-lg font-bold font-headline">{currencySymbol}{price60min.toFixed(2)}</p>

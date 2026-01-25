@@ -1,16 +1,17 @@
+
 'use client';
 
 import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { CourseTemplate } from '@/lib/types';
+import type { Course } from '@/lib/types';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { addCourseTemplate, updateCourseTemplate } from '@/lib/firestore';
+import { addCourse, updateCourse } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -28,27 +29,27 @@ const formSchema = z.object({
   });
 
 interface CourseFormProps {
-    courseTemplate: CourseTemplate | null;
-    onSuccess: (template: CourseTemplate) => void;
+    course: Course | null;
+    onSuccess: (course: Course) => void;
 }
 
 // Get only course thumbnail placeholders
 const courseThumbnails = PlaceHolderImages.filter(p => p.id.startsWith('course-thumb'));
 
 
-export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProps) {
+export default function CourseForm({ course, onSuccess }: CourseFormProps) {
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            title: courseTemplate?.title || '',
-            pitch: courseTemplate?.pitch || '',
-            description: courseTemplate?.description || '',
-            hourlyRate: courseTemplate?.hourlyRate ?? 0,
-            discount60min: courseTemplate?.discount60min ?? undefined,
-            thumbnailUrl: courseTemplate?.thumbnailUrl || '',
+            title: course?.title || '',
+            pitch: course?.pitch || '',
+            description: course?.description || '',
+            hourlyRate: course?.hourlyRate ?? 0,
+            discount60min: course?.discount60min ?? undefined,
+            thumbnailUrl: course?.thumbnailUrl || '',
         },
     });
 
@@ -57,32 +58,32 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
             try {
                 // If we are editing, we preserve the original imageUrl (hero image)
                 // If we are creating a new one, we derive it from the selected thumbnail.
-                const newHeroUrl = courseTemplate?.imageUrl || values.thumbnailUrl?.replace('thumb', 'hero') || 'course-hero1';
+                const newHeroUrl = course?.imageUrl || values.thumbnailUrl?.replace('thumb', 'hero') || 'course-hero1';
                 
-                const templateData = {
+                const courseData = {
                     ...values,
                     thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
                     imageUrl: newHeroUrl,
                 };
 
-                let savedTemplate;
-                if (courseTemplate) {
-                    savedTemplate = await updateCourseTemplate(courseTemplate.id, templateData);
+                let savedCourse;
+                if (course) {
+                    savedCourse = await updateCourse(course.id, courseData);
                 } else {
-                    savedTemplate = await addCourseTemplate(templateData);
+                    savedCourse = await addCourse(courseData);
                 }
                 
                 toast({
-                    title: `Course Template ${courseTemplate ? 'Updated' : 'Created'}`,
-                    description: `"${savedTemplate.title}" has been saved.`,
+                    title: `Course ${course ? 'Updated' : 'Created'}`,
+                    description: `"${savedCourse.title}" has been saved.`,
                 });
                 
-                onSuccess(savedTemplate);
+                onSuccess(savedCourse);
 
             } catch (error) {
                 toast({
                     title: 'Error',
-                    description: `Failed to ${courseTemplate ? 'update' : 'create'} template.`,
+                    description: `Failed to ${course ? 'update' : 'create'} course.`,
                     variant: 'destructive',
                 });
             }
@@ -218,7 +219,7 @@ export default function CourseForm({ courseTemplate, onSuccess }: CourseFormProp
                 />
 
                 <Button type="submit" disabled={isPending} className="w-full mt-4">
-                    {isPending ? <Loader2 className="animate-spin" /> : 'Save Template'}
+                    {isPending ? <Loader2 className="animate-spin" /> : 'Save Course'}
                 </Button>
             </form>
         </Form>

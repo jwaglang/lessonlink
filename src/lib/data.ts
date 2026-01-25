@@ -1,14 +1,15 @@
-import type { Student, Lesson, Availability, CourseTemplate } from './types';
+
+import type { Student, Lesson, Availability, Course } from './types';
 import { subDays, addDays, formatISO, startOfDay } from 'date-fns';
 
 const today = new Date();
 
-let courseTemplates: CourseTemplate[] = [
-    { id: 'ct1', title: 'Algebra II', duration: 60, rate: 25, pitch: 'Master advanced algebra concepts.', description: 'A full course on Algebra II.', thumbnailUrl: 'course-thumb1', imageUrl: 'course-hero1' },
-    { id: 'ct2', title: 'Creative Writing', duration: 60, rate: 35, pitch: 'Unleash your inner author.', description: 'Learn the art of storytelling.', thumbnailUrl: 'course-thumb2', imageUrl: 'course-hero2' },
-    { id: 'ct3', title: 'History 101', duration: 30, rate: 20, pitch: 'Journey through the ages.', description: 'An introduction to world history.', thumbnailUrl: 'course-thumb3', imageUrl: 'course-hero3' },
-    { id: 'ct4', title: 'Physics Fundamentals', duration: 60, rate: 40, pitch: 'Explore the laws of the universe.', description: 'Grasp the core principles of physics.', thumbnailUrl: 'course-thumb4', imageUrl: 'course-hero4' },
-    { id: 'ct5', title: 'Spanish for Beginners', duration: 30, rate: 15, pitch: 'Start speaking Spanish today.', description: 'A beginner-friendly introduction to Spanish.', thumbnailUrl: 'course-thumb5', imageUrl: 'course-hero5' },
+let courses: Course[] = [
+    { id: 'c1', title: 'Algebra II', hourlyRate: 50, pitch: 'Master advanced algebra concepts.', description: 'A full course on Algebra II.', thumbnailUrl: 'course-thumb1', imageUrl: 'course-hero1' },
+    { id: 'c2', title: 'Creative Writing', hourlyRate: 70, pitch: 'Unleash your inner author.', description: 'Learn the art of storytelling.', thumbnailUrl: 'course-thumb2', imageUrl: 'course-hero2' },
+    { id: 'c3', title: 'History 101', hourlyRate: 40, pitch: 'Journey through the ages.', description: 'An introduction to world history.', thumbnailUrl: 'course-thumb3', imageUrl: 'course-hero3' },
+    { id: 'c4', title: 'Physics Fundamentals', hourlyRate: 80, pitch: 'Explore the laws of the universe.', description: 'Grasp the core principles of physics.', thumbnailUrl: 'course-thumb4', imageUrl: 'course-hero4' },
+    { id: 'c5', title: 'Spanish for Beginners', hourlyRate: 30, pitch: 'Start speaking Spanish today.', description: 'A beginner-friendly introduction to Spanish.', thumbnailUrl: 'course-thumb5', imageUrl: 'course-hero5' },
 ];
 
 
@@ -95,32 +96,32 @@ let availability: Availability[] = [
     { id: 'a4', date: formatISO(startOfDay(addDays(today, 2))), time: '15:00', isAvailable: true },
 ];
 
-export async function getCourseTemplates(): Promise<CourseTemplate[]> {
+export async function getCourses(): Promise<Course[]> {
     await new Promise(resolve => setTimeout(resolve, 100));
-    return courseTemplates;
+    return courses;
 }
 
-export async function addCourseTemplate(data: Omit<CourseTemplate, 'id'>): Promise<CourseTemplate> {
+export async function addCourse(data: Omit<Course, 'id'>): Promise<Course> {
     await new Promise(resolve => setTimeout(resolve, 300));
-    const newTemplate: CourseTemplate = {
+    const newCourse: Course = {
         ...data,
-        id: `ct${courseTemplates.length + 1}`,
+        id: `c${courses.length + 1}`,
     };
-    courseTemplates.unshift(newTemplate);
-    return newTemplate;
+    courses.unshift(newCourse);
+    return newCourse;
 }
 
-export async function updateCourseTemplate(id: string, data: Partial<Omit<CourseTemplate, 'id'>>): Promise<CourseTemplate> {
+export async function updateCourse(id: string, data: Partial<Omit<Course, 'id'>>): Promise<Course> {
     await new Promise(resolve => setTimeout(resolve, 300));
-    const index = courseTemplates.findIndex(ct => ct.id === id);
-    if (index === -1) throw new Error("Course template not found");
-    courseTemplates[index] = { ...courseTemplates[index], ...data };
-    return courseTemplates[index];
+    const index = courses.findIndex(ct => ct.id === id);
+    if (index === -1) throw new Error("Course not found");
+    courses[index] = { ...courses[index], ...data };
+    return courses[index];
 }
 
-export async function deleteCourseTemplate(id: string): Promise<{ id: string }> {
+export async function deleteCourse(id: string): Promise<{ id: string }> {
     await new Promise(resolve => setTimeout(resolve, 300));
-    courseTemplates = courseTemplates.filter(ct => ct.id !== id);
+    courses = courses.filter(ct => ct.id !== id);
     return { id };
 }
 
