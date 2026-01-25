@@ -21,7 +21,7 @@ import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, Use
 const studentsCollection = collection(db, 'students');
 const lessonsCollection = collection(db, 'lessons');
 const availabilityCollection = collection(db, 'availability');
-const coursesCollection = collection(db, 'courseTemplates');
+const coursesCollection = collection(db, 'courses');
 const levelsCollection = collection(db, 'levels');
 const approvalRequestsCollection = collection(db, 'approvalRequests');
 const userSettingsCollection = collection(db, 'userSettings');
@@ -1200,8 +1200,8 @@ export async function getUnitsByLevelId(levelId: string): Promise<any[]> {
   }));
 }
 
-export function onUnitsUpdate(courseId: string, callback: (units: any[]) => void) {
-  const q = query(unitsCollection, where('courseId', '==', courseId), orderBy('order', 'asc'));
+export function onUnitsUpdate(levelId: string, callback: (units: any[]) => void) {
+  const q = query(unitsCollection, where('levelId', '==', levelId), orderBy('order', 'asc'));
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const units = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -1285,7 +1285,6 @@ export function onSessionsUpdate(unitId: string, callback: (sessions: any[]) => 
 export async function addSession(data: any): Promise<any> {
   const docRef = await addDoc(sessionsCollection, {
     ...data,
-    courseTemplateId: undefined, // remove old field
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now()
   });
@@ -1299,7 +1298,6 @@ export async function updateSession(id: string, data: any): Promise<any> {
   const docRef = doc(db, 'sessions', id);
   await updateDoc(docRef, {
     ...data,
-    courseTemplateId: undefined, // remove old field
     updatedAt: Timestamp.now()
   });
   const updated = await getDoc(docRef);
