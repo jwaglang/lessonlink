@@ -54,10 +54,6 @@ export default function CourseCard({ course, onEdit, onDelete }: CourseCardProps
                                     <Edit className="mr-2 h-4 w-4" />
                                     Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.location.href = `/t-portal/courses/${course.id}/units`}>
-                                    <ListOrdered className="mr-2 h-4 w-4" />
-                                    Manage Units
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onDelete(course.id)} className="text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Delete

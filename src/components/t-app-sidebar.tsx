@@ -189,15 +189,28 @@ const AppSidebar = () => {
 
           {/* Courses Hierarchy */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild href="/t-portal/courses" isActive={pathname.startsWith('/t-portal/courses')}>
-              <a href="/t-portal/courses" className="flex items-center gap-2">
-                <Library className="h-4 w-4" />
-                <span>Courses</span>
-              </a>
-            </SidebarMenuButton>
+            <div 
+              className='flex items-center w-full' 
+              onMouseEnter={() => setExpandedCourses(new Set(courses.map(c => c.id)))}
+            >
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 shrink-0" 
+                onClick={() => setExpandedCourses(new Set())}
+              >
+                <ChevronRight className={cn("h-4 w-4 transition-transform", expandedCourses.size > 0 && "rotate-90")} />
+              </Button>
+              <SidebarMenuButton asChild href="/t-portal/courses" isActive={pathname.startsWith('/t-portal/courses')} className="w-full justify-start">
+                <a href="/t-portal/courses" className="flex items-center gap-2">
+                  <Library className="h-4 w-4" />
+                  <span>Courses</span>
+                </a>
+              </SidebarMenuButton>
+            </div>
           </SidebarMenuItem>
 
-          {courses.map(course => (
+{expandedCourses.size > 0 && courses.map(course => (
             <SidebarMenuItem key={course.id} className='flex flex-col'>
                 <div className='flex items-center w-full'>
                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => toggleCourse(course.id)}>
@@ -215,34 +228,18 @@ const AppSidebar = () => {
                                     <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => toggleLevel(level.id)}>
                                         <ChevronRight className={cn("h-4 w-4 transition-transform", expandedLevels.has(level.id) && "rotate-90")} />
                                     </Button>
-                                    <SidebarMenuButton asChild href={`/t-portal/courses/${course.id}/units`} isActive={false} className="w-full justify-start text-sm">
-                                        <a href={`/t-portal/courses/${course.id}/units`} className="truncate flex-1">{level.title}</a>
+                                    <SidebarMenuButton asChild href={`/t-portal/courses/${course.id}/levels/${level.id}/units`} isActive={false} className="w-full justify-start text-sm">
+                                        <a href={`/t-portal/courses/${course.id}/levels/${level.id}/units`} className="truncate flex-1">{level.title}</a>
                                     </SidebarMenuButton>
                                 </div>
                                 {expandedLevels.has(level.id) && levelUnits[level.id] && (
                                     <div className='w-full pl-4'>
                                         {levelUnits[level.id].map(unit => (
-                                            <div key={unit.id}>
-                                                <div className='flex items-center w-full'>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => toggleUnit(unit.id)}>
-                                                        <ChevronRight className={cn("h-4 w-4 transition-transform", expandedUnits.has(unit.id) && "rotate-90")} />
-                                                    </Button>
-                                                    <SidebarMenuButton asChild href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`} isActive={false} className="w-full justify-start text-sm">
-                                                        <a href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`} className="truncate flex-1">{unit.title}</a>
-                                                    </SidebarMenuButton>
-                                                </div>
-                                                {expandedUnits.has(unit.id) && unitSessions[unit.id] && (
-                                                    <div className='w-full pl-4'>
-                                                        {unitSessions[unit.id].map(session => (
-                                                             <SidebarMenuItem key={session.id}>
-                                                                <SidebarMenuButton asChild href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`} isActive={false} className="w-full justify-start text-xs pl-9">
-                                                                     <a href={`/t-portal/courses/${course.id}/units/${unit.id}/sessions`} className="truncate flex-1">{session.title}</a>
-                                                                </SidebarMenuButton>
-                                                             </SidebarMenuItem>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <SidebarMenuItem key={unit.id}>
+                                                <SidebarMenuButton asChild href={`/t-portal/courses/${course.id}/levels/${level.id}/units/${unit.id}/sessions`} isActive={false} className="w-full justify-start text-xs pl-4">
+                                                    <a href={`/t-portal/courses/${course.id}/levels/${level.id}/units/${unit.id}/sessions`} className="truncate flex-1">{unit.title}</a>
+                                                </SidebarMenuButton>
+                                            </SidebarMenuItem>
                                         ))}
                                     </div>
                                 )}
