@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { StatusBadge } from '@/components/status-badge';
-import AIStatusSuggester from './ai-status-suggester';
+//import AIStatusSuggester from './ai-status-suggester';
 import { MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -159,7 +159,7 @@ export default function StudentList({ students, setStudents }: { students: Stude
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <AIStatusSuggester student={student} onStatusUpdate={handleStatusUpdate} />
+                      {/*<AIStatusSuggester student={student} onStatusUpdate={handleStatusUpdate} /> */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">

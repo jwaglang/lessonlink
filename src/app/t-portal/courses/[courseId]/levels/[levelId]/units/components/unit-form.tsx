@@ -9,12 +9,12 @@ import { addUnit, updateUnit } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface UnitFormProps {
-    courseId: string;
+    levelId: string;
     unit?: any;
     onSuccess: () => void;
 }
 
-export default function UnitForm({ courseId, unit, onSuccess }: UnitFormProps) {
+export default function UnitForm({ levelId, unit, onSuccess }: UnitFormProps) {
     const [title, setTitle] = useState(unit?.title || '');
     const [bigQuestion, setBigQuestion] = useState(unit?.bigQuestion || '');
     const [description, setDescription] = useState(unit?.description || '');
@@ -30,7 +30,7 @@ export default function UnitForm({ courseId, unit, onSuccess }: UnitFormProps) {
 
         try {
             const unitData = {
-                courseId: courseId,
+                levelId: levelId,
                 title,
                 bigQuestion,
                 description,

@@ -10,13 +10,12 @@ import { addSession, updateSession } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface SessionFormProps {
-    courseId: string;
     unitId: string;
     session?: any;
     onSuccess: () => void;
 }
 
-export default function SessionForm({ courseId, unitId, session, onSuccess }: SessionFormProps) {
+export default function SessionForm({ unitId, session, onSuccess }: SessionFormProps) {
     const [title, setTitle] = useState(session?.title || '');
     const [littleQuestion, setLittleQuestion] = useState(session?.littleQuestion || '');
     const [description, setDescription] = useState(session?.description || '');
@@ -33,7 +32,6 @@ export default function SessionForm({ courseId, unitId, session, onSuccess }: Se
 
         try {
             const sessionData = {
-                courseId: courseId,
                 unitId: unitId,
                 title,
                 littleQuestion,

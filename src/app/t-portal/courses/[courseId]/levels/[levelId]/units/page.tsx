@@ -19,7 +19,6 @@ export default function UnitsPage() {
     const { toast } = useToast();
     const courseId = params.courseId as string;
     const levelId = params.levelId as string;
-    
     const [units, setUnits] = useState<any[]>([]);
     const [levelName, setLevelName] = useState('Loading...');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
