@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -103,6 +104,43 @@ export default function UnitsPage() {
     const handleCloseModal = () => {
         setViewingUnit(null);
         setUnitSessions([]);
+    };
+
+    const handleAssignClick = (unit: any) => {
+        setAssigningUnit(unit);
+        setSelectedStudent('');
+        setIsAssignDialogOpen(true);
+    };
+
+    const handleAssignUnit = async () => {
+        if (!selectedStudent || !assigningUnit) return;
+        
+        setIsAssigning(true);
+        try {
+            const student = students.find(s => s.id === selectedStudent);
+            
+            // TODO: Check student's uncommitted credit
+            // TODO: Reserve credit (uncommitted → committed)
+            // TODO: Create studentProgress entry
+            // TODO: Send notification to student
+            
+            toast({ 
+                title: 'Success', 
+                description: `Unit "${assigningUnit.title}" assigned to ${student.name}!` 
+            });
+            
+            setIsAssignDialogOpen(false);
+            setAssigningUnit(null);
+            setSelectedStudent('');
+        } catch (error) {
+            toast({ 
+                title: 'Error', 
+                description: 'Failed to assign unit.', 
+                variant: 'destructive' 
+            });
+        } finally {
+            setIsAssigning(false);
+        }
     };
 
     return (
