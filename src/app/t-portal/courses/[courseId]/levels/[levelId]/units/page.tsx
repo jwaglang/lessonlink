@@ -360,9 +360,26 @@ export default function UnitsPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {selectedStudent && (
-                                    <p className="text-xs text-muted-foreground">
-                                        Credit check will be implemented next
+                                {selectedStudent && studentCreditInfo && (
+                                    <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Uncommitted:</span>
+                                            <span className="font-semibold">{studentCreditInfo.uncommittedHours}h</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Required:</span>
+                                            <span className="font-semibold">{assigningUnit.estimatedHours}h</span>
+                                        </div>
+                                        {studentCreditInfo.uncommittedHours < assigningUnit.estimatedHours && (
+                                            <p className="text-xs text-destructive mt-2">
+                                                ⚠️ Insufficient credit to assign this unit
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                {selectedStudent && !studentCreditInfo && (
+                                    <p className="text-xs text-amber-600">
+                                        ⚠️ No credit found for this student in this course
                                     </p>
                                 )}
                             </div>
