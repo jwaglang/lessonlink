@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { onUnitsUpdate, getLevelById, deleteUnit, getSessionsByUnitId } from '@/lib/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { getStudents } from '@/lib/firestore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UnitForm from './components/unit-form';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useToast } from '@/hooks/use-toast';
-import { getStudents } from '@/lib/firestore';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function UnitsPage() {
     const params = useParams();
@@ -28,6 +28,11 @@ export default function UnitsPage() {
     const [viewingUnit, setViewingUnit] = useState<any>(null);
     const [unitSessions, setUnitSessions] = useState<any[]>([]);
     const [loadingSessions, setLoadingSessions] = useState(false);
+    const [students, setStudents] = useState<any[]>([]);
+    const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+    const [assigningUnit, setAssigningUnit] = useState<any>(null);
+    const [selectedStudent, setSelectedStudent] = useState<string>('');
+    const [isAssigning, setIsAssigning] = useState(false);
 
     useEffect(() => {
         // Fetch level name
