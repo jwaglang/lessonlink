@@ -303,36 +303,71 @@ export default function UnitsPage() {
                 if (!open) {
                     setAssigningUnit(null);
                     setSelectedStudent('');
+                    setTimeout(() => {
+                        document.body.style.pointerEvents = '';
+                    }, 500);
                 }
             }}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Assign Unit: {assigningUnit?.title}</DialogTitle>
+                        <DialogTitle>Assign Unit to Student</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <p>Select a student to assign this unit to.</p>
-                        <Select onValueChange={setSelectedStudent} value={selectedStudent}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a student..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {students.map(student => (
-                                    <SelectItem key={student.id} value={student.id}>
-                                        {student.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">
-                            This will enroll the student in the unit and begin tracking their progress.
-                        </p>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleAssignUnit} disabled={isAssigning || !selectedStudent}>
-                            {isAssigning ? 'Assigning...' : 'Assign Unit'}
-                        </Button>
-                    </DialogFooter>
+                    
+                    {assigningUnit && (
+                        <div className="space-y-6">
+                            {/* Unit Preview */}
+                            <div className="rounded-lg border bg-muted/50 p-4">
+                                <h4 className="font-semibold mb-2">{assigningUnit.title}</h4>
+                                <p className="text-sm text-primary font-medium mb-2">
+                                    🎯 {assigningUnit.bigQuestion}
+                                </p>
+                                <div className="flex gap-4 text-xs text-muted-foreground">
+                                    <span>{assigningUnit.estimatedHours} hours</span>
+                                    <span>&bull;</span>
+                                    <span>Order: {assigningUnit.order}</span>
+                                </div>
+                            </div>
+
+                            {/* Student Selection */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Select Student</label>
+                                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Choose a student..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {students.map(student => (
+                                            <SelectItem key={student.id} value={student.id}>
+                                                {student.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {selectedStudent && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Credit check will be implemented next
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => setIsAssignDialogOpen(false)}
+                                    disabled={isAssigning}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    onClick={handleAssignUnit}
+                                    disabled={!selectedStudent || isAssigning}
+                                >
+                                    {isAssigning ? 'Assigning...' : 'Assign Unit'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>
