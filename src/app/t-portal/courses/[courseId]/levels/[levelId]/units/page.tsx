@@ -131,6 +131,12 @@ export default function UnitsPage() {
             setIsAssignDialogOpen(false);
             setAssigningUnit(null);
             setSelectedStudent('');
+
+            // CRITICAL FIX: Force cleanup of body pointer-events
+            setTimeout(() => {
+                document.body.style.pointerEvents = '';
+            }, 500);
+            
         } catch (error) {
             toast({ 
                 title: 'Error', 
