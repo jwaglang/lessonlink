@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { onUnitsUpdate, getLevelById, deleteUnit, getSessionsByUnitId } from '@/lib/firestore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
