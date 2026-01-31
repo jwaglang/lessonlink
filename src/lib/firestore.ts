@@ -15,7 +15,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review } from './types';
+import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review, StudentCredit } from './types';
 
 // Collection references
 const studentsCollection = collection(db, 'students');
@@ -26,6 +26,7 @@ const levelsCollection = collection(db, 'levels');
 const approvalRequestsCollection = collection(db, 'approvalRequests');
 const userSettingsCollection = collection(db, 'userSettings');
 const studentPackagesCollection = collection(db, 'studentPackages');
+const studentCreditCollection = collection(db, 'studentCredit');
 const teacherProfilesCollection = collection(db, 'teacherProfiles');
 const reviewsCollection = collection(db, 'reviews');
 const unitsCollection = collection(db, 'units');
@@ -1310,4 +1311,83 @@ export async function updateSession(id: string, data: any): Promise<any> {
 export async function deleteSession(id: string): Promise<void> {
   const docRef = doc(db, 'sessions', id);
   await deleteDoc(docRef);
+}
+
+// ============================================
+// STUDENT CREDIT
+// ============================================
+
+export async function getStudentCredit(studentId: string, courseId: string): Promise<StudentCredit | undefined> {
+  const q = query(
+    studentCreditCollection, 
+    where('studentId', '==', studentId),
+    where('courseId', '==', courseId)
+  );
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) {
+    return undefined;
+  }
+  
+  // Return the first matching credit (or sum if multiple packages)
+  return {
+    id: snapshot.docs[0].id,
+    ...snapshot.docs[0].data()
+  } as StudentCredit;
+}
+
+export async function createStudentCredit(data: Omit<StudentCredit, 'id'>): Promise<StudentCredit> {
+  const docRef = await addDoc(studentCreditCollection, data);
+  return {
+    id: docRef.id,
+    ...data
+  };
+}
+
+export async function updateStudentCredit(id: string, data: Partial<StudentCredit>): Promise<StudentCredit> {
+  const docRef = doc(db, 'studentCredit', id);
+  await updateDoc(docRef, {
+    ...data,
+    updatedAt: new Date().toISOString()
+  });
+  
+  const updated = await getDoc(docRef);
+  return {
+    id: updated.id,
+    ...updated.data()
+  } as StudentCredit;
+}
+
+export async function reserveCredit(
+  studentId: string,
+  courseId: string,
+  hoursToReserve: number
+): Promise<{ success: boolean; message: string; creditId?: string }> {
+  const credit = await getStudentCredit(studentId, courseId);
+  
+  if (!credit) {
+    return { 
+      success: false, 
+      message: 'No credit found for this student in this course.' 
+    };
+  }
+  
+  if (credit.uncommittedHours < hoursToReserve) {
+    return { 
+      success: false, 
+      message: `Insufficient credit. Available: ${credit.uncommittedHours}h, Required: ${hoursToReserve}h` 
+    };
+  }
+  
+  // Move hours from uncommitted to committed
+  await updateStudentCredit(credit.id, {
+    uncommittedHours: credit.uncommittedHours - hoursToReserve,
+    committedHours: credit.committedHours + hoursToReserve
+  });
+  
+  return { 
+    success: true, 
+    message: `Reserved ${hoursToReserve} hours successfully.`,
+    creditId: credit.id
+  };
 }
