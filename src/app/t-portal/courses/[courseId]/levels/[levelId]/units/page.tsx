@@ -34,6 +34,7 @@ export default function UnitsPage() {
     const [assigningUnit, setAssigningUnit] = useState<any>(null);
     const [selectedStudent, setSelectedStudent] = useState<string>('');
     const [isAssigning, setIsAssigning] = useState(false);
+    const [studentCreditInfo, setStudentCreditInfo] = useState<StudentCredit | null>(null);
 
     useEffect(() => {
         // Fetch level name
@@ -109,6 +110,7 @@ export default function UnitsPage() {
     const handleAssignClick = (unit: any) => {
         setAssigningUnit(unit);
         setSelectedStudent('');
+        setStudentCreditInfo(null);
         setIsAssignDialogOpen(true);
     };
 
@@ -147,6 +149,14 @@ export default function UnitsPage() {
         } finally {
             setIsAssigning(false);
         }
+    };
+
+    const handleStudentSelect = async (studentId: string) => {
+        setSelectedStudent(studentId);
+        
+        // Fetch student's credit for this course
+        const credit = await getStudentCredit(studentId, courseId);
+        setStudentCreditInfo(credit || null);
     };
 
     return (
@@ -338,7 +348,7 @@ export default function UnitsPage() {
                             {/* Student Selection */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Select Student</label>
-                                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                                <Select value={selectedStudent} onValueChange={handleStudentSelect}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Choose a student..." />
                                     </SelectTrigger>
