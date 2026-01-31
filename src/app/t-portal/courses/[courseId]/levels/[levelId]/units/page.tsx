@@ -42,6 +42,11 @@ export default function UnitsPage() {
             }
         });
 
+        // Fetch students
+        getStudents().then(studentList => {
+            setStudents(studentList);
+        });
+
         // Set up real-time listener for units
         const unsubscribe = onUnitsUpdate(levelId, (data) => {
             setUnits(data);
