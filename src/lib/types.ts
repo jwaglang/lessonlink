@@ -149,6 +149,20 @@ export interface StudentPackage {
   status: 'active' | 'expired' | 'completed' | 'paused';
 }
 
+export interface StudentCredit {
+  id: string;
+  studentId: string;
+  courseId: string;
+  packageId: string;              // Links to studentPackages
+  totalHours: number;             // Total hours purchased (e.g., 10)
+  uncommittedHours: number;       // Hours available for new units
+  committedHours: number;         // Hours reserved for assigned units
+  completedHours: number;         // Hours already used/consumed
+  currency: string;               // USD, EUR, etc.
+  createdAt: string;              // ISO timestamp
+  updatedAt: string;              // ISO timestamp
+}
+
 export interface StudentProgress {
     studentId: string;
     courseId: string;
