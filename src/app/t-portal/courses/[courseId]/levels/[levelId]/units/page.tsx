@@ -115,31 +115,46 @@ export default function UnitsPage() {
     };
 
     const handleAssignUnit = async () => {
-        if (!selectedStudent || !assigningUnit) return;
+        if (!selectedStudent || !assigningUnit || !studentCreditInfo) return;
         
         setIsAssigning(true);
         try {
             const student = students.find(s => s.id === selectedStudent);
             
-            // TODO: Check student's uncommitted credit
-            // TODO: Reserve credit (uncommitted → committed)
+            // Reserve credit
+            const result = await reserveCredit(
+                selectedStudent, 
+                courseId, 
+                assigningUnit.estimatedHours
+            );
+            
+            if (!result.success) {
+                toast({ 
+                    title: 'Cannot Assign', 
+                    description: result.message, 
+                    variant: 'destructive' 
+                });
+                setIsAssigning(false);
+                return;
+            }
+            
             // TODO: Create studentProgress entry
             // TODO: Send notification to student
             
             toast({ 
                 title: 'Success', 
-                description: `Unit "${assigningUnit.title}" assigned to ${student.name}!` 
+                description: `Unit "${assigningUnit.title}" assigned to ${student.name}! ${assigningUnit.estimatedHours}h reserved.` 
             });
             
             setIsAssignDialogOpen(false);
             setAssigningUnit(null);
             setSelectedStudent('');
-
+            setStudentCreditInfo(null);
+            
             // CRITICAL FIX: Force cleanup of body pointer-events
             setTimeout(() => {
                 document.body.style.pointerEvents = '';
             }, 500);
-            
         } catch (error) {
             toast({ 
                 title: 'Error', 
@@ -395,7 +410,9 @@ export default function UnitsPage() {
                                 </Button>
                                 <Button 
                                     onClick={handleAssignUnit}
-                                    disabled={!selectedStudent || isAssigning}
+                                    disabled={!selectedStudent || !studentCreditInfo || 
+                                              studentCreditInfo.uncommittedHours < assigningUnit.estimatedHours || 
+                                              isAssigning}
                                 >
                                     {isAssigning ? 'Assigning...' : 'Assign Unit'}
                                 </Button>
