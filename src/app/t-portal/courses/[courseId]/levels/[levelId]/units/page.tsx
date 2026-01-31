@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { onUnitsUpdate, getLevelById, deleteUnit, getSessionsByUnitId } from '@/
 import { useToast } from '@/hooks/use-toast';
 import { getStudents } from '@/lib/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UnitForm from './components/unit-form';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -187,6 +186,10 @@ export default function UnitsPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAssignClick(unit); }}>
+                                                <UserPlus className="mr-2 h-4 w-4" />
+                                                Assign to Student
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(unit); }}>
                                                 <Edit className="mr-2 h-4 w-4" />
                                                 Edit
@@ -291,6 +294,45 @@ export default function UnitsPage() {
                             ))}
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Assign Unit Dialog */}
+            <Dialog open={isAssignDialogOpen} onOpenChange={(open) => {
+                setIsAssignDialogOpen(open);
+                if (!open) {
+                    setAssigningUnit(null);
+                    setSelectedStudent('');
+                }
+            }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Assign Unit: {assigningUnit?.title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <p>Select a student to assign this unit to.</p>
+                        <Select onValueChange={setSelectedStudent} value={selectedStudent}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a student..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {students.map(student => (
+                                    <SelectItem key={student.id} value={student.id}>
+                                        {student.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                            This will enroll the student in the unit and begin tracking their progress.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAssignUnit} disabled={isAssigning || !selectedStudent}>
+                            {isAssigning ? 'Assigning...' : 'Assign Unit'}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
