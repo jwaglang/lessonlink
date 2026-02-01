@@ -13,6 +13,7 @@ import {
   createReview,
   getReviewedLessonIds,
   getTeacherProfileByEmail,
+  getStudentCredit,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,12 +44,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare } from 'lucide-react';
+import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart } from 'lucide-react';
 import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
-import type { Lesson, Student, Availability } from '@/lib/types';
+import type { Lesson, Student, Availability, StudentCredit } from '@/lib/types';
 import Link from 'next/link';
 import TimezonePrompt from '@/components/timezone-prompt';
 import PageHeader from '@/components/page-header';
+import PurchasePlanCard from '@/components/purchase-plan-card';
 
 export default function StudentPortalPage() {
   const { user, loading } = useAuth();
@@ -57,6 +59,7 @@ export default function StudentPortalPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [timezone, setTimezone] = useState<string>('');
+  const [studentCredit, setStudentCredit] = useState<StudentCredit | null>(null);
 
   // Reschedule state
   const [rescheduleLesson_, setRescheduleLesson] = useState<Lesson | null>(null);
@@ -97,6 +100,11 @@ export default function StudentPortalPage() {
         
         const studentLessons = await getLessonsByStudentId(studentRecord.id);
         setLessons(studentLessons);
+        
+        // Fetch student credit
+        const courseId = '45Jkyfg94otjc4d22dZT'; // Hardcoded for now (Kiddoland course)
+        const credit = await getStudentCredit(studentRecord.id, courseId);
+        setStudentCredit(credit);
         
         // Fetch reviewed lesson IDs
         const reviewedIds = await getReviewedLessonIds(studentRecord.id);
@@ -321,32 +329,57 @@ export default function StudentPortalPage() {
             </Link>
         </PageHeader>
 
-        <div className="grid gap-6 md:grid-cols-3 my-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 my-8">
+          {/* Purchase Plan Card - Full Width on Mobile, Spans 2 Columns on Desktop */}
+          <div className="md:col-span-2">
+            {studentCredit ? (
+              <PurchasePlanCard
+                totalHours={studentCredit.totalHours}
+                uncommittedHours={studentCredit.uncommittedHours}
+                committedHours={studentCredit.committedHours}
+                completedHours={studentCredit.completedHours}
+                currency={studentCredit.currency}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>My Purchase Plan</CardTitle>
+                  <CardDescription>No package purchased yet</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Purchase a package to start learning!
+                  </p>
+                  <Link href="/s-portal/purchase">
+                    <Button className="w-full">
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Purchase Package
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Stats Cards */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming Lessons</CardTitle>
+              <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{upcomingLessons.length}</div>
+              <p className="text-xs text-muted-foreground">sessions</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Lessons</CardTitle>
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{pastLessons.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Lessons</CardTitle>
-              <GraduationCap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{lessons.length}</div>
+              <p className="text-xs text-muted-foreground">sessions</p>
             </CardContent>
           </Card>
         </div>
