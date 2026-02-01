@@ -1,3 +1,4 @@
+
 import {
   collection,
   doc,
@@ -15,7 +16,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review, StudentCredit, Message } from './types';
+import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review, StudentCredit, Message, Unit } from './types';
 
 // Collection references
 const studentsCollection = collection(db, 'students');
@@ -1214,18 +1215,18 @@ export function onUnitsUpdate(levelId: string, callback: (units: any[]) => void)
   return unsubscribe;
 }
 
-export async function getUnitById(id: string): Promise<any | undefined> {
-  const docRef = doc(db, 'units', id);
+export async function getUnitById(unitId: string): Promise<Unit | null> {
+  const docRef = doc(db, 'units', unitId);
   const docSnap = await getDoc(docRef);
   
   if (!docSnap.exists()) {
-    return undefined;
+    return null;
   }
-
+  
   return {
     id: docSnap.id,
-    ...docSnap.data()
-  };
+    ...docSnap.data(),
+  } as Unit;
 }
 
 export async function addUnit(data: any): Promise<any> {
@@ -1469,4 +1470,22 @@ export async function getUnreadCount(userId: string): Promise<number> {
   
   const snapshot = await getDocs(q);
   return snapshot.docs.length;
+}
+
+// ===================================
+// Student Progress
+// ===================================
+
+export async function getStudentProgressByStudentId(studentId: string): Promise<any[]> {
+  const q = query(
+    collection(db, 'studentProgress'),
+    where('studentId', '==', studentId),
+    orderBy('assignedAt', 'desc')
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 }
