@@ -279,12 +279,12 @@ const AppSidebar = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={pathname === '/t-portal/messages'}
-              tooltip="Messages"
+              isActive={pathname === '/t-portal/chat'}
+              tooltip="Chat"
             >
-              <Link href="/t-portal/messages" className="flex items-center gap-2">
+              <Link href="/t-portal/chat" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                <span>Messages</span>
+                <span>Chat</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

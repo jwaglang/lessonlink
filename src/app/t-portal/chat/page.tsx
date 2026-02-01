@@ -31,7 +31,7 @@ interface Message {
   createdAt: Timestamp;
 }
 
-export default function TeacherMessagesPage() {
+export default function TeacherChatPage() {
   const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
