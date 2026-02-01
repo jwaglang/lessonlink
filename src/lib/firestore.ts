@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   doc,
@@ -33,6 +34,7 @@ const teacherProfilesCollection = collection(db, 'teacherProfiles');
 const reviewsCollection = collection(db, 'reviews');
 const unitsCollection = collection(db, 'units');
 const sessionsCollection = collection(db, 'sessions');
+const studentProgressCollection = collection(db, 'studentProgress');
 
 // ============================================
 // COURSES
@@ -843,7 +845,7 @@ export async function getActiveStudentPackage(studentId: string, courseId?: stri
 }
 
 export async function updateStudentPackage(id: string, data: Partial<StudentPackage>): Promise<StudentPackage> {
-  const docRef = doc(db, 'studentPackages', packageId);
+  const docRef = doc(db, 'studentPackages', id);
   await updateDoc(docRef, data);
   const updated = await getDoc(docRef);
   return { id: updated.id, ...updated.data() } as StudentPackage;
@@ -1476,7 +1478,7 @@ export async function getUnreadCountByChannel(userId: string, channel: 'notifica
   const q = query(
     messagesCollection,
     where('to', '==', userId),
-    where('channel', '==', channel),
+    where('type', '==', channel),
     where('read', '==', false)
   );
   
@@ -1490,7 +1492,7 @@ export async function getUnreadCountByChannel(userId: string, channel: 'notifica
 
 export async function getStudentProgressByStudentId(studentId: string): Promise<any[]> {
   const q = query(
-    collection(db, 'studentProgress'),
+    studentProgressCollection,
     where('studentId', '==', studentId),
     orderBy('assignedAt', 'desc')
   );
@@ -1513,7 +1515,7 @@ export async function createStudentProgress(data: {
   sessionsTotal: number;
   status?: string;
 }) {
-  const docRef = await addDoc(collection(db, 'studentProgress'), {
+  const docRef = await addDoc(studentProgressCollection, {
     ...data,
     sessionsCompleted: 0,
     status: data.status || 'assigned',

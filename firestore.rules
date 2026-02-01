@@ -27,6 +27,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
+    function isSenderStudent(studentDocId) {
+      // Checks if the authenticated user's email matches the email on the student document
+      return get(/databases/$(database)/documents/students/$(studentDocId)).data.email == request.auth.token.email;
+    }
+
     // ===================================
     // Collection Rules
     // ===================================
@@ -84,6 +89,14 @@ service cloud.firestore {
     match /studentPackages/{pkgId} {
         allow read: if isAdmin() || isTeacher() || (isAuthenticated() && resource.data.studentId == request.auth.uid);
         allow write: if isAdmin() || isTeacher();
+    }
+
+    match /messages/{messageId} {
+        allow read: if (isTeacher() && (resource.data.from == request.auth.token.email || resource.data.to == request.auth.token.email)) ||
+                     (isAuthenticated() && (isSenderStudent(resource.data.from) || isSenderStudent(resource.data.to)));
+        allow create: if (isTeacher() && request.resource.data.from == request.auth.token.email) ||
+                       (isAuthenticated() && isSenderStudent(request.resource.data.from));
+        allow update, delete: if isTeacher();
     }
 
     // --- New Gamification/Curriculum Collections ---
