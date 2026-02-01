@@ -24,12 +24,25 @@ import { query, where, onSnapshot } from 'firebase/firestore';
 export default function StudentChatPage() {
   const { user } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
+
+  // States for different message types
   const [notifications, setNotifications] = useState<Message[]>([]);
+  const [incomingComms, setIncomingComms] = useState<Message[]>([]);
+  const [outgoingComms, setOutgoingComms] = useState<Message[]>([]);
   const [communications, setCommunications] = useState<Message[]>([]);
+
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [activeTab, setActiveTab] = useState('notifications');
+
+  // MERGE EFFECT: Combine incoming and outgoing communications
+  useEffect(() => {
+    const allComms = [...incomingComms, ...outgoingComms]
+      .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+    setCommunications(allComms);
+  }, [incomingComms, outgoingComms]);
+
 
   useEffect(() => {
     if (!user?.email) return;
@@ -64,24 +77,18 @@ export default function StudentChatPage() {
             setNotifications(notifs);
         });
 
-        // Listeners for two-way communication
-        let studentToTeacherMsgs: Message[] = [];
-        let teacherToStudentMsgs: Message[] = [];
-
+        // Listener for outgoing communications (student -> teacher)
         const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
         commsUnsubscribe1 = onSnapshot(q1, (snapshot) => {
-            studentToTeacherMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            const allComms = [...studentToTeacherMsgs, ...teacherToStudentMsgs]
-                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-            setCommunications(allComms);
+            const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            setOutgoingComms(outgoing);
         });
 
+        // Listener for incoming communications (teacher -> student)
         const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', teacherEmail), where('type', '==', 'communication'));
         commsUnsubscribe2 = onSnapshot(q2, (snapshot) => {
-            teacherToStudentMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            const allComms = [...studentToTeacherMsgs, ...teacherToStudentMsgs]
-                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-            setCommunications(allComms);
+            const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            setIncomingComms(incoming);
         });
     });
 
@@ -108,7 +115,6 @@ export default function StudentChatPage() {
         read: false,
       });
 
-      // No longer need to manually update state, listener will do it.
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -120,7 +126,6 @@ export default function StudentChatPage() {
   async function handleMarkAsRead(messageId: string) {
     try {
       await markMessageAsRead(messageId);
-      // No need to manually update state, listeners will handle it.
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }

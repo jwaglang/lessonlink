@@ -22,13 +22,29 @@ export default function TeacherChatPage() {
   const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  
+  // States for different message types
+  const [messages, setMessages] = useState<Message[]>([]); // This will be the final merged/displayed list
+  const [incomingComms, setIncomingComms] = useState<Message[]>([]);
+  const [outgoingComms, setOutgoingComms] = useState<Message[]>([]);
+
   const [activeChannel, setActiveChannel] = useState<'notifications' | 'communications'>('notifications');
   const [newMessage, setNewMessage] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [studentCounts, setStudentCounts] = useState<Record<string, { notifications: number; communications: number }>>({});
+
+  // MERGE EFFECT: Combine incoming and outgoing communications
+  useEffect(() => {
+    // Only merge for the communications tab
+    if (activeChannel === 'communications') {
+      const allComms = [...incomingComms, ...outgoingComms]
+        .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+      setMessages(allComms);
+    }
+  }, [incomingComms, outgoingComms, activeChannel]);
+
 
   // Fetch all students
   useEffect(() => {
@@ -44,19 +60,29 @@ export default function TeacherChatPage() {
       setStudents(studentsData);
       setLoading(false);
 
-      // Auto-select first student if none selected
       if (!selectedStudent && studentsData.length > 0) {
         setSelectedStudent(studentsData[0]);
+      } else if (selectedStudent) {
+        // keep selected student state up to date
+        const updatedSelected = studentsData.find(s => s.id === selectedStudent.id);
+        if(updatedSelected) {
+          setSelectedStudent(updatedSelected);
+        }
       }
 
-      // Fetch unread counts for each student
       const counts: Record<string, { notifications: number; communications: number }> = {};
       for (const student of studentsData) {
-        const notifCount = await getUnreadCountByChannel(student.id, 'notifications');
-        const commCount = await getUnreadCountByChannel(student.id, 'communications');
+        // For the teacher, unread comms are messages FROM the student
+        const q = query(
+          messagesCollection,
+          where('from', '==', student.id),
+          where('to', '==', user.email),
+          where('read', '==', false)
+        );
+        const commsSnapshot = await getDocs(q);
         counts[student.id] = {
-          notifications: notifCount,
-          communications: commCount
+          notifications: 0, // Teacher doesn't have unread notifications in this view
+          communications: commsSnapshot.size
         };
       }
       setStudentCounts(counts);
@@ -68,57 +94,52 @@ export default function TeacherChatPage() {
   // Fetch messages for selected student
   useEffect(() => {
     if (!selectedStudent || !user?.email) {
-      setMessages([]); // Clear messages when no student is selected
+      setMessages([]);
       return;
     };
 
-    let unsubscribe: (() => void) | undefined;
-    let unsubscribe1: (() => void) | undefined;
-    let unsubscribe2: (() => void) | undefined;
+    let unsubscribeNotifs: (() => void) | undefined;
+    let unsubscribeComms1: (() => void) | undefined;
+    let unsubscribeComms2: (() => void) | undefined;
 
     const teacherEmail = user.email;
     const studentId = selectedStudent.id;
 
-    if (activeChannel === 'notifications') {
-        // One-way query for notifications sent to this student
-        const q = query(
-            messagesCollection,
-            where('to', '==', studentId),
-            where('type', '==', 'notification')
-        );
-        unsubscribe = onSnapshot(q, (snapshot) => {
-            const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message))
-                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-            setMessages(msgs);
-        });
-    } else { // 'communications'
-        // Two-way query for communications
-        let teacherToStudentMsgs: Message[] = [];
-        let studentToTeacherMsgs: Message[] = [];
+    // Listener for notifications sent to this student
+    const notifsQuery = query(
+        messagesCollection,
+        where('to', '==', studentId),
+        where('type', '==', 'notification')
+    );
+    unsubscribeNotifs = onSnapshot(notifsQuery, (snapshot) => {
+        const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message))
+            .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+        // Only update messages if the current tab is notifications
+        if(activeChannel === 'notifications') {
+          setMessages(notifs);
+        }
+    });
 
-        const q1 = query(messagesCollection, where('from', '==', teacherEmail), where('to', '==', studentId), where('type', '==', 'communication'));
-        unsubscribe1 = onSnapshot(q1, (snapshot) => {
-            teacherToStudentMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            const merged = [...teacherToStudentMsgs, ...studentToTeacherMsgs]
-                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-            setMessages(merged);
-        });
+    // Listener for outgoing communications (teacher -> student)
+    const q1 = query(messagesCollection, where('from', '==', teacherEmail), where('to', '==', studentId), where('type', '==', 'communication'));
+    unsubscribeComms1 = onSnapshot(q1, (snapshot) => {
+        const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+        setOutgoingComms(outgoing);
+    });
 
-        const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
-        unsubscribe2 = onSnapshot(q2, (snapshot) => {
-            studentToTeacherMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            const merged = [...teacherToStudentMsgs, ...studentToTeacherMsgs]
-                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-            setMessages(merged);
-        });
-    }
+    // Listener for incoming communications (student -> teacher)
+    const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
+    unsubscribeComms2 = onSnapshot(q2, (snapshot) => {
+        const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+        setIncomingComms(incoming);
+    });
 
     return () => {
-        if (unsubscribe) unsubscribe();
-        if (unsubscribe1) unsubscribe1();
-        if (unsubscribe2) unsubscribe2();
+        if (unsubscribeNotifs) unsubscribeNotifs();
+        if (unsubscribeComms1) unsubscribeComms1();
+        if (unsubscribeComms2) unsubscribeComms2();
     };
-  }, [selectedStudent, activeChannel, user]);
+  }, [selectedStudent, user, activeChannel]); // re-run when activeChannel changes to set initial message list
 
   const handleSendMessage = async () => {
     if (!selectedStudent || !newMessage.trim() || !user?.email) return;
@@ -127,14 +148,13 @@ export default function TeacherChatPage() {
     try {
       const messageData: any = {
         type: activeChannel,
-        from: user.email,
+        from: user.email, // Teacher sends from their email
         to: selectedStudent.id,
         content: newMessage,
         timestamp: new Date().toISOString(),
         read: false,
       };
 
-      // Only add subject if it exists
       if (activeChannel === 'notifications' && newSubject) {
         messageData.subject = newSubject;
       }
@@ -181,15 +201,8 @@ export default function TeacherChatPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{student.name}</span>
                       <div className="flex gap-2">
-                        {counts.notifications > 0 && (
-                          <Badge variant="default" className="flex items-center gap-1">
-                            <Bell className="h-3 w-3" />
-                            {counts.notifications}
-                          </Badge>
-                        )}
                         {counts.communications > 0 && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <MessageSquare className="h-3 w-3" />
+                          <Badge variant="destructive" className="flex items-center gap-1">
                             {counts.communications}
                           </Badge>
                         )}
@@ -218,17 +231,12 @@ export default function TeacherChatPage() {
                     <TabsTrigger value="notifications" className="flex items-center gap-2">
                       <Bell className="h-4 w-4" />
                       Notifications
-                      {(studentCounts[selectedStudent.id]?.notifications || 0) > 0 && (
-                        <Badge variant="default" className="ml-1">
-                          {studentCounts[selectedStudent.id].notifications}
-                        </Badge>
-                      )}
                     </TabsTrigger>
                     <TabsTrigger value="communications" className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
                       Communications
                       {(studentCounts[selectedStudent.id]?.communications || 0) > 0 && (
-                        <Badge variant="secondary" className="ml-1">
+                        <Badge variant="destructive" className="ml-1">
                           {studentCounts[selectedStudent.id].communications}
                         </Badge>
                       )}
@@ -244,7 +252,12 @@ export default function TeacherChatPage() {
                         </p>
                       ) : (
                         messages.map((msg) => (
-                          <div key={msg.id} className="bg-muted p-4 rounded-lg">
+                          <div key={msg.id} className={`p-4 rounded-lg ${
+                            msg.from === user?.email ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
+                          }`}>
+                            <p className="text-sm font-medium mb-1">
+                              {msg.from === user?.email ? 'You' : selectedStudent.name}
+                            </p>
                             {msg.subject && (
                               <h4 className="font-semibold mb-2">{msg.subject}</h4>
                             )}
@@ -265,7 +278,7 @@ export default function TeacherChatPage() {
                           placeholder="Subject (optional)"
                           value={newSubject}
                           onChange={(e) => setNewSubject(e.target.value)}
-                          className="w-full p-2 border rounded-lg"
+                          className="w-full p-2 border rounded-lg bg-input"
                         />
                       )}
                       <div className="flex gap-2">
