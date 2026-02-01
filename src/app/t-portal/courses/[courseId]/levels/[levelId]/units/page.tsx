@@ -7,9 +7,17 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered, UserPlus } from 'lucide-react';
 import type { StudentCredit } from '@/lib/types';
 import Link from 'next/link';
-import { onUnitsUpdate, getLevelById, deleteUnit, getSessionsByUnitId, reserveCredit, getStudentCredit } from '@/lib/firestore';
+import { 
+  onUnitsUpdate, 
+  getLevelById, 
+  deleteUnit, 
+  getSessionsByUnitId, 
+  reserveCredit, 
+  getStudentCredit,
+  getStudents,
+  createMessage
+} from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { getStudents } from '@/lib/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UnitForm from './components/unit-form';
@@ -139,11 +147,25 @@ export default function UnitsPage() {
             }
             
             // TODO: Create studentProgress entry
-            // TODO: Send notification to student
+            
+            // ✅ NEW: Send notification to student
+            await createMessage({
+                type: 'notification',
+                from: 'system',
+                to: selectedStudent,
+                content: `Your teacher assigned the unit "${assigningUnit.title}" to you! Start learning by exploring the Big Question: ${assigningUnit.bigQuestion}`,
+                timestamp: new Date().toISOString(),
+                read: false,
+                relatedEntity: {
+                    type: 'unit',
+                    id: assigningUnit.id
+                },
+                actionLink: '/s-portal/units'
+            });
             
             toast({ 
                 title: 'Success', 
-                description: `Unit "${assigningUnit.title}" assigned to ${student.name}! ${assigningUnit.estimatedHours}h reserved.` 
+                description: `Unit "${assigningUnit.title}" assigned to ${student.name}! ${assigningUnit.estimatedHours}h reserved. Notification sent.` 
             });
             
             setIsAssignDialogOpen(false);
