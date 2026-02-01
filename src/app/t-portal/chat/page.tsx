@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bell, MessageSquare, Send } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import {
   createMessage,
-  getUnreadCountByChannel,
   messagesCollection,
 } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
@@ -24,34 +24,32 @@ export default function TeacherChatPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
   // States for different message types
-  const [messages, setMessages] = useState<Message[]>([]); // This will be the final merged/displayed list
+  const [notifications, setNotifications] = useState<Message[]>([]);
+  const [communications, setCommunications] = useState<Message[]>([]);
   const [incomingComms, setIncomingComms] = useState<Message[]>([]);
   const [outgoingComms, setOutgoingComms] = useState<Message[]>([]);
 
-  const [activeChannel, setActiveChannel] = useState<'notifications' | 'communications'>('notifications');
+  const [activeTab, setActiveTab] = useState<'notifications' | 'communications'>('communications');
   const [newMessage, setNewMessage] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [studentCounts, setStudentCounts] = useState<Record<string, { notifications: number; communications: number }>>({});
+  const [studentUnreadCounts, setStudentUnreadCounts] = useState<Record<string, number>>({});
 
-  // MERGE EFFECT: Combine incoming and outgoing communications
+  // Merge incoming and outgoing communications into a single list
   useEffect(() => {
-    // Only merge for the communications tab
-    if (activeChannel === 'communications') {
-      const allComms = [...incomingComms, ...outgoingComms]
-        .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-      setMessages(allComms);
-    }
-  }, [incomingComms, outgoingComms, activeChannel]);
+    const allComms = [...incomingComms, ...outgoingComms]
+      .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+    setCommunications(allComms);
+  }, [incomingComms, outgoingComms]);
 
 
-  // Fetch all students
+  // Fetch all students and listen for unread messages
   useEffect(() => {
-    if (!user) return;
+    if (!user?.email) return;
 
     const studentsQuery = query(collection(db, 'students'));
-    const unsubscribe = onSnapshot(studentsQuery, async (snapshot) => {
+    const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {
       const studentsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -63,83 +61,76 @@ export default function TeacherChatPage() {
       if (!selectedStudent && studentsData.length > 0) {
         setSelectedStudent(studentsData[0]);
       } else if (selectedStudent) {
-        // keep selected student state up to date
         const updatedSelected = studentsData.find(s => s.id === selectedStudent.id);
-        if(updatedSelected) {
-          setSelectedStudent(updatedSelected);
-        }
+        if(updatedSelected) setSelectedStudent(updatedSelected);
       }
-
-      const counts: Record<string, { notifications: number; communications: number }> = {};
-      for (const student of studentsData) {
-        // For the teacher, unread comms are messages FROM the student
-        const q = query(
-          messagesCollection,
-          where('from', '==', student.id),
-          where('to', '==', user.email),
-          where('read', '==', false)
-        );
-        const commsSnapshot = await getDocs(q);
-        counts[student.id] = {
-          notifications: 0, // Teacher doesn't have unread notifications in this view
-          communications: commsSnapshot.size
-        };
-      }
-      setStudentCounts(counts);
+    });
+    
+    // Single listener for all unread communications to the teacher
+    const unreadQuery = query(
+        messagesCollection, 
+        where('to', '==', user.email), 
+        where('read', '==', false), 
+        where('type', '==', 'communication')
+    );
+    const unreadUnsubscribe = onSnapshot(unreadQuery, (snapshot) => {
+        const counts: Record<string, number> = {};
+        snapshot.forEach(doc => {
+            const fromId = doc.data().from;
+            counts[fromId] = (counts[fromId] || 0) + 1;
+        });
+        setStudentUnreadCounts(counts);
     });
 
-    return () => unsubscribe();
+    return () => {
+        studentsUnsubscribe();
+        unreadUnsubscribe();
+    };
   }, [user, selectedStudent]);
 
-  // Fetch messages for selected student
+  // Fetch messages for the selected student
   useEffect(() => {
     if (!selectedStudent || !user?.email) {
-      setMessages([]);
+      setNotifications([]);
+      setIncomingComms([]);
+      setOutgoingComms([]);
       return;
     };
-
-    let unsubscribeNotifs: (() => void) | undefined;
-    let unsubscribeComms1: (() => void) | undefined;
-    let unsubscribeComms2: (() => void) | undefined;
 
     const teacherEmail = user.email;
     const studentId = selectedStudent.id;
 
-    // Listener for notifications sent to this student
+    // Listener for notifications sent to this student by the teacher
     const notifsQuery = query(
         messagesCollection,
         where('to', '==', studentId),
+        where('from', '==', teacherEmail),
         where('type', '==', 'notification')
     );
-    unsubscribeNotifs = onSnapshot(notifsQuery, (snapshot) => {
+    const unsubscribeNotifs = onSnapshot(notifsQuery, (snapshot) => {
         const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message))
             .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-        // Only update messages if the current tab is notifications
-        if(activeChannel === 'notifications') {
-          setMessages(notifs);
-        }
+        setNotifications(notifs);
     });
 
     // Listener for outgoing communications (teacher -> student)
     const q1 = query(messagesCollection, where('from', '==', teacherEmail), where('to', '==', studentId), where('type', '==', 'communication'));
-    unsubscribeComms1 = onSnapshot(q1, (snapshot) => {
-        const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-        setOutgoingComms(outgoing);
+    const unsubscribeComms1 = onSnapshot(q1, (snapshot) => {
+        setOutgoingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
     });
 
     // Listener for incoming communications (student -> teacher)
     const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
-    unsubscribeComms2 = onSnapshot(q2, (snapshot) => {
-        const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-        setIncomingComms(incoming);
+    const unsubscribeComms2 = onSnapshot(q2, (snapshot) => {
+        setIncomingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
     });
 
     return () => {
-        if (unsubscribeNotifs) unsubscribeNotifs();
-        if (unsubscribeComms1) unsubscribeComms1();
-        if (unsubscribeComms2) unsubscribeComms2();
+        unsubscribeNotifs();
+        unsubscribeComms1();
+        unsubscribeComms2();
     };
-  }, [selectedStudent, user, activeChannel]); // re-run when activeChannel changes to set initial message list
+  }, [selectedStudent, user]);
 
   const handleSendMessage = async () => {
     if (!selectedStudent || !newMessage.trim() || !user?.email) return;
@@ -147,7 +138,7 @@ export default function TeacherChatPage() {
     setSending(true);
     try {
       const messageData: any = {
-        type: activeChannel,
+        type: activeTab,
         from: user.email, // Teacher sends from their email
         to: selectedStudent.id,
         content: newMessage,
@@ -155,7 +146,7 @@ export default function TeacherChatPage() {
         read: false,
       };
 
-      if (activeChannel === 'notifications' && newSubject) {
+      if (activeTab === 'notifications' && newSubject) {
         messageData.subject = newSubject;
       }
 
@@ -189,7 +180,7 @@ export default function TeacherChatPage() {
           <CardContent className="flex-1 overflow-y-auto p-0">
             <div className="space-y-1">
               {students.map((student) => {
-                const counts = studentCounts[student.id] || { notifications: 0, communications: 0 };
+                const unreadCount = studentUnreadCounts[student.id] || 0;
                 return (
                   <button
                     key={student.id}
@@ -200,13 +191,9 @@ export default function TeacherChatPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{student.name}</span>
-                      <div className="flex gap-2">
-                        {counts.communications > 0 && (
-                          <Badge variant="destructive" className="flex items-center gap-1">
-                            {counts.communications}
-                          </Badge>
-                        )}
-                      </div>
+                      {unreadCount > 0 && (
+                          <Badge variant="destructive">{unreadCount}</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{student.email}</p>
                   </button>
@@ -226,7 +213,7 @@ export default function TeacherChatPage() {
           <CardContent className="flex-1 flex flex-col p-0">
             {selectedStudent ? (
               <>
-                <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as any)} className="flex-1 flex flex-col">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'notifications' | 'communications')} className="flex-1 flex flex-col">
                   <TabsList className="mx-6 mt-4">
                     <TabsTrigger value="notifications" className="flex items-center gap-2">
                       <Bell className="h-4 w-4" />
@@ -235,70 +222,84 @@ export default function TeacherChatPage() {
                     <TabsTrigger value="communications" className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
                       Communications
-                      {(studentCounts[selectedStudent.id]?.communications || 0) > 0 && (
+                      {(studentUnreadCounts[selectedStudent.id] || 0) > 0 && (
                         <Badge variant="destructive" className="ml-1">
-                          {studentCounts[selectedStudent.id].communications}
+                          {studentUnreadCounts[selectedStudent.id]}
                         </Badge>
                       )}
                     </TabsTrigger>
                   </TabsList>
-
-                  <TabsContent value={activeChannel} className="flex-1 flex flex-col mt-0">
-                    {/* Messages List */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                      {messages.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                          No messages yet
-                        </p>
-                      ) : (
-                        messages.map((msg) => (
-                          <div key={msg.id} className={`p-4 rounded-lg ${
-                            msg.from === user?.email ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
-                          }`}>
-                            <p className="text-sm font-medium mb-1">
-                              {msg.from === user?.email ? 'You' : selectedStudent.name}
-                            </p>
-                            {msg.subject && (
-                              <h4 className="font-semibold mb-2">{msg.subject}</h4>
-                            )}
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {format(parseISO(msg.timestamp), 'PPp')}
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Message Input */}
-                    <div className="border-t p-6 space-y-4">
-                      {activeChannel === 'notifications' && (
-                        <input
-                          type="text"
-                          placeholder="Subject (optional)"
-                          value={newSubject}
-                          onChange={(e) => setNewSubject(e.target.value)}
-                          className="w-full p-2 border rounded-lg bg-input"
-                        />
-                      )}
-                      <div className="flex gap-2">
-                        <Textarea
-                          placeholder={`Send ${activeChannel === 'notifications' ? 'notification' : 'message'} to ${selectedStudent.name}...`}
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          className="flex-1"
-                          rows={3}
-                        />
-                        <Button
-                          onClick={handleSendMessage}
-                          disabled={!newMessage.trim() || sending}
-                          className="self-end"
-                        >
-                          <Send className="h-4 w-4" />
-                        </Button>
+                  
+                  {/* Notifications Tab */}
+                  <TabsContent value="notifications" className="flex-1 flex flex-col mt-0">
+                    <ScrollArea className="flex-1 p-6">
+                      <div className="space-y-4">
+                        {notifications.length === 0 ? (
+                          <p className="text-center text-muted-foreground py-8">No notifications sent to {selectedStudent.name}</p>
+                        ) : (
+                          notifications.map((msg) => (
+                            <div key={msg.id} className="bg-muted p-4 rounded-lg">
+                              <h4 className="font-semibold mb-2">{msg.subject || 'Notification'}</h4>
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              <p className="text-xs text-muted-foreground mt-2">{format(parseISO(msg.timestamp), 'PPp')}</p>
+                            </div>
+                          ))
+                        )}
                       </div>
-                    </div>
+                    </ScrollArea>
                   </TabsContent>
+                  
+                  {/* Communications Tab */}
+                  <TabsContent value="communications" className="flex-1 flex flex-col mt-0">
+                     <ScrollArea className="flex-1 p-6">
+                        <div className="space-y-4">
+                          {communications.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-8">No messages yet</p>
+                          ) : (
+                            communications.map((msg) => (
+                              <div key={msg.id} className={`p-4 rounded-lg ${
+                                msg.from === user?.email ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
+                              }`}>
+                                <p className="text-sm font-medium mb-1">
+                                  {msg.from === user?.email ? 'You' : selectedStudent.name}
+                                </p>
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p className="text-xs text-muted-foreground mt-2">{format(parseISO(msg.timestamp), 'PPp')}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                     </ScrollArea>
+                  </TabsContent>
+
+                  {/* Message Input - common for both tabs */}
+                  <div className="border-t p-6 space-y-4">
+                    {activeTab === 'notifications' && (
+                      <input
+                        type="text"
+                        placeholder="Subject (optional for notifications)"
+                        value={newSubject}
+                        onChange={(e) => setNewSubject(e.target.value)}
+                        className="w-full p-2 border rounded-lg bg-input"
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder={`Send ${activeTab === 'notifications' ? 'notification' : 'message'} to ${selectedStudent.name}...`}
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        className="flex-1"
+                        rows={3}
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || sending}
+                        className="self-end"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </Tabs>
               </>
             ) : (

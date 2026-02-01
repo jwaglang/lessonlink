@@ -27,9 +27,9 @@ export default function StudentChatPage() {
 
   // States for different message types
   const [notifications, setNotifications] = useState<Message[]>([]);
+  const [communications, setCommunications] = useState<Message[]>([]);
   const [incomingComms, setIncomingComms] = useState<Message[]>([]);
   const [outgoingComms, setOutgoingComms] = useState<Message[]>([]);
-  const [communications, setCommunications] = useState<Message[]>([]);
 
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
