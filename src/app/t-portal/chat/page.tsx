@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -88,15 +89,21 @@ export default function TeacherChatPage() {
 
     setSending(true);
     try {
-      const message = await createMessage({
+      const messageData: any = {
         type: activeChannel,
         from: 'system',
         to: selectedStudent.id,
         content: newMessage,
-        subject: activeChannel === 'notifications' ? newSubject : undefined,
         timestamp: new Date().toISOString(),
         read: false,
-      });
+      };
+
+      // Only add subject if it exists
+      if (activeChannel === 'notifications' && newSubject) {
+        messageData.subject = newSubject;
+      }
+
+      const message = await createMessage(messageData);
 
       setMessages(prev => [message, ...prev]);
       setNewMessage('');
