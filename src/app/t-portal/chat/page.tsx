@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -11,13 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, MessageSquare, Send } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import {
-  getNotificationsByUser,
-  getCommunicationsByUser,
   createMessage,
   getUnreadCountByChannel,
+  messagesCollection,
 } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export default function TeacherChatPage() {
@@ -69,29 +67,67 @@ export default function TeacherChatPage() {
 
   // Fetch messages for selected student
   useEffect(() => {
-    if (!selectedStudent) return;
+    if (!selectedStudent || !user?.email) {
+      setMessages([]); // Clear messages when no student is selected
+      return;
+    };
 
-    async function loadMessages() {
-      if (activeChannel === 'notifications') {
-        const msgs = await getNotificationsByUser(selectedStudent!.id);
-        setMessages(msgs);
-      } else {
-        const msgs = await getCommunicationsByUser(selectedStudent!.id);
-        setMessages(msgs);
-      }
+    let unsubscribe: (() => void) | undefined;
+    let unsubscribe1: (() => void) | undefined;
+    let unsubscribe2: (() => void) | undefined;
+
+    const teacherEmail = user.email;
+    const studentId = selectedStudent.id;
+
+    if (activeChannel === 'notifications') {
+        // One-way query for notifications sent to this student
+        const q = query(
+            messagesCollection,
+            where('to', '==', studentId),
+            where('type', '==', 'notification')
+        );
+        unsubscribe = onSnapshot(q, (snapshot) => {
+            const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message))
+                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+            setMessages(msgs);
+        });
+    } else { // 'communications'
+        // Two-way query for communications
+        let teacherToStudentMsgs: Message[] = [];
+        let studentToTeacherMsgs: Message[] = [];
+
+        const q1 = query(messagesCollection, where('from', '==', teacherEmail), where('to', '==', studentId), where('type', '==', 'communication'));
+        unsubscribe1 = onSnapshot(q1, (snapshot) => {
+            teacherToStudentMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            const merged = [...teacherToStudentMsgs, ...studentToTeacherMsgs]
+                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+            setMessages(merged);
+        });
+
+        const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
+        unsubscribe2 = onSnapshot(q2, (snapshot) => {
+            studentToTeacherMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            const merged = [...teacherToStudentMsgs, ...studentToTeacherMsgs]
+                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+            setMessages(merged);
+        });
     }
 
-    loadMessages();
-  }, [selectedStudent, activeChannel]);
+    return () => {
+        if (unsubscribe) unsubscribe();
+        if (unsubscribe1) unsubscribe1();
+        if (unsubscribe2) unsubscribe2();
+    };
+  }, [selectedStudent, activeChannel, user]);
 
   const handleSendMessage = async () => {
-    if (!selectedStudent || !newMessage.trim()) return;
+    if (!selectedStudent || !newMessage.trim() || !user?.email) return;
 
     setSending(true);
     try {
       const messageData: any = {
         type: activeChannel,
-        from: 'system',
+        from: user.email,
         to: selectedStudent.id,
         content: newMessage,
         timestamp: new Date().toISOString(),
@@ -103,9 +139,8 @@ export default function TeacherChatPage() {
         messageData.subject = newSubject;
       }
 
-      const message = await createMessage(messageData);
+      await createMessage(messageData);
 
-      setMessages(prev => [message, ...prev]);
       setNewMessage('');
       setNewSubject('');
     } catch (error) {

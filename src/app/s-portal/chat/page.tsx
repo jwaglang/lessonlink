@@ -10,17 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import PageHeader from '@/components/page-header';
 import {
-  getNotificationsByUser,
-  getCommunicationsByUser,
   createMessage,
   markMessageAsRead,
-  getUnreadCount,
   getStudentByEmail,
+  messagesCollection,
 } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
 import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
+import { query, where, onSnapshot } from 'firebase/firestore';
 
 export default function StudentChatPage() {
   const { user } = useAuth();
@@ -33,28 +32,66 @@ export default function StudentChatPage() {
   const [activeTab, setActiveTab] = useState('notifications');
 
   useEffect(() => {
-    async function loadData() {
-      if (!user?.email) return;
+    if (!user?.email) return;
 
-      const studentData = await getStudentByEmail(user.email);
-      if (!studentData) return;
-      
-      setStudent(studentData);
+    let notifUnsubscribe: (() => void) | undefined;
+    let commsUnsubscribe1: (() => void) | undefined;
+    let commsUnsubscribe2: (() => void) | undefined;
+    let unreadUnsubscribe: (() => void) | undefined;
 
-      // Load notifications
-      const notifs = await getNotificationsByUser(studentData.id);
-      setNotifications(notifs);
+    // Fetch student data once, then set up listeners
+    getStudentByEmail(user.email).then(studentData => {
+        if (!studentData) return;
+        setStudent(studentData);
 
-      // Load communications
-      const comms = await getCommunicationsByUser(studentData.id);
-      setCommunications(comms);
+        const studentId = studentData.id;
+        const teacherEmail = 'jwag.lang@gmail.com'; // Hardcoded for now
 
-      // Get unread count
-      const count = await getUnreadCount(studentData.id);
-      setUnreadCount(count);
-    }
+        // --- Real-time listeners ---
 
-    loadData();
+        // Listener for all unread messages
+        const unreadQuery = query(messagesCollection, where('to', '==', studentId), where('read', '==', false));
+        unreadUnsubscribe = onSnapshot(unreadQuery, (snapshot) => {
+            setUnreadCount(snapshot.size);
+        });
+
+        // Listener for notifications
+        const notifQuery = query(messagesCollection, where('to', '==', studentId), where('type', '==', 'notification'));
+        notifUnsubscribe = onSnapshot(notifQuery, (snapshot) => {
+            const notifs = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }) as Message)
+                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+            setNotifications(notifs);
+        });
+
+        // Listeners for two-way communication
+        let studentToTeacherMsgs: Message[] = [];
+        let teacherToStudentMsgs: Message[] = [];
+
+        const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
+        commsUnsubscribe1 = onSnapshot(q1, (snapshot) => {
+            studentToTeacherMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            const allComms = [...studentToTeacherMsgs, ...teacherToStudentMsgs]
+                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+            setCommunications(allComms);
+        });
+
+        const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', teacherEmail), where('type', '==', 'communication'));
+        commsUnsubscribe2 = onSnapshot(q2, (snapshot) => {
+            teacherToStudentMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            const allComms = [...studentToTeacherMsgs, ...teacherToStudentMsgs]
+                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+            setCommunications(allComms);
+        });
+    });
+
+    // Cleanup function
+    return () => {
+        if (notifUnsubscribe) notifUnsubscribe();
+        if (commsUnsubscribe1) commsUnsubscribe1();
+        if (commsUnsubscribe2) commsUnsubscribe2();
+        if (unreadUnsubscribe) unreadUnsubscribe();
+    };
   }, [user]);
 
   async function handleSendMessage() {
@@ -62,7 +99,7 @@ export default function StudentChatPage() {
 
     setIsSending(true);
     try {
-      const message = await createMessage({
+      await createMessage({
         type: 'communication',
         from: student.id,
         to: 'jwag.lang@gmail.com', // Teacher ID (hardcoded for now)
@@ -71,7 +108,7 @@ export default function StudentChatPage() {
         read: false,
       });
 
-      setCommunications(prev => [message, ...prev]);
+      // No longer need to manually update state, listener will do it.
       setNewMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -83,17 +120,7 @@ export default function StudentChatPage() {
   async function handleMarkAsRead(messageId: string) {
     try {
       await markMessageAsRead(messageId);
-      
-      // Update local state
-      setNotifications(prev =>
-        prev.map(msg => msg.id === messageId ? { ...msg, read: true } : msg)
-      );
-      setCommunications(prev =>
-        prev.map(msg => msg.id === messageId ? { ...msg, read: true } : msg)
-      );
-      
-      // Update unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      // No need to manually update state, listeners will handle it.
     } catch (error) {
       console.error('Failed to mark as read:', error);
     }
@@ -126,9 +153,9 @@ export default function StudentChatPage() {
           <TabsTrigger value="communications" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Communications
-            {communications.filter(c => !c.read).length > 0 && (
+            {communications.filter(c => !c.read && c.to === student?.id).length > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {communications.filter(c => !c.read).length}
+                {communications.filter(c => !c.read && c.to === student?.id).length}
               </Badge>
             )}
           </TabsTrigger>
