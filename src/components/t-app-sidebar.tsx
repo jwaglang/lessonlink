@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import {
   SidebarHeader,
   SidebarMenu,
@@ -278,13 +279,13 @@ const AppSidebar = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={pathname === '/t-portal/chat'}
-              tooltip="Chat"
+              isActive={pathname === '/t-portal/messages'}
+              tooltip="Messages"
             >
-              <a href="/t-portal/chat" className="flex items-center gap-2">
+              <Link href="/t-portal/messages" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                <span>Chat</span>
-              </a>
+                <span>Messages</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
