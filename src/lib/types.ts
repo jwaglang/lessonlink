@@ -297,3 +297,27 @@ export function calculateLessonPrice(
   }
   return hourlyRate; // Full hourly rate for 60-min
 }
+
+// ===================================
+// Messages & Notifications
+// ===================================
+
+export type MessageType = 'notification' | 'communication';
+
+export type RelatedEntityType = 'unit' | 'session' | 'package' | 'credit';
+
+export interface Message {
+  id: string;
+  type: MessageType;
+  from: string; // userId or 'system'
+  to: string; // userId
+  content: string;
+  timestamp: string; // ISO string
+  read: boolean;
+  relatedEntity?: {
+    type: RelatedEntityType;
+    id: string;
+  };
+  actionLink?: string; // e.g., "/s-portal/units/abc123"
+  createdAt: string; // ISO string
+}

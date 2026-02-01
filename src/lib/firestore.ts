@@ -15,7 +15,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review, StudentCredit } from './types';
+import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review, StudentCredit, Message } from './types';
 
 // Collection references
 const studentsCollection = collection(db, 'students');
@@ -27,6 +27,7 @@ const approvalRequestsCollection = collection(db, 'approvalRequests');
 const userSettingsCollection = collection(db, 'userSettings');
 const studentPackagesCollection = collection(db, 'studentPackages');
 const studentCreditCollection = collection(db, 'studentCredit');
+export const messagesCollection = collection(db, 'messages');
 const teacherProfilesCollection = collection(db, 'teacherProfiles');
 const reviewsCollection = collection(db, 'reviews');
 const unitsCollection = collection(db, 'units');
@@ -841,7 +842,7 @@ export async function getActiveStudentPackage(studentId: string, courseId?: stri
 }
 
 export async function updateStudentPackage(id: string, data: Partial<StudentPackage>): Promise<StudentPackage> {
-  const docRef = doc(db, 'studentPackages', id);
+  const docRef = doc(db, 'studentPackages', packageId);
   await updateDoc(docRef, data);
   const updated = await getDoc(docRef);
   return { id: updated.id, ...updated.data() } as StudentPackage;
@@ -1390,4 +1391,82 @@ export async function reserveCredit(
     message: `Reserved ${hoursToReserve} hours successfully.`,
     creditId: credit.id
   };
+}
+
+// ===================================
+// Messages & Notifications
+// ===================================
+
+export async function createMessage(data: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
+  const now = new Date().toISOString();
+  const docRef = await addDoc(messagesCollection, {
+    ...data,
+    createdAt: now,
+  });
+  
+  return {
+    id: docRef.id,
+    ...data,
+    createdAt: now,
+  };
+}
+
+export async function getMessagesByUser(userId: string): Promise<Message[]> {
+  const q = query(
+    messagesCollection,
+    where('to', '==', userId),
+    orderBy('timestamp', 'desc')
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Message));
+}
+
+export async function getNotificationsByUser(userId: string): Promise<Message[]> {
+  const q = query(
+    messagesCollection,
+    where('to', '==', userId),
+    where('type', '==', 'notification'),
+    orderBy('timestamp', 'desc')
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Message));
+}
+
+export async function getCommunicationsByUser(userId: string): Promise<Message[]> {
+  const q = query(
+    messagesCollection,
+    where('to', '==', userId),
+    where('type', '==', 'communication'),
+    orderBy('timestamp', 'desc')
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Message));
+}
+
+export async function markMessageAsRead(messageId: string): Promise<void> {
+  const docRef = doc(messagesCollection, messageId);
+  await updateDoc(docRef, { read: true });
+}
+
+export async function getUnreadCount(userId: string): Promise<number> {
+  const q = query(
+    messagesCollection,
+    where('to', '==', userId),
+    where('read', '==', false)
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.length;
 }
