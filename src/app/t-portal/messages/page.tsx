@@ -111,8 +111,7 @@ export default function TeacherMessagesPage() {
     const messagesQuery = query(
       collection(db, 'messages'),
       where('to', '==', selectedStudent.id),
-      where('channel', '==', activeChannel),
-      orderBy('createdAt', 'desc')
+      where('channel', '==', activeChannel)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -120,6 +119,13 @@ export default function TeacherMessagesPage() {
         id: doc.id,
         ...doc.data()
       } as Message));
+      
+      // Sort in memory instead of in query
+      messagesData.sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return b.createdAt.toMillis() - a.createdAt.toMillis();
+      });
+      
       setMessages(messagesData);
     });
 
