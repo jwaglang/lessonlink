@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/components/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,26 +8,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Bell, MessageSquare, Send } from 'lucide-react';
-import { format } from 'date-fns';
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  notificationCount?: number;
-  communicationCount?: number;
-}
-
-interface Message {
-  id: string;
-  from: string;
-  to: string;
-  channel: 'notifications' | 'communications';
-  subject?: string;
-  message: string;
-  read: boolean;
-  createdAt: Timestamp;
-}
+import { format, parseISO } from 'date-fns';
+import {
+  getNotificationsByUser,
+  getCommunicationsByUser,
+  createMessage,
+  getUnreadCountByChannel,
+} from '@/lib/firestore';
+import type { Message, Student } from '@/lib/types';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function TeacherChatPage() {
   const { user } = useAuth();
@@ -41,8 +29,9 @@ export default function TeacherChatPage() {
   const [newSubject, setNewSubject] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [studentCounts, setStudentCounts] = useState<Record<string, { notifications: number; communications: number }>>({});
 
-  // Fetch all students with unread counts
+  // Fetch all students
   useEffect(() => {
     if (!user) return;
 
@@ -53,83 +42,45 @@ export default function TeacherChatPage() {
         ...doc.data()
       } as Student));
 
-      // Get unread counts for each student
-      const studentsWithCounts = await Promise.all(
-        studentsData.map(async (student) => {
-          const notifQuery = query(
-            collection(db, 'messages'),
-            where('to', '==', student.id),
-            where('channel', '==', 'notifications'),
-            where('read', '==', false)
-          );
-          const commQuery = query(
-            collection(db, 'messages'),
-            where('to', '==', student.id),
-            where('channel', '==', 'communications'),
-            where('read', '==', false)
-          );
-
-          const [notifSnapshot, commSnapshot] = await Promise.all([
-            new Promise<number>((resolve) => {
-              const unsub = onSnapshot(notifQuery, (snap) => {
-                resolve(snap.size);
-                unsub();
-              });
-            }),
-            new Promise<number>((resolve) => {
-              const unsub = onSnapshot(commQuery, (snap) => {
-                resolve(snap.size);
-                unsub();
-              });
-            })
-          ]);
-
-          return {
-            ...student,
-            notificationCount: notifSnapshot,
-            communicationCount: commSnapshot
-          };
-        })
-      );
-
-      setStudents(studentsWithCounts);
+      setStudents(studentsData);
       setLoading(false);
 
       // Auto-select first student if none selected
-      if (!selectedStudent && studentsWithCounts.length > 0) {
-        setSelectedStudent(studentsWithCounts[0]);
+      if (!selectedStudent && studentsData.length > 0) {
+        setSelectedStudent(studentsData[0]);
       }
+
+      // Fetch unread counts for each student
+      const counts: Record<string, { notifications: number; communications: number }> = {};
+      for (const student of studentsData) {
+        const notifCount = await getUnreadCountByChannel(student.id, 'notifications');
+        const commCount = await getUnreadCountByChannel(student.id, 'communications');
+        counts[student.id] = {
+          notifications: notifCount,
+          communications: commCount
+        };
+      }
+      setStudentCounts(counts);
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, selectedStudent]);
 
   // Fetch messages for selected student
   useEffect(() => {
     if (!selectedStudent) return;
 
-    const messagesQuery = query(
-      collection(db, 'messages'),
-      where('to', '==', selectedStudent.id),
-      where('channel', '==', activeChannel)
-    );
+    async function loadMessages() {
+      if (activeChannel === 'notifications') {
+        const msgs = await getNotificationsByUser(selectedStudent!.id);
+        setMessages(msgs);
+      } else {
+        const msgs = await getCommunicationsByUser(selectedStudent!.id);
+        setMessages(msgs);
+      }
+    }
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Message));
-      
-      // Sort in memory instead of in query
-      messagesData.sort((a, b) => {
-        if (!a.createdAt || !b.createdAt) return 0;
-        return b.createdAt.toMillis() - a.createdAt.toMillis();
-      });
-      
-      setMessages(messagesData);
-    });
-
-    return () => unsubscribe();
+    loadMessages();
   }, [selectedStudent, activeChannel]);
 
   const handleSendMessage = async () => {
@@ -137,16 +88,17 @@ export default function TeacherChatPage() {
 
     setSending(true);
     try {
-      await addDoc(collection(db, 'messages'), {
+      const message = await createMessage({
+        type: activeChannel,
         from: 'system',
         to: selectedStudent.id,
-        channel: activeChannel,
+        content: newMessage,
         subject: activeChannel === 'notifications' ? newSubject : undefined,
-        message: newMessage,
+        timestamp: new Date().toISOString(),
         read: false,
-        createdAt: serverTimestamp()
       });
 
+      setMessages(prev => [message, ...prev]);
       setNewMessage('');
       setNewSubject('');
     } catch (error) {
@@ -174,34 +126,37 @@ export default function TeacherChatPage() {
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto p-0">
             <div className="space-y-1">
-              {students.map((student) => (
-                <button
-                  key={student.id}
-                  onClick={() => setSelectedStudent(student)}
-                  className={`w-full text-left p-4 hover:bg-accent transition-colors ${
-                    selectedStudent?.id === student.id ? 'bg-accent' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{student.name}</span>
-                    <div className="flex gap-2">
-                      {(student.notificationCount || 0) > 0 && (
-                        <Badge variant="default" className="flex items-center gap-1">
-                          <Bell className="h-3 w-3" />
-                          {student.notificationCount}
-                        </Badge>
-                      )}
-                      {(student.communicationCount || 0) > 0 && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          {student.communicationCount}
-                        </Badge>
-                      )}
+              {students.map((student) => {
+                const counts = studentCounts[student.id] || { notifications: 0, communications: 0 };
+                return (
+                  <button
+                    key={student.id}
+                    onClick={() => setSelectedStudent(student)}
+                    className={`w-full text-left p-4 hover:bg-accent transition-colors ${
+                      selectedStudent?.id === student.id ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{student.name}</span>
+                      <div className="flex gap-2">
+                        {counts.notifications > 0 && (
+                          <Badge variant="default" className="flex items-center gap-1">
+                            <Bell className="h-3 w-3" />
+                            {counts.notifications}
+                          </Badge>
+                        )}
+                        {counts.communications > 0 && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            {counts.communications}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">{student.email}</p>
-                </button>
-              ))}
+                    <p className="text-xs text-muted-foreground mt-1">{student.email}</p>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -221,18 +176,18 @@ export default function TeacherChatPage() {
                     <TabsTrigger value="notifications" className="flex items-center gap-2">
                       <Bell className="h-4 w-4" />
                       Notifications
-                      {(selectedStudent.notificationCount || 0) > 0 && (
+                      {(studentCounts[selectedStudent.id]?.notifications || 0) > 0 && (
                         <Badge variant="default" className="ml-1">
-                          {selectedStudent.notificationCount}
+                          {studentCounts[selectedStudent.id].notifications}
                         </Badge>
                       )}
                     </TabsTrigger>
                     <TabsTrigger value="communications" className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
                       Communications
-                      {(selectedStudent.communicationCount || 0) > 0 && (
+                      {(studentCounts[selectedStudent.id]?.communications || 0) > 0 && (
                         <Badge variant="secondary" className="ml-1">
-                          {selectedStudent.communicationCount}
+                          {studentCounts[selectedStudent.id].communications}
                         </Badge>
                       )}
                     </TabsTrigger>
@@ -251,9 +206,9 @@ export default function TeacherChatPage() {
                             {msg.subject && (
                               <h4 className="font-semibold mb-2">{msg.subject}</h4>
                             )}
-                            <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                             <p className="text-xs text-muted-foreground mt-2">
-                              {msg.createdAt && format(msg.createdAt.toDate(), 'PPp')}
+                              {format(parseISO(msg.timestamp), 'PPp')}
                             </p>
                           </div>
                         ))

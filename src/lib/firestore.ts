@@ -1472,6 +1472,18 @@ export async function getUnreadCount(userId: string): Promise<number> {
   return snapshot.docs.length;
 }
 
+export async function getUnreadCountByChannel(userId: string, channel: 'notifications' | 'communications'): Promise<number> {
+  const q = query(
+    messagesCollection,
+    where('to', '==', userId),
+    where('channel', '==', channel),
+    where('read', '==', false)
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.length;
+}
+
 // ===================================
 // Student Progress
 // ===================================
