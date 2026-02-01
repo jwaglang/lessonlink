@@ -15,7 +15,8 @@ import {
   reserveCredit, 
   getStudentCredit,
   getStudents,
-  createMessage
+  createMessage,
+  createStudentProgress
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -146,9 +147,20 @@ export default function UnitsPage() {
                 return;
             }
             
-            // TODO: Create studentProgress entry
+            // Get session count for this unit
+            const sessions = await getSessionsByUnitId(assigningUnit.id);
             
-            // ✅ NEW: Send notification to student
+            // Create studentProgress entry
+            await createStudentProgress({
+                studentId: selectedStudent,
+                unitId: assigningUnit.id,
+                courseId: courseId,
+                hoursReserved: assigningUnit.estimatedHours,
+                sessionsTotal: sessions.length || 4,
+                status: 'assigned'
+            });
+            
+            // Send notification to student
             await createMessage({
                 type: 'notification',
                 from: 'system',
@@ -178,6 +190,7 @@ export default function UnitsPage() {
                 document.body.style.pointerEvents = '';
             }, 500);
         } catch (error) {
+            console.error('Assignment error:', error);
             toast({ 
                 title: 'Error', 
                 description: 'Failed to assign unit.', 

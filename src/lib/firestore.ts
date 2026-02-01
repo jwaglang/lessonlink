@@ -1489,3 +1489,32 @@ export async function getStudentProgressByStudentId(studentId: string): Promise<
     ...doc.data(),
   }));
 }
+// ===================================
+// Student Progress (CREATE)
+// ===================================
+
+export async function createStudentProgress(data: {
+  studentId: string;
+  unitId: string;
+  courseId: string;
+  hoursReserved: number;
+  sessionsTotal: number;
+  status?: string;
+}) {
+  const docRef = await addDoc(collection(db, 'studentProgress'), {
+    ...data,
+    sessionsCompleted: 0,
+    status: data.status || 'assigned',
+    assignedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  
+  return {
+    id: docRef.id,
+    ...data,
+    sessionsCompleted: 0,
+    status: data.status || 'assigned',
+    assignedAt: new Date().toISOString(),
+  };
+}
