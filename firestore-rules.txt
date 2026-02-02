@@ -141,13 +141,17 @@ service cloud.firestore {
 
     match /messages/{messageId} {
       // Teachers/Admins have full access
-      allow read, write: if isAdmin() || isTeacher();
+      allow read, write: if isTeacher() || isAdmin();
 
+      // Student-specific rules
       // Students can read messages they sent or received
       allow read: if isAssociatedStudent(resource.data.from) || isAssociatedStudent(resource.data.to);
 
       // Students can create messages originating from themselves
-      allow create: if isAssociatedStudent(request.resource.data.from);
+      allow create: if isAssociatedStudent(request.resource.data.from) && request.resource.data.fromType == 'student';
+      
+      // Allow marking a message as read if you are the recipient
+      allow update: if (isAssociatedStudent(resource.data.to) && request.resource.data.read == true && resource.data.read == false);
     }
   }
 }

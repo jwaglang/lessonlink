@@ -43,7 +43,6 @@ export default function TeacherChatPage() {
     setCommunications(allComms);
   }, [incomingComms, outgoingComms]);
 
-
   // Fetch all students and listen for unread messages
   useEffect(() => {
     if (!user?.email) return;
@@ -68,82 +67,85 @@ export default function TeacherChatPage() {
     
     // Single listener for all unread communications to the teacher
     const unreadQuery = query(
-        messagesCollection, 
-        where('to', '==', user.email), 
-        where('read', '==', false), 
-        where('type', '==', 'communication')
+      messagesCollection, 
+      where('to', '==', user.uid), 
+      where('read', '==', false), 
+      where('type', '==', 'communication')
     );
     const unreadUnsubscribe = onSnapshot(unreadQuery, (snapshot) => {
-        const counts: Record<string, number> = {};
-        snapshot.forEach(doc => {
-            const fromId = doc.data().from;
-            counts[fromId] = (counts[fromId] || 0) + 1;
-        });
-        setStudentUnreadCounts(counts);
+      const counts: Record<string, number> = {};
+      snapshot.forEach(doc => {
+        const fromId = doc.data().from;
+        counts[fromId] = (counts[fromId] || 0) + 1;
+      });
+      setStudentUnreadCounts(counts);
     });
 
     return () => {
-        studentsUnsubscribe();
-        unreadUnsubscribe();
+      studentsUnsubscribe();
+      unreadUnsubscribe();
     };
   }, [user, selectedStudent]);
 
   // Fetch messages for the selected student
   useEffect(() => {
-    if (!selectedStudent || !user?.email) {
+    if (!selectedStudent || !user?.uid) {
       setNotifications([]);
       setIncomingComms([]);
       setOutgoingComms([]);
       return;
     };
 
-    const teacherEmail = user.email;
+    const teacherUid = user.uid;
     const studentId = selectedStudent.id;
 
     // Listener for notifications sent to this student by the teacher
     const notifsQuery = query(
-        messagesCollection,
-        where('to', '==', studentId),
-        where('from', '==', teacherEmail),
-        where('type', '==', 'notification')
+      messagesCollection,
+      where('to', '==', studentId),
+      where('from', '==', teacherUid),
+      where('type', '==', 'notification')
     );
     const unsubscribeNotifs = onSnapshot(notifsQuery, (snapshot) => {
-        const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message))
-            .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-        setNotifications(notifs);
+      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message))
+        .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
+      setNotifications(notifs);
     });
 
     // Listener for outgoing communications (teacher -> student)
-    const q1 = query(messagesCollection, where('from', '==', teacherEmail), where('to', '==', studentId), where('type', '==', 'communication'));
+    const q1 = query(messagesCollection, where('from', '==', teacherUid), where('to', '==', studentId), where('type', '==', 'communication'));
     const unsubscribeComms1 = onSnapshot(q1, (snapshot) => {
-        setOutgoingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+      setOutgoingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
     });
 
     // Listener for incoming communications (student -> teacher)
-    const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
+    const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherUid), where('type', '==', 'communication'));
     const unsubscribeComms2 = onSnapshot(q2, (snapshot) => {
-        setIncomingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+      setIncomingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
     });
 
     return () => {
-        unsubscribeNotifs();
-        unsubscribeComms1();
-        unsubscribeComms2();
+      unsubscribeNotifs();
+      unsubscribeComms1();
+      unsubscribeComms2();
     };
   }, [selectedStudent, user]);
 
   const handleSendMessage = async () => {
-    if (!selectedStudent || !newMessage.trim() || !user?.email) return;
+    if (!selectedStudent || !newMessage.trim() || !user?.uid) return;
 
     setSending(true);
     try {
       const messageData: any = {
         type: activeTab,
-        from: user.email, // Teacher sends from their email
+        from: user.uid,
+        fromType: 'teacher',
         to: selectedStudent.id,
+        toType: 'student',
         content: newMessage,
         timestamp: new Date().toISOString(),
         read: false,
+        createdAt: new Date().toISOString(),
       };
 
       if (activeTab === 'notifications' && newSubject) {
@@ -192,7 +194,7 @@ export default function TeacherChatPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{student.name}</span>
                       {unreadCount > 0 && (
-                          <Badge variant="destructive">{unreadCount}</Badge>
+                        <Badge variant="destructive">{unreadCount}</Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{student.email}</p>
@@ -239,7 +241,7 @@ export default function TeacherChatPage() {
                         ) : (
                           notifications.map((msg) => (
                             <div key={msg.id} className="bg-muted p-4 rounded-lg">
-                              <h4 className="font-semibold mb-2">{msg.subject || 'Notification'}</h4>
+                              <h4 className="font-semibold mb-2">{(msg as any).subject || 'Notification'}</h4>
                               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                               <p className="text-xs text-muted-foreground mt-2">{format(parseISO(msg.timestamp), 'PPp')}</p>
                             </div>
@@ -251,25 +253,25 @@ export default function TeacherChatPage() {
                   
                   {/* Communications Tab */}
                   <TabsContent value="communications" className="flex-1 flex flex-col mt-0">
-                     <ScrollArea className="flex-1 p-6">
-                        <div className="space-y-4">
-                          {communications.length === 0 ? (
-                            <p className="text-center text-muted-foreground py-8">No messages yet</p>
-                          ) : (
-                            communications.map((msg) => (
-                              <div key={msg.id} className={`p-4 rounded-lg ${
-                                msg.from === user?.email ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
-                              }`}>
-                                <p className="text-sm font-medium mb-1">
-                                  {msg.from === user?.email ? 'You' : selectedStudent.name}
-                                </p>
-                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                <p className="text-xs text-muted-foreground mt-2">{format(parseISO(msg.timestamp), 'PPp')}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                     </ScrollArea>
+                    <ScrollArea className="flex-1 p-6">
+                      <div className="space-y-4">
+                        {communications.length === 0 ? (
+                          <p className="text-center text-muted-foreground py-8">No messages yet</p>
+                        ) : (
+                          communications.map((msg) => (
+                            <div key={msg.id} className={`p-4 rounded-lg ${
+                              msg.from === user?.uid ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
+                            }`}>
+                              <p className="text-sm font-medium mb-1">
+                                {msg.from === user?.uid ? 'You' : selectedStudent.name}
+                              </p>
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              <p className="text-xs text-muted-foreground mt-2">{format(parseISO(msg.timestamp), 'PPp')}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
                   </TabsContent>
 
                   {/* Message Input - common for both tabs */}

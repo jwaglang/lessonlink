@@ -14,6 +14,7 @@ import {
   markMessageAsRead,
   getStudentByEmail,
   messagesCollection,
+  getTeacherProfileByEmail,
 } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
 import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
@@ -24,6 +25,7 @@ import { query, where, onSnapshot } from 'firebase/firestore';
 export default function StudentChatPage() {
   const { user } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
 
   // States for different message types
   const [notifications, setNotifications] = useState<Message[]>([]);
@@ -53,12 +55,17 @@ export default function StudentChatPage() {
     let unreadUnsubscribe: (() => void) | undefined;
 
     // Fetch student data once, then set up listeners
-    getStudentByEmail(user.email).then(studentData => {
+    async function setupListeners() {
+        const studentData = await getStudentByEmail(user!.email!);
         if (!studentData) return;
         setStudent(studentData);
 
+        const teacherProfile = await getTeacherProfileByEmail('jwag.lang@gmail.com');
+        if (!teacherProfile) return;
+        setTeacherId(teacherProfile.id);
+
         const studentId = studentData.id;
-        const teacherEmail = 'jwag.lang@gmail.com'; // Hardcoded for now
+        const assignedTeacherId = teacherProfile.id;
 
         // --- Real-time listeners ---
 
@@ -78,19 +85,21 @@ export default function StudentChatPage() {
         });
 
         // Listener for outgoing communications (student -> teacher)
-        const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherEmail), where('type', '==', 'communication'));
+        const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', assignedTeacherId), where('type', '==', 'communication'));
         commsUnsubscribe1 = onSnapshot(q1, (snapshot) => {
             const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
             setOutgoingComms(outgoing);
         });
 
         // Listener for incoming communications (teacher -> student)
-        const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', teacherEmail), where('type', '==', 'communication'));
+        const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', assignedTeacherId), where('type', '==', 'communication'));
         commsUnsubscribe2 = onSnapshot(q2, (snapshot) => {
             const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
             setIncomingComms(incoming);
         });
-    });
+    }
+
+    setupListeners();
 
     // Cleanup function
     return () => {
@@ -102,17 +111,20 @@ export default function StudentChatPage() {
   }, [user]);
 
   async function handleSendMessage() {
-    if (!newMessage.trim() || !student || !user) return;
+    if (!newMessage.trim() || !student || !user || !teacherId) return;
 
     setIsSending(true);
     try {
       await createMessage({
         type: 'communication',
         from: student.id,
-        to: 'jwag.lang@gmail.com', // Teacher ID (hardcoded for now)
+        fromType: 'student',
+        to: teacherId, 
+        toType: 'teacher',
         content: newMessage,
         timestamp: new Date().toISOString(),
         read: false,
+        createdAt: new Date().toISOString(),
       });
 
       setNewMessage('');

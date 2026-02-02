@@ -18,6 +18,7 @@ export interface Student {
   lessons: Lesson[];
   goalMet: boolean;
   isNewStudent?: boolean; // true if never had a completed booking
+  assignedTeacherId?: string;
 }
 
 export type LessonStatus = 'paid' | 'unpaid' | 'deducted' | 'scheduled' | 'pending_approval';
@@ -50,7 +51,7 @@ export interface PackageOption {
 }
 
 export interface Course {
-  id: string;
+  id:string;
   title: string;
   pitch: string;
   description: string;
@@ -303,14 +304,16 @@ export function calculateLessonPrice(
 // ===================================
 
 export type MessageType = 'notification' | 'communication';
-
+export type ParticipantType = 'teacher' | 'student' | 'system';
 export type RelatedEntityType = 'unit' | 'session' | 'package' | 'credit';
 
 export interface Message {
   id: string;
   type: MessageType;
-  from: string; // userId or 'system'
-  to: string; // userId
+  from: string; // studentId or teacher UID or 'system'
+  fromType: ParticipantType;
+  to: string; // studentId or teacher UID
+  toType: ParticipantType;
   content: string;
   timestamp: string; // ISO string
   read: boolean;
