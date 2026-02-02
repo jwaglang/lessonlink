@@ -85,7 +85,7 @@ export default function TeacherChatPage() {
       studentsUnsubscribe();
       unreadUnsubscribe();
     };
-  }, [user, selectedStudent]);
+  }, [user]);
 
   // Fetch messages for the selected student
   useEffect(() => {
