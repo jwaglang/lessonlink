@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -57,12 +58,17 @@ export default function TeacherChatPage() {
       setStudents(studentsData);
       setLoading(false);
 
-      if (!selectedStudent && studentsData.length > 0) {
-        setSelectedStudent(studentsData[0]);
-      } else if (selectedStudent) {
-        const updatedSelected = studentsData.find(s => s.id === selectedStudent.id);
-        if(updatedSelected) setSelectedStudent(updatedSelected);
-      }
+      // Use functional update to avoid stale closures on selectedStudent
+      setSelectedStudent(currentSelected => {
+        if (currentSelected) {
+          // If a student is already selected, find their updated data in the new list
+          const updated = studentsData.find(s => s.id === currentSelected.id);
+          // If the selected student was deleted, fall back to the first student
+          return updated || studentsData[0] || null;
+        }
+        // If no student was selected, select the first one
+        return studentsData[0] || null;
+      });
     });
     
     // Single listener for all unread communications to the teacher
@@ -115,13 +121,15 @@ export default function TeacherChatPage() {
     // Listener for outgoing communications (teacher -> student)
     const q1 = query(messagesCollection, where('from', '==', teacherUid), where('to', '==', studentId), where('type', '==', 'communication'));
     const unsubscribeComms1 = onSnapshot(q1, (snapshot) => {
-      setOutgoingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+      const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+      setOutgoingComms(outgoing);
     });
 
     // Listener for incoming communications (student -> teacher)
     const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherUid), where('type', '==', 'communication'));
     const unsubscribeComms2 = onSnapshot(q2, (snapshot) => {
-      setIncomingComms(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
+      const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+      setIncomingComms(incoming);
     });
 
     return () => {
