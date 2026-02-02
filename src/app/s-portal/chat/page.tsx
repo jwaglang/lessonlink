@@ -14,7 +14,6 @@ import {
   markMessageAsRead,
   getStudentByEmail,
   messagesCollection,
-  getTeacherProfileByEmail,
 } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
 import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
@@ -36,7 +35,7 @@ export default function StudentChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('notifications');
+  const [activeTab, setActiveTab] = useState('communications');
 
   // MERGE EFFECT: Combine incoming and outgoing communications
   useEffect(() => {
@@ -60,12 +59,12 @@ export default function StudentChatPage() {
         if (!studentData) return;
         setStudent(studentData);
 
-        const teacherProfile = await getTeacherProfileByEmail('jwag.lang@gmail.com');
-        if (!teacherProfile) return;
-        setTeacherId(teacherProfile.id);
+        // This is the key change: get the assigned teacher's UID
+        const assignedTeacherId = studentData.assignedTeacherId;
+        if (!assignedTeacherId) return;
+        setTeacherId(assignedTeacherId);
 
         const studentId = studentData.id;
-        const assignedTeacherId = teacherProfile.id;
 
         // --- Real-time listeners ---
 

@@ -45,7 +45,7 @@ export default function TeacherChatPage() {
 
   // Fetch all students and listen for unread messages
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.uid) return;
 
     const studentsQuery = query(collection(db, 'students'));
     const studentsUnsubscribe = onSnapshot(studentsQuery, (snapshot) => {

@@ -204,6 +204,9 @@ export async function getStudentById(id: string): Promise<Student | undefined> {
 }
 
 export async function addStudent(data: Pick<Student, 'name' | 'email'>): Promise<Student> {
+  const teacher = await getTeacherProfileByEmail('jwag.lang@gmail.com');
+  const teacherId = teacher ? teacher.id : undefined;
+
   const newStudentData = {
     name: data.name,
     email: data.email,
@@ -213,6 +216,7 @@ export async function addStudent(data: Pick<Student, 'name' | 'email'>): Promise
     paymentStatus: 'unpaid',
     prepaidPackage: { initialValue: 0, balance: 0, currency: 'USD' },
     goalMet: false,
+    assignedTeacherId: teacherId,
   };
 
   const docRef = await addDoc(studentsCollection, newStudentData);
@@ -274,6 +278,9 @@ export async function getOrCreateStudentByEmail(email: string, name?: string): P
     return existing;
   }
 
+  const teacher = await getTeacherProfileByEmail('jwag.lang@gmail.com');
+  const teacherId = teacher ? teacher.id : undefined;
+
   // Create new student if not found
   const newStudentData = {
     name: name || email.split('@')[0],
@@ -284,6 +291,7 @@ export async function getOrCreateStudentByEmail(email: string, name?: string): P
     paymentStatus: 'unpaid',
     prepaidPackage: { initialValue: 0, balance: 0, currency: 'USD' },
     goalMet: false,
+    assignedTeacherId: teacherId,
   };
 
   const docRef = await addDoc(studentsCollection, newStudentData);
