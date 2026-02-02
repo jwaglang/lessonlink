@@ -179,10 +179,10 @@ service cloud.firestore {
     match /messages/{messageId} {
 
       // Teachers/Admins have full access
-      allow read, write: if isTeacher() || isAdmin();
+      allow read, list, write: if isTeacher() || isAdmin();
 
-      // Students can read messages they sent or received (legacy) OR via participants key (new)
-      allow read: if
+      // Students can read + list messages they sent or received (legacy) OR via participants key (new)
+      allow read, list: if
         isAssociatedStudent(resource.data.from) ||
         isAssociatedStudent(resource.data.to) ||
         isParticipantForDoc();

@@ -25,6 +25,13 @@ import { onSnapshot, orderBy, query, where } from 'firebase/firestore';
 export default function StudentChatPage() {
   const { user } = useAuth();
 
+  useEffect(() => {
+    console.log('[StudentChat][AUTH]', {
+      userEmail: user?.email,
+      userUid: user?.uid,
+    });
+  }, [user]);
+
   const [student, setStudent] = useState<Student | null>(null);
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
