@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
+import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import PageHeader from '@/components/page-header';
+import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import Link from 'next/link';
+
 import {
   createMessage,
   markMessageAsRead,
@@ -16,340 +20,253 @@ import {
   messagesCollection,
 } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
-import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import Link from 'next/link';
-import { collection, doc, getDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { onSnapshot, orderBy, query, where } from 'firebase/firestore';
 
 export default function StudentChatPage() {
   const { user } = useAuth();
+
   const [student, setStudent] = useState<Student | null>(null);
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
-  // States for different message types
   const [notifications, setNotifications] = useState<Message[]>([]);
   const [communications, setCommunications] = useState<Message[]>([]);
-  const [incomingComms, setIncomingComms] = useState<Message[]>([]);
-  const [outgoingComms, setOutgoingComms] = useState<Message[]>([]);
 
+  const [activeTab, setActiveTab] = useState<'notifications' | 'communications'>('communications');
   const [newMessage, setNewMessage] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  const [sending, setSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('communications');
 
-  // MERGE EFFECT: Combine incoming and outgoing communications
-  useEffect(() => {
-    const allComms = [...incomingComms, ...outgoingComms]
-      .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-    setCommunications(allComms);
-  }, [incomingComms, outgoingComms]);
-
+  /* ---------------- RESOLVE STUDENT + TEACHER ---------------- */
 
   useEffect(() => {
     if (!user?.email) return;
 
-    let notifUnsubscribe: (() => void) | undefined;
-    let commsUnsubscribe1: (() => void) | undefined;
-    let commsUnsubscribe2: (() => void) | undefined;
-    let unreadUnsubscribe: (() => void) | undefined;
+    (async () => {
+      const s = await getStudentByEmail(user.email);
+      if (!s || !s.assignedTeacherId) return;
+      setStudent(s);
+      setTeacherId(s.assignedTeacherId);
+    })();
+  }, [user]);
 
-    // Fetch student data once, then set up listeners
-    async function setupListeners() {
-            // Debug: Check if onSnapshot exists
-        console.log('onSnapshot exists?', typeof onSnapshot);
-        console.log('Firebase functions:', { onSnapshot, query, where });
-        
-        const studentData = await getStudentByEmail(user!.email!);
-        if (!studentData) return;
-        setStudent(studentData);
+  /* ---------------- UNREAD COUNT ---------------- */
 
-        // This is the key change: get the assigned teacher's UID
-        const assignedTeacherId = studentData.assignedTeacherId;
-        if (!assignedTeacherId) return;
-        setTeacherId(assignedTeacherId);
+  useEffect(() => {
+    if (!student?.id) return;
 
-        const studentId = studentData.id;
+    const q = query(
+      messagesCollection,
+      where('to', '==', student.id),
+      where('read', '==', false)
+    );
 
-        // --- Real-time listeners ---
+    return onSnapshot(
+      q,
+      snap => setUnreadCount(snap.size),
+      err => {
+        console.error('[StudentChat][UNREAD] snapshot error', err);
+        console.log('[StudentChat][UNREAD] studentId=', student?.id);
+      }
+    );
+  }, [student]);
 
-        // Listener for all unread messages
-        const unreadQuery = query(messagesCollection, where('to', '==', studentId), where('read', '==', false));
-        unreadUnsubscribe = onSnapshot(unreadQuery, (snapshot) => {
-            setUnreadCount(snapshot.size);
-        });
+  /* ---------------- NOTIFICATIONS ---------------- */
 
-        // Listener for notifications
-        const notifQuery = query(messagesCollection, where('to', '==', studentId), where('type', '==', 'notification'));
-        notifUnsubscribe = onSnapshot(notifQuery, (snapshot) => {
-            const notifs = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() }) as Message)
-                .sort((a, b) => parseISO(b.timestamp).getTime() - parseISO(a.timestamp).getTime());
-            setNotifications(notifs);
-        });
-
-        // Listener for outgoing communications (student -> teacher)
-        const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', assignedTeacherId), where('type', '==', 'communications'));
-        commsUnsubscribe1 = onSnapshot(q1, (snapshot) => {
-            const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            setOutgoingComms(outgoing);
-        });
-
-        // Listener for incoming communications (teacher -> student)
-        const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', assignedTeacherId), where('type', '==', 'communications'));
-        commsUnsubscribe2 = onSnapshot(q2, (snapshot) => {
-            const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-            setIncomingComms(incoming);
-        });
+  useEffect(() => {
+    if (!student?.id) {
+      setNotifications([]);
+      return;
     }
 
-    setupListeners();
+    const q = query(
+      messagesCollection,
+      where('type', '==', 'notification'),
+      where('to', '==', student.id),
+      orderBy('timestamp', 'desc')
+    );
 
-    // Cleanup function
-    return () => {
-        if (notifUnsubscribe) notifUnsubscribe();
-        if (commsUnsubscribe1) commsUnsubscribe1();
-        if (commsUnsubscribe2) commsUnsubscribe2();
-        if (unreadUnsubscribe) unreadUnsubscribe();
-    };
-  }, [user]);
-  // Add this useEffect to check Firestore directly
-useEffect(() => {
-  if (!student?.id || !teacherId) return;
-  
-  console.log('=== DIRECT FIRESTORE CHECK ===');
-  
-  // Check student document
-  const studentRef = doc(db, 'students', student.id);
-  getDoc(studentRef).then(studentSnap => {
-    console.log('Student Firestore doc:', studentSnap.data());
-  });
-  
-  // Check messages
-  const messagesQuery = query(
-    collection(db, 'messages'),
-    where('to', '==', student.id),
-    where('from', '==', teacherId)
-  );
-  
-  getDocs(messagesQuery).then(snapshot => {
-    console.log('Teacher->Student messages count:', snapshot.size);
-    snapshot.forEach(doc => {
-      console.log('Message found:', doc.id, doc.data());
-    });
-  });
-  
-}, [student?.id, teacherId]);
+    return onSnapshot(
+      q,
+      snap => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        setNotifications(list);
+      },
+      err => {
+        console.error('[StudentChat][NOTIFICATIONS] snapshot error', err);
+        console.log('[StudentChat][NOTIFICATIONS] studentId=', student?.id);
+      }
+    );
+  }, [student]);
+
+  /* ---------------- SINGLE COMMUNICATIONS LISTENER ---------------- */
+
+  useEffect(() => {
+    if (!student?.id || !teacherId) {
+      setCommunications([]);
+      return;
+    }
+
+    const participantKey = `${teacherId}:${student.id}`;
+
+    const q = query(
+      messagesCollection,
+      where('type', '==', 'communications'),
+      where('participants', 'array-contains', participantKey),
+      orderBy('timestamp', 'desc')
+    );
+
+    return onSnapshot(
+      q,
+      snap => {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        setCommunications(list);
+      },
+      err => {
+        console.error('[StudentChat][COMMUNICATIONS] snapshot error', err);
+        console.log(
+          '[StudentChat][COMMUNICATIONS] studentId=',
+          student?.id,
+          'teacherId=',
+          teacherId,
+          'participantKey=',
+          `${teacherId}:${student?.id}`
+        );
+      }
+    );
+  }, [student, teacherId]);
+
+  /* ---------------- SEND MESSAGE ---------------- */
+
   async function handleSendMessage() {
-    if (!newMessage.trim() || !student || !user || !teacherId) return;
+    if (!student || !teacherId || !newMessage.trim()) return;
 
-    setIsSending(true);
+    setSending(true);
     try {
       await createMessage({
         type: 'communications',
         from: student.id,
         fromType: 'student',
-        to: teacherId, 
+        to: teacherId,
         toType: 'teacher',
+        participants: [`${teacherId}:${student.id}`],
         content: newMessage,
         timestamp: new Date().toISOString(),
-        read: false,
         createdAt: new Date().toISOString(),
+        read: false,
       });
-
       setNewMessage('');
-    } catch (error) {
-      console.error('Failed to send message:', error);
     } finally {
-      setIsSending(false);
+      setSending(false);
     }
   }
 
-  async function handleMarkAsRead(messageId: string) {
-    try {
-      await markMessageAsRead(messageId);
-    } catch (error) {
-      console.error('Failed to mark as read:', error);
-    }
+  async function handleMarkAsRead(id: string) {
+    await markMessageAsRead(id);
   }
 
   return (
     <div className="p-4 md:p-8">
-      <PageHeader
-        title="Chat"
-        description="Talk with your tutor!"
-      >
-        {unreadCount > 0 && (
-          <Badge variant="destructive" className="ml-2">
-            {unreadCount} unread
-          </Badge>
-        )}
+      <PageHeader title="Chat" description="Talk with your tutor">
+        {unreadCount > 0 && <Badge variant="destructive">{unreadCount} unread</Badge>}
       </PageHeader>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+      <Tabs value={activeTab} onValueChange={v => setActiveTab(v as any)} className="mt-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
-            {notifications.filter(n => !n.read).length > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {notifications.filter(n => !n.read).length}
-              </Badge>
-            )}
+          <TabsTrigger value="notifications">
+            <Bell className="h-4 w-4 mr-1" /> Notifications
           </TabsTrigger>
-          <TabsTrigger value="communications" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Communications
-            {communications.filter(c => !c.read && c.to === student?.id).length > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {communications.filter(c => !c.read && c.to === student?.id).length}
-              </Badge>
-            )}
+          <TabsTrigger value="communications">
+            <MessageSquare className="h-4 w-4 mr-1" /> Communications
           </TabsTrigger>
         </TabsList>
 
-        {/* Notifications Tab */}
+        {/* Notifications */}
         <TabsContent value="notifications" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                System Notifications
-              </CardTitle>
-              <CardDescription>
-                Updates from LessonLink about your learning progress
-              </CardDescription>
+              <CardTitle>System Notifications</CardTitle>
+              <CardDescription>Updates about your learning</CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[500px] pr-4">
+              <ScrollArea className="h-[420px] pr-4">
                 {notifications.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bell className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>No notifications yet</p>
-                  </div>
+                  <p className="text-muted-foreground text-center py-8">No notifications</p>
                 ) : (
-                  <div className="space-y-3">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 rounded-lg border ${
-                          !notification.read
-                            ? 'bg-primary/5 border-primary/20'
-                            : 'bg-card'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <p className="text-sm">{notification.content}</p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {format(parseISO(notification.timestamp), 'PPp')}
-                            </p>
-                            {notification.actionLink && (
-                              <Link href={notification.actionLink}>
-                                <Button variant="link" size="sm" className="px-0 h-auto mt-2">
-                                  <ExternalLink className="h-3 w-3 mr-1" />
-                                  View Details
-                                </Button>
-                              </Link>
-                            )}
-                          </div>
-                          {!notification.read && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMarkAsRead(notification.id)}
-                            >
-                              Mark Read
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  notifications.map(n => (
+                    <div
+                      key={n.id}
+                      className={`p-4 rounded-lg mb-3 border ${
+                        !n.read ? 'bg-primary/5 border-primary/20' : 'bg-card'
+                      }`}
+                    >
+                      <p>{n.content}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {format(parseISO(n.timestamp), 'PPp')}
+                      </p>
+                      {n.actionLink && (
+                        <Link href={n.actionLink}>
+                          <Button variant="link" size="sm" className="px-0">
+                            <ExternalLink className="h-3 w-3 mr-1" /> View details
+                          </Button>
+                        </Link>
+                      )}
+                      {!n.read && (
+                        <Button variant="ghost" size="sm" onClick={() => handleMarkAsRead(n.id)}>
+                          Mark read
+                        </Button>
+                      )}
+                    </div>
+                  ))
                 )}
               </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Communications Tab */}
+        {/* Communications */}
         <TabsContent value="communications" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Teacher Communications
-              </CardTitle>
-              <CardDescription>
-                Chat with your teacher
-              </CardDescription>
+              <CardTitle>Teacher Communications</CardTitle>
+              <CardDescription>Chat with your teacher</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Message List */}
-              <ScrollArea className="h-[400px] pr-4">
+              <ScrollArea className="h-[360px] pr-4">
                 {communications.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>No messages yet</p>
-                    <p className="text-xs mt-2">Start a conversation with your teacher!</p>
-                  </div>
+                  <p className="text-muted-foreground text-center py-8">No messages yet</p>
                 ) : (
-                  <div className="space-y-3">
-                    {communications.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`p-4 rounded-lg ${
-                          message.from === student?.id
-                            ? 'bg-primary/10 ml-8'
-                            : 'bg-muted mr-8'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium mb-1">
-                              {message.from === student?.id ? 'You' : 'Teacher'}
-                            </p>
-                            <p className="text-sm">{message.content}</p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {format(parseISO(message.timestamp), 'PPp')}
-                            </p>
-                          </div>
-                          {!message.read && message.from !== student?.id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMarkAsRead(message.id)}
-                            >
-                              Mark Read
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  communications.map(m => (
+                    <div
+                      key={m.id}
+                      className={`p-4 rounded-lg mb-3 ${
+                        m.from === student?.id ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
+                      }`}
+                    >
+                      <p className="text-sm font-medium">
+                        {m.from === student?.id ? 'You' : 'Teacher'}
+                      </p>
+                      <p>{m.content}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(parseISO(m.timestamp), 'PPp')}
+                      </p>
+                      {!m.read && m.from !== student?.id && (
+                        <Button variant="ghost" size="sm" onClick={() => handleMarkAsRead(m.id)}>
+                          Mark read
+                        </Button>
+                      )}
+                    </div>
+                  ))
                 )}
               </ScrollArea>
 
-              {/* Message Input */}
               <div className="flex gap-2">
                 <Textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
                   rows={3}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
+                  value={newMessage}
+                  onChange={e => setNewMessage(e.target.value)}
+                  placeholder="Type your message…"
                 />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || isSending}
-                  size="icon"
-                  className="h-auto"
-                >
+                <Button onClick={handleSendMessage} disabled={sending}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
