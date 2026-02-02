@@ -19,7 +19,8 @@ import type { Message, Student } from '@/lib/types';
 import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
-import { query, where, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function StudentChatPage() {
   const { user } = useAuth();
@@ -55,6 +56,10 @@ export default function StudentChatPage() {
 
     // Fetch student data once, then set up listeners
     async function setupListeners() {
+            // Debug: Check if onSnapshot exists
+        console.log('onSnapshot exists?', typeof onSnapshot);
+        console.log('Firebase functions:', { onSnapshot, query, where });
+        
         const studentData = await getStudentByEmail(user!.email!);
         if (!studentData) return;
         setStudent(studentData);
@@ -84,14 +89,14 @@ export default function StudentChatPage() {
         });
 
         // Listener for outgoing communications (student -> teacher)
-        const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', assignedTeacherId), where('type', '==', 'communication'));
+        const q1 = query(messagesCollection, where('from', '==', studentId), where('to', '==', assignedTeacherId), where('type', '==', 'communications'));
         commsUnsubscribe1 = onSnapshot(q1, (snapshot) => {
             const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
             setOutgoingComms(outgoing);
         });
 
         // Listener for incoming communications (teacher -> student)
-        const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', assignedTeacherId), where('type', '==', 'communication'));
+        const q2 = query(messagesCollection, where('to', '==', studentId), where('from', '==', assignedTeacherId), where('type', '==', 'communications'));
         commsUnsubscribe2 = onSnapshot(q2, (snapshot) => {
             const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
             setIncomingComms(incoming);
@@ -108,14 +113,40 @@ export default function StudentChatPage() {
         if (unreadUnsubscribe) unreadUnsubscribe();
     };
   }, [user]);
-
+  // Add this useEffect to check Firestore directly
+useEffect(() => {
+  if (!student?.id || !teacherId) return;
+  
+  console.log('=== DIRECT FIRESTORE CHECK ===');
+  
+  // Check student document
+  const studentRef = doc(db, 'students', student.id);
+  getDoc(studentRef).then(studentSnap => {
+    console.log('Student Firestore doc:', studentSnap.data());
+  });
+  
+  // Check messages
+  const messagesQuery = query(
+    collection(db, 'messages'),
+    where('to', '==', student.id),
+    where('from', '==', teacherId)
+  );
+  
+  getDocs(messagesQuery).then(snapshot => {
+    console.log('Teacher->Student messages count:', snapshot.size);
+    snapshot.forEach(doc => {
+      console.log('Message found:', doc.id, doc.data());
+    });
+  });
+  
+}, [student?.id, teacherId]);
   async function handleSendMessage() {
     if (!newMessage.trim() || !student || !user || !teacherId) return;
 
     setIsSending(true);
     try {
       await createMessage({
-        type: 'communication',
+        type: 'communications',
         from: student.id,
         fromType: 'student',
         to: teacherId, 
@@ -145,8 +176,8 @@ export default function StudentChatPage() {
   return (
     <div className="p-4 md:p-8">
       <PageHeader
-        title="Messages"
-        description="System notifications and teacher communications"
+        title="Chat"
+        description="Talk with your tutor!"
       >
         {unreadCount > 0 && (
           <Badge variant="destructive" className="ml-2">

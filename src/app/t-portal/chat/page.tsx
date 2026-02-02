@@ -76,7 +76,7 @@ export default function TeacherChatPage() {
       messagesCollection, 
       where('to', '==', user.uid), 
       where('read', '==', false), 
-      where('type', '==', 'communication')
+      where('type', '==', 'communications')
     );
     const unreadUnsubscribe = onSnapshot(unreadQuery, (snapshot) => {
       const counts: Record<string, number> = {};
@@ -119,14 +119,14 @@ export default function TeacherChatPage() {
     });
 
     // Listener for outgoing communications (teacher -> student)
-    const q1 = query(messagesCollection, where('from', '==', teacherUid), where('to', '==', studentId), where('type', '==', 'communication'));
+    const q1 = query(messagesCollection, where('from', '==', teacherUid), where('to', '==', studentId), where('type', '==', 'communications'));
     const unsubscribeComms1 = onSnapshot(q1, (snapshot) => {
       const outgoing = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       setOutgoingComms(outgoing);
     });
 
     // Listener for incoming communications (student -> teacher)
-    const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherUid), where('type', '==', 'communication'));
+    const q2 = query(messagesCollection, where('from', '==', studentId), where('to', '==', teacherUid), where('type', '==', 'communications'));
     const unsubscribeComms2 = onSnapshot(q2, (snapshot) => {
       const incoming = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       setIncomingComms(incoming);
