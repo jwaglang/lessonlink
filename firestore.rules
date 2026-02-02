@@ -46,15 +46,19 @@ service cloud.firestore {
     // For an existing message doc: allow participant-based reads for students
     // Our participant key convention is: ["teacherUid:studentId"]
     function isParticipantForDoc() {
-      // Only applies if participants exists and is a list
       return (resource.data.participants is list) &&
         (
-          // If the authed user is the student (associated to studentId), allow if participants contains (assignedTeacherUid:studentId)
-          (isAssociatedStudent(resource.data.to) &&
-            resource.data.participants.hasAny([assignedTeacherUid(resource.data.to) + ":" + resource.data.to])) ||
-
-          (isAssociatedStudent(resource.data.from) &&
-            resource.data.participants.hasAny([assignedTeacherUid(resource.data.from) + ":" + resource.data.from]))
+          // teacher -> student (student is recipient)
+          (
+            isAssociatedStudent(resource.data.to) &&
+            resource.data.participants.hasAny([resource.data.from + ":" + resource.data.to])
+          ) ||
+    
+          // student -> teacher (student is sender)
+          (
+            isAssociatedStudent(resource.data.from) &&
+            resource.data.participants.hasAny([resource.data.to + ":" + resource.data.from])
+          )
         );
     }
 
