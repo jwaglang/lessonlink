@@ -24,6 +24,7 @@ import {
   LogOut,
   BookOpen,
   MessageSquare,
+  CreditCard,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
@@ -447,6 +448,20 @@ const AppSidebar = () => {
                     <a href="/t-portal/students" className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       <span>Students</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === '/t-portal/packages'}
+                    tooltip="Student Packages"
+                    className="w-full justify-start"
+                  >
+                    <a href="/t-portal/packages" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      <span>Student Packages</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

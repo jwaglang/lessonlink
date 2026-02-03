@@ -1329,6 +1329,14 @@ export async function deleteSession(id: string): Promise<void> {
 // STUDENT CREDIT
 // ============================================
 
+export async function getAllStudentCredits(): Promise<StudentCredit[]> {
+    const snapshot = await getDocs(studentCreditCollection);
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as StudentCredit));
+}
+
 export async function getStudentCredit(studentId: string, courseId: string): Promise<StudentCredit | undefined> {
   const q = query(
     studentCreditCollection, 
@@ -1368,6 +1376,11 @@ export async function updateStudentCredit(id: string, data: Partial<StudentCredi
     id: updated.id,
     ...updated.data()
   } as StudentCredit;
+}
+
+export async function deleteStudentCredit(id: string): Promise<void> {
+    const docRef = doc(db, 'studentCredit', id);
+    await deleteDoc(docRef);
 }
 
 export async function reserveCredit(
