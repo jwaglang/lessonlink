@@ -13,12 +13,7 @@ import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 
-import {
-  createMessage,
-  markMessageAsRead,
-  getStudentByEmail,
-  messagesCollection,
-} from '@/lib/firestore';
+import { createMessage, markMessageAsRead, getStudentByEmail, messagesCollection } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
 import { onSnapshot, orderBy, query, where } from 'firebase/firestore';
 
@@ -59,10 +54,11 @@ export default function StudentChatPage() {
   /* ---------------- UNREAD COUNT ---------------- */
 
   useEffect(() => {
-    if (!student?.id) return;
+    if (!student?.id || !user?.uid) return;
 
     const q = query(
       messagesCollection,
+      where('studentAuthUid', '==', user.uid),
       where('to', '==', student.id),
       where('read', '==', false)
     );
@@ -75,18 +71,19 @@ export default function StudentChatPage() {
         console.log('[StudentChat][UNREAD] studentId=', student?.id);
       }
     );
-  }, [student]);
+  }, [student, user]);
 
   /* ---------------- NOTIFICATIONS ---------------- */
 
   useEffect(() => {
-    if (!student?.id) {
+    if (!student?.id || !user?.uid) {
       setNotifications([]);
       return;
     }
 
     const q = query(
       messagesCollection,
+      where('studentAuthUid', '==', user.uid),
       where('type', '==', 'notification'),
       where('to', '==', student.id),
       orderBy('timestamp', 'desc')
@@ -103,12 +100,12 @@ export default function StudentChatPage() {
         console.log('[StudentChat][NOTIFICATIONS] studentId=', student?.id);
       }
     );
-  }, [student]);
+  }, [student, user]);
 
   /* ---------------- SINGLE COMMUNICATIONS LISTENER ---------------- */
 
   useEffect(() => {
-    if (!student?.id || !teacherId) {
+    if (!student?.id || !teacherId || !user?.uid) {
       setCommunications([]);
       return;
     }
@@ -117,6 +114,7 @@ export default function StudentChatPage() {
 
     const q = query(
       messagesCollection,
+      where('studentAuthUid', '==', user.uid),
       where('type', '==', 'communications'),
       where('participants', 'array-contains', participantKey),
       orderBy('timestamp', 'desc')
@@ -140,16 +138,17 @@ export default function StudentChatPage() {
         );
       }
     );
-  }, [student, teacherId]);
+  }, [student, teacherId, user]);
 
   /* ---------------- SEND MESSAGE ---------------- */
 
   async function handleSendMessage() {
-    if (!student || !teacherId || !newMessage.trim()) return;
+    if (!student || !teacherId || !newMessage.trim() || !user?.uid) return;
 
     setSending(true);
     try {
       await createMessage({
+        studentAuthUid: user.uid,
         type: 'communications',
         from: student.id,
         fromType: 'student',

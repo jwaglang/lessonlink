@@ -15,17 +15,19 @@ service cloud.firestore {
     }
 
     function isTeacher() {
-      return isAuthenticated() && exists(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid));
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/teacherProfiles/$(request.auth.uid));
     }
 
     function isOwner(uid) {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
+    // Legacy helper (kept for non-query use; DO NOT use for list/query auth in /messages)
     function isAssociatedStudent(studentId) {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/students/$(studentId)) &&
-             get(/databases/$(database)/documents/students/$(studentId)).data.email == request.auth.token.email;
+        exists(/databases/$(database)/documents/students/$(studentId)) &&
+        get(/databases/$(database)/documents/students/$(studentId)).data.email == request.auth.token.email;
     }
 
     // Returns teacher UID assigned to a given studentId (or null if missing)
@@ -43,23 +45,10 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/students/$(uid));
     }
 
-    // For an existing message doc: allow participant-based reads for students
-    // Our participant key convention is: ["teacherUid:studentId"]
-    function isParticipantForDoc() {
-      return (resource.data.participants is list) &&
-        (
-          // teacher -> student (student is recipient)
-          (
-            isAssociatedStudent(resource.data.to) &&
-            resource.data.participants.hasAny([resource.data.from + ":" + resource.data.to])
-          ) ||
-    
-          // student -> teacher (student is sender)
-          (
-            isAssociatedStudent(resource.data.from) &&
-            resource.data.participants.hasAny([resource.data.to + ":" + resource.data.from])
-          )
-        );
+    // NEW: Get the auth UID stored on a student document
+    // Safe to use for create validation, but not for list/query auth.
+    function studentAuthUid(studentId) {
+      return get(/databases/$(database)/documents/students/$(studentId)).data.authUid;
     }
 
     // For creates: validate participants matches the student<->teacher relationship
@@ -185,34 +174,35 @@ service cloud.firestore {
       // Teachers/Admins have full access
       allow read, list, write: if isTeacher() || isAdmin();
 
-      // Students can read + list messages they sent or received (legacy) OR via participants key (new)
+      // Students: query-safe authorization (NO get()/exists() here)
+      // Requires each message doc to include: studentAuthUid (string)
       allow read, list: if
-        isAssociatedStudent(resource.data.from) ||
-        isAssociatedStudent(resource.data.to) ||
-        isParticipantForDoc();
+        isAuthenticated() &&
+        resource.data.studentAuthUid == request.auth.uid;
 
       // Students can create messages originating from themselves,
-      // only to their assigned teacher, and with valid participants key.
+      // only to their assigned teacher, and must tag studentAuthUid correctly.
       allow create: if
         isAuthenticated() &&
-        // from must be a studentId associated to this authed user
-        isAssociatedStudent(request.resource.data.from) &&
         request.resource.data.fromType == 'student' &&
-        // to must be the assigned teacher uid for that student
-        (request.resource.data.to == assignedTeacherUid(request.resource.data.from)) &&
         request.resource.data.toType == 'teacher' &&
-        // type must be one of the two supported values
         (request.resource.data.type == 'communications' || request.resource.data.type == 'notification') &&
+        // studentAuthUid must be present and match the authed user
+        request.resource.data.studentAuthUid == request.auth.uid &&
+        // The claimed studentId (from) must belong to this auth uid (validated via student doc)
+        request.resource.data.studentAuthUid == studentAuthUid(request.resource.data.from) &&
+        // To must be the assigned teacher uid for that student
+        (request.resource.data.to == assignedTeacherUid(request.resource.data.from)) &&
         // participants must be ["teacherUid:studentId"]
         isParticipantForCreate();
 
-      // Students may only mark a message as read if they are the recipient and only toggling read false->true.
+      // Students may only mark a message as read if the message belongs to them,
+      // only toggling read false->true, and changing nothing else.
       allow update: if
         isAuthenticated() &&
-        isAssociatedStudent(resource.data.to) &&
+        resource.data.studentAuthUid == request.auth.uid &&
         resource.data.read == false &&
         request.resource.data.read == true &&
-        // prevent changing anything else
         request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
     }
   }

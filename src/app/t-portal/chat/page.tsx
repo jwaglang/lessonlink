@@ -118,37 +118,34 @@ export default function TeacherChatPage() {
     });
   }, [user, selectedStudent]);
 
-  /* ---------------- SEND MESSAGE ---------------- */
+/* ---------------- SEND MESSAGE ---------------- */
 
-  async function handleSendMessage() {
-    if (!user?.uid || !selectedStudent || !newMessage.trim()) return;
+async function handleSendMessage() {
+  if (!user?.uid || !selectedStudent || !selectedStudent.authUid || !newMessage.trim()) return;
 
-    setSending(true);
-    try {
-      await createMessage({
-        type: activeTab === 'notifications' ? 'notification' : 'communications',
-        from: user.uid,
-        fromType: 'teacher',
-        to: selectedStudent.id,
-        toType: 'student',
-        participants: [user.uid + ':' + selectedStudent.id],
-        subject: activeTab === 'notifications' ? newSubject || null : null,
-        content: newMessage,
-        timestamp: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        read: false,
-      });
+  setSending(true);
+  try {
+    await createMessage({
+      studentAuthUid: selectedStudent.authUid,
+      type: activeTab === 'notifications' ? 'notification' : 'communications',
+      from: user.uid,
+      fromType: 'teacher',
+      to: selectedStudent.id,
+      toType: 'student',
+      participants: [`${user.uid}:${selectedStudent.id}`],
+      subject: activeTab === 'notifications' ? newSubject || null : null,
+      content: newMessage,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
 
-      setNewMessage('');
-      setNewSubject('');
-    } finally {
-      setSending(false);
-    }
+    setNewMessage('');
+    setNewSubject('');
+  } finally {
+    setSending(false);
   }
-
-  if (loading) {
-    return <p className="p-8 text-muted-foreground">Loading chat…</p>;
-  }
+}
 
   return (
     <div className="container mx-auto p-8">

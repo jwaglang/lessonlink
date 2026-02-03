@@ -4,6 +4,7 @@ export type StudentStatus = 'currently enrolled' | 'unenrolled (package over)' |
 
 export interface Student {
   id: string;
+  authUid: string; // Firebase Auth UID for this student (required)
   name: string;
   email: string;
   avatarUrl: string;
