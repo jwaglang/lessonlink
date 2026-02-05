@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -13,7 +14,7 @@ import {
   subDays,
 } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,9 +24,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { updateLessonStatus } from '@/lib/firestore';
+import { updateLessonStatus, completeSession } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -42,6 +44,7 @@ export default function WeeklyCalendar({
 }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedLesson, setSelectedLesson] = useState<LessonWithStudent | null>(null);
+  const [completingLessonId, setCompletingLessonId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const weekStart = startOfWeek(currentDate);
@@ -62,6 +65,32 @@ export default function WeeklyCalendar({
         toast({ title: 'Success', description: 'Lesson status updated.' });
     } catch(e) {
         toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
+    }
+  }
+
+  async function handleMarkComplete(lessonId: string) {
+    if (!lessonId) return;
+    setCompletingLessonId(lessonId);
+    
+    try {
+      await completeSession(lessonId);
+
+      const updatedState = { status: 'completed' as const, completedAt: new Date().toISOString() };
+      
+      setLessons(prev => prev.map(l => l.id === lessonId ? { ...l, ...updatedState } : l));
+      setSelectedLesson(prev => (prev?.id === lessonId ? { ...prev, ...updatedState } : prev));
+      
+      toast({ title: 'Success', description: 'Lesson marked as complete.' });
+
+    } catch (err: any) {
+      console.error('[handleMarkComplete]', err);
+      toast({
+        title: 'Error Completing Lesson',
+        description: err.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCompletingLessonId(null);
     }
   }
 
@@ -155,6 +184,7 @@ export default function WeeklyCalendar({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="scheduled">Scheduled</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
                                 <SelectItem value="paid">Paid</SelectItem>
                                 <SelectItem value="unpaid">Unpaid</SelectItem>
                                 <SelectItem value="deducted">Deducted from Package</SelectItem>
@@ -162,6 +192,23 @@ export default function WeeklyCalendar({
                         </Select>
                     </div>
                 </div>
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="default"
+                        disabled={selectedLesson?.status === 'completed' || !!completingLessonId}
+                        onClick={() => selectedLesson?.id && handleMarkComplete(selectedLesson.id)}
+                    >
+                        {completingLessonId === selectedLesson.id ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Completing...
+                            </>
+                        ) : (
+                            'Mark Complete'
+                        )}
+                    </Button>
+                </DialogFooter>
                 </>
             )}
         </DialogContent>
