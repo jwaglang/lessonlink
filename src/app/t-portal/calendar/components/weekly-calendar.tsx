@@ -141,12 +141,19 @@ export default function WeeklyCalendar({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="p-2 rounded-lg text-xs cursor-pointer bg-white dark:bg-card-foreground/5 hover:shadow-md transition-shadow"
+                      className={`p-2 rounded-lg text-xs cursor-pointer hover:shadow-md transition-shadow ${
+                        lesson.status === 'completed'
+                          ? 'opacity-60 border border-dashed'
+                          : 'bg-white dark:bg-card-foreground/5'
+                      }`}
                       onClick={() => setSelectedLesson(lesson)}
                     >
                       <p className="font-bold truncate">{lesson.student?.name}</p>
                       <p className="text-muted-foreground truncate">{lesson.title}</p>
                       <p className="text-muted-foreground">{lesson.startTime}</p>
+                      {lesson.status === 'completed' && (
+                        <p className="text-[10px] mt-1 font-semibold text-muted-foreground">Completed</p>
+                      )}
                     </motion.div>
                   ))}
               </div>
