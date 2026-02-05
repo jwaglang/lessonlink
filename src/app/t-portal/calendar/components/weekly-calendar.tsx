@@ -177,7 +177,7 @@ export default function WeeklyCalendar({
                         </div>
                     </div>
                     <div>
-                        <h4 className="font-semibold mb-2">Payment Status</h4>
+                        <h4 className="font-semibold mb-2">Lesson Status</h4>
                         <Select value={selectedLesson.status} onValueChange={handleLessonStatusChange}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Set status" />
@@ -186,7 +186,6 @@ export default function WeeklyCalendar({
                                 <SelectItem value="scheduled">Scheduled</SelectItem>
                                 <SelectItem value="completed">Completed</SelectItem>
                                 <SelectItem value="paid">Paid</SelectItem>
-                                <SelectItem value="unpaid">Unpaid</SelectItem>
                                 <SelectItem value="deducted">Deducted from Package</SelectItem>
                             </SelectContent>
                         </Select>
