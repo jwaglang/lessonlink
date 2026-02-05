@@ -15,6 +15,8 @@ import {
   setDoc,
   limit,
   onSnapshot,
+  runTransaction,
+  increment,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, UserSettings, StudentPackage, TeacherProfile, Review, StudentCredit, Message, Unit } from './types';
@@ -352,14 +354,25 @@ export async function bookLesson(data: {
   startTime: string;
   endTime: string;
   rate: number;
+
+  // required for completion workflow
+  courseId: string;
+  unitId: string;
+  sessionId: string; // template session id
+  durationHours: number; // 0.5 | 1
+  teacherUid: string;
+  studentAuthUid: string;
 }): Promise<Lesson> {
   const newLessonData = {
     ...data,
     status: 'scheduled' as const,
+    completedAt: null as any, // keep Lesson typing happy if it doesn't include this yet
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
   };
 
   const docRef = await addDoc(lessonsCollection, newLessonData);
-  
+
   // Mark the availability slot as no longer available
   const { formatISO, startOfDay } = await import('date-fns');
   const dateISO = formatISO(startOfDay(new Date(data.date)));
@@ -371,14 +384,95 @@ export async function bookLesson(data: {
   const availSnapshot = await getDocs(availQuery);
   if (!availSnapshot.empty) {
     await updateDoc(doc(db, 'availability', availSnapshot.docs[0].id), {
-      isAvailable: false
+      isAvailable: false,
     });
   }
 
   return {
     id: docRef.id,
-    ...newLessonData
-  };
+    ...newLessonData,
+  } as Lesson;
+}
+
+export async function completeSession(lessonId: string): Promise<{ success: boolean; message: string }> {
+  const lessonRef = doc(db, 'lessons', lessonId);
+
+  await runTransaction(db, async (tx) => {
+    const lessonSnap = await tx.get(lessonRef);
+    if (!lessonSnap.exists()) throw new Error('Lesson not found');
+
+    const lesson = lessonSnap.data() as any;
+
+    if (lesson.status === 'completed') {
+      return; // idempotent
+    }
+
+    const {
+      studentId,
+      courseId,
+      unitId,
+      durationHours,
+    } = lesson;
+
+    if (!studentId || !courseId || !unitId || !durationHours) {
+      throw new Error('Lesson missing required completion fields (studentId/courseId/unitId/durationHours)');
+    }
+
+    // 1) Update lesson
+    tx.update(lessonRef, {
+      status: 'completed',
+      completedAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    // 2) Update studentProgress (find the assigned unit progress doc)
+    const progressQuery = query(
+      studentProgressCollection,
+      where('studentId', '==', studentId),
+      where('courseId', '==', courseId),
+      where('unitId', '==', unitId),
+      limit(1)
+    );
+
+    const progressSnap = await getDocs(progressQuery);
+    if (progressSnap.empty) {
+      throw new Error('studentProgress not found for this student/course/unit');
+    }
+    const progressDoc = progressSnap.docs[0];
+    tx.update(progressDoc.ref, {
+      sessionsCompleted: increment(1),
+      totalHoursCompleted: increment(durationHours),
+      lastActivityAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // 3) Update studentCredit (same lookup logic you confirmed)
+    const creditQuery = query(
+      studentCreditCollection,
+      where('studentId', '==', studentId),
+      where('courseId', '==', courseId),
+      limit(1)
+    );
+    const creditSnap = await getDocs(creditQuery);
+    if (creditSnap.empty) {
+      throw new Error('studentCredit not found for this student/course');
+    }
+    const creditDoc = creditSnap.docs[0];
+
+    const credit = creditDoc.data() as any;
+    const newCommitted = (credit.committedHours ?? 0) - durationHours;
+    if (newCommitted < -0.00001) {
+      throw new Error(`Credit underflow: committedHours would go negative (${newCommitted})`);
+    }
+
+    tx.update(creditDoc.ref, {
+      committedHours: increment(-durationHours),
+      completedHours: increment(durationHours),
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
+  return { success: true, message: 'Session completed.' };
 }
 
 export async function rescheduleLesson(
@@ -1468,7 +1562,7 @@ export async function getCommunicationsByUser(userId: string): Promise<Message[]
   const q = query(
     messagesCollection,
     where('to', '==', userId),
-    where('type', '==', 'communication'),
+    where('type', '==', 'communications'),
     orderBy('timestamp', 'desc')
   );
   
@@ -1553,3 +1647,4 @@ export async function createStudentProgress(data: {
     assignedAt: new Date().toISOString(),
   };
 }
+
