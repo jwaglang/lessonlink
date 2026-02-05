@@ -43,6 +43,15 @@ function BookingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const courseIdFromQuery = searchParams.get('courseId');
+  const unitIdFromQuery = searchParams.get('unitId');
+  const sessionIdFromQuery = searchParams.get('sessionId');
+
+  // TODO: replace with real teacher auth uid if/when you store it.
+  // For now, we keep it consistent and non-empty.
+  const teacherUid = 'jwag.lang@gmail.com';
+
+
   const [student, setStudent] = useState<Student | null>(null);
   const [availableSlots, setAvailableSlots] = useState<Availability[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -95,15 +104,32 @@ function BookingPageContent() {
   }, [user]);
 
   async function handleBookLesson() {
-    if (!selectedSlot || !selectedCourse || !student) return;
-    
-    setIsBooking(true);
-    
-    const course = courses.find(c => c.id === selectedCourse);
-    if (!course) return;
+    if (!selectedSlot || !selectedCourse || !student || !user?.uid) return;
 
-    const lessonPrice = calculateLessonPrice(course.hourlyRate, selectedDuration, course.discount60min);
-    const endHour = parseInt(selectedSlot.time.split(':')[0]) + (selectedDuration / 60);
+    // Require unit/session linkage for Phase 3D completion workflow
+    const unitId = unitIdFromQuery;
+    const sessionId = sessionIdFromQuery;
+
+    if (!unitId || !sessionId) {
+      console.error('Missing unitId/sessionId in booking URL');
+      return;
+    }
+
+    setIsBooking(true);
+
+    const course = courses.find((c) => c.id === selectedCourse);
+    if (!course) {
+      setIsBooking(false);
+      return;
+    }
+
+    const lessonPrice = calculateLessonPrice(
+      course.hourlyRate,
+      selectedDuration,
+      course.discount60min
+    );
+
+    const endHour = parseInt(selectedSlot.time.split(':')[0]) + selectedDuration / 60;
     const endTime = `${endHour.toString().padStart(2, '0')}:00`;
 
     try {
@@ -118,10 +144,11 @@ function BookingPageContent() {
           lessonTime: selectedSlot.time,
           reason: 'First-time booking requires teacher approval.',
         });
-        
+
         setBookingResult({
           type: 'pending_approval',
-          message: 'As a new student, your booking request has been sent to the teacher for approval. You will be notified once it is reviewed.'
+          message:
+            'As a new student, your booking request has been sent to the teacher for approval. You will be notified once it is reviewed.',
         });
       } else {
         await bookLesson({
@@ -131,13 +158,20 @@ function BookingPageContent() {
           startTime: selectedSlot.time,
           endTime: endTime,
           rate: lessonPrice,
+
+          courseId: selectedCourse,
+          unitId,
+          sessionId,
+          durationHours: selectedDuration / 60,
+          teacherUid,
+          studentAuthUid: user.uid,
         });
-        
-        setAvailableSlots(prev => prev.filter(s => s.id !== selectedSlot.id));
-        
+
+        setAvailableSlots((prev) => prev.filter((s) => s.id !== selectedSlot.id));
+
         setBookingResult({
           type: 'success',
-          message: 'Your lesson has been successfully scheduled!'
+          message: 'Your lesson has been successfully scheduled!',
         });
       }
     } catch (error) {
