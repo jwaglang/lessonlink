@@ -439,10 +439,16 @@ export async function completeSession(lessonId: string): Promise<{ success: bool
       throw new Error('studentProgress not found for this student/course/unit');
     }
     const progressDoc = progressSnap.docs[0];
+    const progressData = progressDoc.data() as any;
+    const currentCompleted = Number(progressData.sessionsCompleted ?? 0);
+    const sessionsTotal = Number(progressData.sessionsTotal ?? 0);
+    const nextCompleted = currentCompleted + 1;
+
     tx.update(progressDoc.ref, {
       sessionsCompleted: increment(1),
       totalHoursCompleted: increment(durationHours),
       lastActivityAt: new Date().toISOString(),
+      status: sessionsTotal > 0 && nextCompleted >= sessionsTotal ? 'completed' : (progressData.status || 'assigned'),
       updatedAt: new Date().toISOString(),
     });
 
@@ -1647,4 +1653,5 @@ export async function createStudentProgress(data: {
     assignedAt: new Date().toISOString(),
   };
 }
+
 
