@@ -22,21 +22,32 @@ export interface Student {
   assignedTeacherId?: string;
 }
 
-export type LessonStatus = 'paid' | 'unpaid' | 'deducted' | 'scheduled' | 'pending_approval';
-
 export interface Lesson {
   id: string;
+
+  // scheduling
   studentId: string;
   title: string;
-  date: string; // ISO string
+  date: string;
   startTime: string;
   endTime: string;
-  status: LessonStatus;
-  paymentAmount?: number;
-  paymentCurrency?: string;
   rate: number;
-  packageId?: string; // if booked as part of a package
+  status: 'scheduled' | 'completed' | 'paid' | 'deducted';
+
+  // completion + linkage
+  courseId: string;
+  unitId: string;
+  sessionId: string; // template session id
+  durationHours: number; // 0.5 | 1
+  teacherUid: string;
+  studentAuthUid: string;
+
+  // lifecycle
+  completedAt?: any | null;
+  createdAt?: any;
+  updatedAt?: any;
 }
+
 
 export interface Availability {
   id: string;
