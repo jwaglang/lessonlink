@@ -57,7 +57,7 @@ export default function AdminDashboardPage() {
         const totalStudents = studentsSnap.size;
 
         // Fetch lessons
-        const lessonsSnap = await getDocs(collection(db, 'lessons'));
+        const lessonsSnap = await getDocs(collection(db, 'sessionInstances'));
         const lessons = lessonsSnap.docs.map(doc => doc.data());
         const totalLessons = lessons.length;
         const now = new Date().toISOString();
@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
 
         // Fetch pending approvals
         const approvalsSnap = await getDocs(
-          query(collection(db, 'lessons'), where('status', '==', 'pending_approval'))
+          query(collection(db, 'approvalRequests'), where('status', '==', 'pending'))
         );
         const pendingApprovals = approvalsSnap.size;
 

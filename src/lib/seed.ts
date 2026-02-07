@@ -21,7 +21,7 @@ const studentsData = [
   { name: 'David Brown', email: 'david.b@example.com', avatarUrl: '/avatars/student5.png', status: 'MIA', enrollmentStatus: 'Active', paymentStatus: 'unpaid', prepaidPackage: { initialValue: 0, balance: 0, currency: 'CNY' }, goalMet: false },
 ];
 
-const getLessonsData = (studentIds: string[]) => [
+const getSessionInstancesData = (studentIds: string[]) => [
   { studentId: studentIds[0], title: 'Algebra II', date: formatISO(subDays(today, 10)), startTime: '10:00', endTime: '11:00', status: 'paid', rate: 25, paymentAmount: 25, paymentCurrency: 'USD' },
   { studentId: studentIds[0], title: 'Algebra II', date: formatISO(subDays(today, 3)), startTime: '10:00', endTime: '11:00', status: 'deducted', rate: 25 },
   { studentId: studentIds[0], title: 'Algebra II', date: formatISO(addDays(today, 4)), startTime: '10:00', endTime: '11:00', status: 'scheduled', rate: 25 },
@@ -54,7 +54,7 @@ export async function seedDatabase() {
 
   await clearCollection('courses');
   await clearCollection('students');
-  await clearCollection('lessons');
+  await clearCollection('sessionInstances');
   await clearCollection('availability');
 
   for (const course of coursesData) {
@@ -69,11 +69,11 @@ export async function seedDatabase() {
   }
   console.log('✅ Students added');
 
-  const lessonsData = getLessonsData(studentIds);
-  for (const lesson of lessonsData) {
-    await addDoc(collection(db, 'lessons'), lesson);
+  const sessionInstancesData = getSessionInstancesData(studentIds);
+  for (const sessionInstance of sessionInstancesData) {
+    await addDoc(collection(db, 'sessionInstances'), sessionInstance);
   }
-  console.log('✅ Lessons added');
+  console.log('✅ SessionInstances added');
 
   for (const slot of availabilityData) {
     await addDoc(collection(db, 'availability'), slot);

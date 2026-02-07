@@ -68,14 +68,17 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || isTeacher();
     }
 
-    match /lessons/{lessonId} {
-      allow read, list: if isAuthenticated();
-      allow write: if isAdmin() || isTeacher();
-    }
-
     match /availability/{availId} {
       allow read, list: if true;
       allow write: if isAdmin() || isTeacher();
+    }
+
+    // ===================================
+    // SESSION INSTANCES (booked classes)
+    // ===================================
+    match /sessionInstances/{sessionInstanceId} {
+      allow read, list: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isTeacher();
     }
 
     match /courseTemplates/{courseId} {
