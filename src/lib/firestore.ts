@@ -23,7 +23,7 @@ import type { Student, Lesson, Availability, Course, Level, ApprovalRequest, Use
 
 // Collection references
 const studentsCollection = collection(db, 'students');
-const lessonsCollection = collection(db, 'lessons');
+const sessionInstancesCollection = collection(db, 'sessionInstances');
 const availabilityCollection = collection(db, 'availability');
 const coursesCollection = collection(db, 'courses');
 const levelsCollection = collection(db, 'levels');
@@ -164,7 +164,7 @@ export async function deleteLevel(id: string): Promise<void> {
 
 export async function getStudents(): Promise<Student[]> {
   const studentsSnapshot = await getDocs(studentsCollection);
-  const lessonsSnapshot = await getDocs(lessonsCollection);
+  const lessonsSnapshot = await getDocs(sessionInstancesCollection);
   
   const allLessons = lessonsSnapshot.docs.map(doc => ({
     id: doc.id,
@@ -191,7 +191,7 @@ export async function getStudentById(id: string): Promise<Student | undefined> {
   }
 
   // Get student's lessons
-  const lessonsQuery = query(lessonsCollection, where('studentId', '==', id));
+  const lessonsQuery = query(sessionInstancesCollection, where('studentId', '==', id));
   const lessonsSnapshot = await getDocs(lessonsQuery);
   const lessons = lessonsSnapshot.docs.map(doc => ({
     id: doc.id,
@@ -259,7 +259,7 @@ export async function getStudentByEmail(email: string): Promise<Student | undefi
   const docSnap = snapshot.docs[0];
   
   // Get student's lessons
-  const lessonsQuery = query(lessonsCollection, where('studentId', '==', docSnap.id));
+  const lessonsQuery = query(sessionInstancesCollection, where('studentId', '==', docSnap.id));
   const lessonsSnapshot = await getDocs(lessonsQuery);
   const lessons = lessonsSnapshot.docs.map(doc => ({
     id: doc.id,
@@ -307,7 +307,7 @@ export async function getOrCreateStudentByEmail(email: string, name?: string): P
 
 export async function deleteStudent(studentId: string): Promise<void> {
   // 1. Find and delete all lessons for this student
-  const lessonsQuery = query(lessonsCollection, where('studentId', '==', studentId));
+  const lessonsQuery = query(sessionInstancesCollection, where('studentId', '==', studentId));
   const lessonsSnapshot = await getDocs(lessonsQuery);
   const deletePromises: Promise<void>[] = [];
   lessonsSnapshot.forEach((doc) => {
@@ -325,7 +325,7 @@ export async function deleteStudent(studentId: string): Promise<void> {
 // ============================================
 
 export async function getLessonsByStudentId(studentId: string): Promise<Lesson[]> {
-  const q = query(lessonsCollection, where('studentId', '==', studentId));
+  const q = query(sessionInstancesCollection, where('studentId', '==', studentId));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({
     id: doc.id,
@@ -334,7 +334,7 @@ export async function getLessonsByStudentId(studentId: string): Promise<Lesson[]
 }
 
 export async function getLessonById(id: string): Promise<Lesson | undefined> {
-  const docRef = doc(db, 'lessons', id);
+  const docRef = doc(db, 'sessionInstances', id);
   const docSnap = await getDoc(docRef);
   
   if (!docSnap.exists()) {
@@ -371,7 +371,7 @@ export async function bookLesson(data: {
     updatedAt: Timestamp.now(),
   };
 
-  const docRef = await addDoc(lessonsCollection, newLessonData);
+  const docRef = await addDoc(sessionInstancesCollection, newLessonData);
 
   // Mark the availability slot as no longer available
   const { formatISO, startOfDay } = await import('date-fns');
@@ -395,7 +395,7 @@ export async function bookLesson(data: {
 }
 
 export async function completeSession(lessonId: string): Promise<{ success: boolean; message: string }> {
-  const lessonRef = doc(db, 'lessons', lessonId);
+  const lessonRef = doc(db, 'sessionInstances', lessonId);
 
   await runTransaction(db, async (tx) => {
     const lessonSnap = await tx.get(lessonRef);
@@ -489,7 +489,7 @@ export async function rescheduleLesson(
   studentId: string,
   forceApproval: boolean = false
 ): Promise<{ success: boolean; lesson?: Lesson; approvalRequired?: boolean; approvalRequest?: ApprovalRequest }> {
-  const lessonRef = doc(db, 'lessons', lessonId);
+  const lessonRef = doc(db, 'sessionInstances', lessonId);
   const lessonSnap = await getDoc(lessonRef);
   
   if (!lessonSnap.exists()) {
@@ -581,7 +581,7 @@ export async function cancelLesson(
   studentId: string,
   forceApproval: boolean = false
 ): Promise<{ success: boolean; approvalRequired?: boolean; approvalRequest?: ApprovalRequest }> {
-  const lessonRef = doc(db, 'lessons', lessonId);
+  const lessonRef = doc(db, 'sessionInstances', lessonId);
   const lessonSnap = await getDoc(lessonRef);
   
   if (!lessonSnap.exists()) {
@@ -655,7 +655,7 @@ export async function getAvailableSlots(): Promise<Availability[]> {
 // ============================================
 
 export async function getLessons(): Promise<Lesson[]> {
-  const snapshot = await getDocs(lessonsCollection);
+  const snapshot = await getDocs(sessionInstancesCollection);
   return snapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
@@ -668,7 +668,7 @@ export async function addLesson(data: Omit<Lesson, 'id' | 'status'>): Promise<Le
     status: 'scheduled' as const,
   };
 
-  const docRef = await addDoc(lessonsCollection, newLessonData);
+  const docRef = await addDoc(sessionInstancesCollection, newLessonData);
   
   return {
     id: docRef.id,
@@ -677,7 +677,7 @@ export async function addLesson(data: Omit<Lesson, 'id' | 'status'>): Promise<Le
 }
 
 export async function updateLessonStatus(id: string, status: Lesson['status']): Promise<Lesson> {
-  const docRef = doc(db, 'lessons', id);
+  const docRef = doc(db, 'sessionInstances', id);
   const updateData: Record<string, any> = { status };
 
   // If lesson is marked as paid, add payment info
@@ -1669,6 +1669,7 @@ export async function createStudentProgress(data: {
     assignedAt: new Date().toISOString(),
   };
 }
+
 
 
 
