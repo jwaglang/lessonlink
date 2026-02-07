@@ -490,7 +490,7 @@ export async function rescheduleLesson(
   forceApproval: boolean = false
 ): Promise<{ success: boolean; lesson?: Lesson; approvalRequired?: boolean; approvalRequest?: ApprovalRequest }> {
   const lessonRef = doc(db, 'sessionInstances', lessonId);
-  const lessonSnap = await getDoc(lessonRef);
+  const lessonSnap = await getDoc(docRef);
   
   if (!lessonSnap.exists()) {
     throw new Error("Lesson not found");
@@ -800,84 +800,193 @@ export async function getApprovalRequests(status?: 'pending' | 'approved' | 'den
 }
 
 export async function resolveApprovalRequest(
-  requestId: string, 
+  requestId: string,
   resolution: 'approved' | 'denied'
 ): Promise<ApprovalRequest> {
-  const docRef = doc(db, 'approvalRequests', requestId);
-  const requestSnap = await getDoc(docRef);
-  
-  if (!requestSnap.exists()) {
-    throw new Error("Approval request not found");
+  const approvalRef = doc(db, 'approvalRequests', requestId);
+  const approvalSnap = await getDoc(approvalRef);
+
+  if (!approvalSnap.exists()) {
+    throw new Error('Approval request not found');
   }
 
-  const request = requestSnap.data() as ApprovalRequest;
-  
-  await updateDoc(docRef, {
-    status: resolution,
-    resolvedAt: new Date().toISOString()
-  });
+  const request = approvalSnap.data() as ApprovalRequest;
 
-  // If approved, execute the action
-  if (resolution === 'approved') {
-    if (request.type === 'new_student_booking' && request.lessonDate && request.lessonTime && request.lessonTitle) {
-      // Validate linkage fields exist (new student approvals must include these now)
-      if (!request.courseId || !request.unitId || !request.sessionId || !request.durationHours || !request.teacherUid || !request.studentAuthUid) {
-        throw new Error('Approval request is missing required lesson linkage fields (courseId/unitId/sessionId/durationHours/teacherUid/studentAuthUid).');
+  // Deny = simple update only
+  if (resolution === 'denied') {
+    await updateDoc(approvalRef, {
+      status: 'denied',
+      resolvedAt: new Date().toISOString(),
+    });
+
+    const updated = await getDoc(approvalRef);
+    return { id: updated.id, ...updated.data() } as ApprovalRequest;
+  }
+
+  // Approved: atomic(ish) assign-progress + reserve-credit + create sessionInstance + mark approval approved
+  if (request.type === 'new_student_booking' && request.lessonDate && request.lessonTime && request.lessonTitle) {
+    // Validate linkage fields exist (these are REQUIRED for creating a valid sessionInstance)
+    if (
+      !request.studentId ||
+      !request.courseId ||
+      !request.unitId ||
+      !request.sessionId ||
+      !request.durationHours ||
+      !request.teacherUid ||
+      !request.studentAuthUid
+    ) {
+      throw new Error(
+        'Approval request missing required linkage fields (studentId/courseId/unitId/sessionId/durationHours/teacherUid/studentAuthUid).'
+      );
+    }
+
+    // Compute endTime (keeps your existing behavior)
+    const startHour = parseInt(request.lessonTime.split(':')[0], 10);
+    const endHour = startHour + request.durationHours;
+    const endTime = `${Math.floor(endHour).toString().padStart(2, '0')}:${endHour % 1 === 0.5 ? '30' : '00'}`;
+
+    // Rate: keep existing behavior but respect duration + 60-min discount if present
+    const durationMinutes = Math.round(request.durationHours * 60);
+    const courses = await getCourses();
+    const course = courses.find((c) => c.id === request.courseId) || courses.find((c) => c.title === request.lessonTitle);
+
+    const baseRate = course ? course.hourlyRate * request.durationHours : 0;
+    const discountedRate =
+      course && durationMinutes === 60 && course.discount60min ? baseRate * (1 - course.discount60min / 100) : baseRate;
+
+    // We'll create the instance inside the transaction with an auto-id
+    const newInstanceRef = doc(sessionInstancesCollection);
+
+    await runTransaction(db, async (tx) => {
+      // 1) Ensure studentProgress exists for (studentId, courseId, unitId)
+      const progressQuery = query(
+        studentProgressCollection,
+        where('studentId', '==', request.studentId),
+        where('courseId', '==', request.courseId),
+        where('unitId', '==', request.unitId),
+        limit(1)
+      );
+
+      const progressSnap = await getDocs(progressQuery);
+
+      if (progressSnap.empty) {
+        // sessionsTotal = count session templates for this unit
+        const sessionsQ = query(sessionsCollection, where('unitId', '==', request.unitId));
+        const sessionsSnap = await getDocs(sessionsQ);
+        const sessionsTotal = sessionsSnap.size;
+
+        const progressRef = doc(studentProgressCollection);
+        tx.set(progressRef, {
+          studentId: request.studentId,
+          courseId: request.courseId,
+          unitId: request.unitId,
+          sessionsTotal,
+          sessionsCompleted: 0,
+          totalHoursCompleted: 0,
+          hoursReserved: 0, // per your lifecycle doc: no unit-level reservation
+          status: 'assigned',
+          assignedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
       }
-      
-      const durationMinutes = Math.round(request.durationHours * 60);
-      const startHour = parseInt(request.lessonTime.split(':')[0], 10);
-      const endHour = startHour + request.durationHours;
-      const endTime = `${Math.floor(endHour).toString().padStart(2, '0')}:${endHour % 1 === 0.5 ? '30' : '00'}`;
-      
-      // Rate: keep existing behavior but respect duration + 60-min discount if present
-      const courses = await getCourses();
-      const course = courses.find(c => c.id === request.courseId) || courses.find(c => c.title === request.lessonTitle);
-      
-      const baseRate = course ? course.hourlyRate * request.durationHours : 0;
-      const discountedRate =
-        course && durationMinutes === 60 && course.discount60min
-          ? baseRate * (1 - course.discount60min / 100)
-          : baseRate;
-      
-      await bookLesson({
+
+      // 2) Reserve credit per sessionInstance (only if studentCredit exists)
+      const creditQuery = query(
+        studentCreditCollection,
+        where('studentId', '==', request.studentId),
+        where('courseId', '==', request.courseId),
+        limit(1)
+      );
+
+      const creditSnap = await getDocs(creditQuery);
+
+      if (!creditSnap.empty) {
+        const creditDoc = creditSnap.docs[0];
+        const credit = creditDoc.data() as any;
+
+        const uncommitted = Number(credit.uncommittedHours ?? 0);
+        if (uncommitted < request.durationHours) {
+          throw new Error(
+            `Insufficient credit. Available: ${uncommitted}h, Required: ${request.durationHours}h`
+          );
+        }
+
+        tx.update(creditDoc.ref, {
+          uncommittedHours: increment(-request.durationHours),
+          committedHours: increment(request.durationHours),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      // 3) Create the sessionInstance (booked class)
+      tx.set(newInstanceRef, {
         studentId: request.studentId,
         title: request.lessonTitle,
         date: request.lessonDate,
         startTime: request.lessonTime,
         endTime,
         rate: discountedRate,
-      
+
         courseId: request.courseId,
         unitId: request.unitId,
         sessionId: request.sessionId,
         durationHours: request.durationHours,
         teacherUid: request.teacherUid,
         studentAuthUid: request.studentAuthUid,
+
+        status: 'scheduled',
+        completedAt: null,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       });
-    } else if (request.type === 'late_reschedule' && request.lessonId && request.newDate && request.newTime) {
-      // Calculate end time (assume same duration)
-      const lesson = await getLessonById(request.lessonId);
-      if (lesson) {
-        const startHour = parseInt(request.newTime.split(':')[0]);
-        const originalStart = parseInt(lesson.startTime.split(':')[0]);
-        const originalEnd = parseInt(lesson.endTime.split(':')[0]);
-        const duration = originalEnd - originalStart;
-        const endTime = `${(startHour + duration).toString().padStart(2, '0')}:00`;
-        
-        await rescheduleLesson(request.lessonId, request.newDate, request.newTime, endTime, request.studentId, true);
-      }
-    } else if (request.type === 'late_cancel' && request.lessonId) {
-      await cancelLesson(request.lessonId, request.studentId, true);
+
+      // 4) Mark approval approved + store the created instance id (handy for debugging)
+      tx.update(approvalRef, {
+        status: 'approved',
+        resolvedAt: new Date().toISOString(),
+        sessionInstanceId: newInstanceRef.id,
+      });
+    });
+
+    // 5) Mark the availability slot unavailable (same behavior as bookLesson, but done AFTER transaction)
+    const { formatISO, startOfDay } = await import('date-fns');
+    const dateISO = formatISO(startOfDay(new Date(request.lessonDate)));
+    const availQuery = query(
+      availabilityCollection,
+      where('date', '==', dateISO),
+      where('time', '==', request.lessonTime)
+    );
+    const availSnapshot = await getDocs(availQuery);
+    if (!availSnapshot.empty) {
+      await updateDoc(doc(db, 'availability', availSnapshot.docs[0].id), {
+        isAvailable: false,
+      });
     }
-    // Handle other approval types as needed
+  } else if (request.type === 'late_reschedule' && (request as any).lessonId && (request as any).newDate && (request as any).newTime) {
+    // keep existing behavior for other approval types
+    const r: any = request;
+    const lesson = await getLessonById(r.lessonId);
+    if (lesson) {
+      const startHour = parseInt(r.newTime.split(':')[0], 10);
+      const originalStart = parseInt(lesson.startTime.split(':')[0], 10);
+      const originalEnd = parseInt(lesson.endTime.split(':')[0], 10);
+      const duration = originalEnd - originalStart;
+      const endTime = `${(startHour + duration).toString().padStart(2, '0')}:00`;
+      await rescheduleLesson(r.lessonId, r.newDate, r.newTime, endTime, r.studentId, true);
+    }
+    await updateDoc(approvalRef, { status: 'approved', resolvedAt: new Date().toISOString() });
+  } else if (request.type === 'late_cancel' && (request as any).lessonId) {
+    const r: any = request;
+    await cancelLesson(r.lessonId, r.studentId, true);
+    await updateDoc(approvalRef, { status: 'approved', resolvedAt: new Date().toISOString() });
+  } else {
+    // fallback: approve without side effects
+    await updateDoc(approvalRef, { status: 'approved', resolvedAt: new Date().toISOString() });
   }
 
-  const updated = await getDoc(docRef);
-  return {
-    id: updated.id,
-    ...updated.data()
-  } as ApprovalRequest;
+  const updated = await getDoc(approvalRef);
+  return { id: updated.id, ...updated.data() } as ApprovalRequest;
 }
 
 // ============================================
@@ -1674,3 +1783,6 @@ export async function createStudentProgress(data: {
 
 
 
+
+
+    
