@@ -85,7 +85,7 @@ function BookingPageContent() {
   useEffect(() => {
     async function fetchData() {
       if (user?.email) {
-        const studentRecord = await getOrCreateStudentByEmail(user.email);
+        const studentRecord = await getOrCreateStudentByEmail(user.email, user.displayName || undefined);
         setStudent(studentRecord);
         
         const newStudent = await isNewStudent(studentRecord.id);
@@ -134,6 +134,14 @@ function BookingPageContent() {
 
     try {
       if (isNew) {
+        const unitId = unitIdFromQuery;
+        const sessionId = sessionIdFromQuery;
+        
+        if (!unitId || !sessionId) {
+          console.error('Missing unitId/sessionId in booking URL (cannot request approval)');
+          return;
+        }
+        
         await createApprovalRequest({
           type: 'new_student_booking',
           studentId: student.id,
@@ -143,6 +151,14 @@ function BookingPageContent() {
           lessonDate: selectedSlot.date,
           lessonTime: selectedSlot.time,
           reason: 'First-time booking requires teacher approval.',
+        
+          // NEW: required linkage for creating a valid lesson on approval
+          courseId: selectedCourse,
+          unitId,
+          sessionId,
+          durationHours: selectedDuration / 60,
+          teacherUid,
+          studentAuthUid: user.uid,
         });
 
         setBookingResult({

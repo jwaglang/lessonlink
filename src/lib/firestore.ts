@@ -820,24 +820,40 @@ export async function resolveApprovalRequest(
   // If approved, execute the action
   if (resolution === 'approved') {
     if (request.type === 'new_student_booking' && request.lessonDate && request.lessonTime && request.lessonTitle) {
-      // Create the lesson for the new student
-      // Get course info to determine duration and rate
-      const courses = await getCourses();
-      const course = courses.find(c => c.title === request.lessonTitle);
-      // Default to 60 minutes and calculate rate from hourlyRate
-      const duration = 60;
-      const rate = course ? (course.hourlyRate * (course.discount60min ? (1 - course.discount60min / 100) : 1)) : 0;
+      // Validate linkage fields exist (new student approvals must include these now)
+      if (!request.courseId || !request.unitId || !request.sessionId || !request.durationHours || !request.teacherUid || !request.studentAuthUid) {
+        throw new Error('Approval request is missing required lesson linkage fields (courseId/unitId/sessionId/durationHours/teacherUid/studentAuthUid).');
+      }
       
-      const startHour = parseInt(request.lessonTime.split(':')[0]);
-      const endTime = `${(startHour + (duration / 60)).toString().padStart(2, '0')}:00`;
+      const durationMinutes = Math.round(request.durationHours * 60);
+      const startHour = parseInt(request.lessonTime.split(':')[0], 10);
+      const endHour = startHour + request.durationHours;
+      const endTime = `${Math.floor(endHour).toString().padStart(2, '0')}:${endHour % 1 === 0.5 ? '30' : '00'}`;
+      
+      // Rate: keep existing behavior but respect duration + 60-min discount if present
+      const courses = await getCourses();
+      const course = courses.find(c => c.id === request.courseId) || courses.find(c => c.title === request.lessonTitle);
+      
+      const baseRate = course ? course.hourlyRate * request.durationHours : 0;
+      const discountedRate =
+        course && durationMinutes === 60 && course.discount60min
+          ? baseRate * (1 - course.discount60min / 100)
+          : baseRate;
       
       await bookLesson({
         studentId: request.studentId,
         title: request.lessonTitle,
         date: request.lessonDate,
         startTime: request.lessonTime,
-        endTime: endTime,
-        rate: rate,
+        endTime,
+        rate: discountedRate,
+      
+        courseId: request.courseId,
+        unitId: request.unitId,
+        sessionId: request.sessionId,
+        durationHours: request.durationHours,
+        teacherUid: request.teacherUid,
+        studentAuthUid: request.studentAuthUid,
       });
     } else if (request.type === 'late_reschedule' && request.lessonId && request.newDate && request.newTime) {
       // Calculate end time (assume same duration)
@@ -1653,5 +1669,6 @@ export async function createStudentProgress(data: {
     assignedAt: new Date().toISOString(),
   };
 }
+
 
 

@@ -133,6 +133,13 @@ export interface ApprovalRequest {
   status: 'pending' | 'approved' | 'denied';
   createdAt: string; // ISO string
   resolvedAt?: string; // ISO string
+  // NEW: needed to create a valid lesson on approval (Phase 3D)
+  courseId?: string;
+  unitId?: string;
+  sessionId?: string;
+  durationHours?: number;
+  teacherUid?: string;
+  studentAuthUid?: string;
 }
 
 export interface UserSettings {
