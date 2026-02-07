@@ -11,6 +11,10 @@ import {
   bookLesson,
   isNewStudent,
   createApprovalRequest,
+  getStudentProgressByStudentId,
+  getSessionsByUnitId,
+  getLevelsByCourseId,
+  getUnitsByLevelId,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,6 +85,59 @@ function BookingPageContent() {
         setSelectedCourse(courseIdFromQuery);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    async function ensureUnitAndSessionInUrl() {
+      if (!student) return;
+
+      const courseId = searchParams.get('courseId') || selectedCourse;
+      const unitId = searchParams.get('unitId');
+      const sessionId = searchParams.get('sessionId');
+
+      // Only run when course exists but unit/session are missing
+      if (!courseId || (unitId && sessionId)) return;
+
+      try {
+        // 1) Prefer the student's currently assigned unit for this course
+        const progressList = await getStudentProgressByStudentId(student.id);
+        const assigned = progressList.find(
+          (p: any) => p.courseId === courseId && p.status === 'assigned'
+        );
+
+        let resolvedUnitId: string | undefined = assigned?.unitId;
+
+        // 2) Fallback: first unit in first level of the course
+        if (!resolvedUnitId) {
+          const levels = await getLevelsByCourseId(courseId);
+          const firstLevel = levels?.[0];
+          if (!firstLevel) return;
+
+          const units = await getUnitsByLevelId(firstLevel.id);
+          const firstUnit = units?.[0];
+          if (!firstUnit) return;
+
+          resolvedUnitId = firstUnit.id;
+        }
+
+        // 3) Resolve first session in that unit
+        const sessions = await getSessionsByUnitId(resolvedUnitId);
+        const firstSession = sessions?.[0];
+        if (!firstSession) return;
+
+        // 4) Rewrite URL with unitId + sessionId so booking can proceed
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('courseId', courseId);
+        params.set('unitId', resolvedUnitId);
+        params.set('sessionId', firstSession.id);
+
+        router.replace(`/s-portal/calendar?${params.toString()}`);
+      } catch (e) {
+        console.error('[ensureUnitAndSessionInUrl]', e);
+      }
+    }
+
+    ensureUnitAndSessionInUrl();
+  }, [student, selectedCourse, searchParams, router]);
 
   useEffect(() => {
     async function fetchData() {
