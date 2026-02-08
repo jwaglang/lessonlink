@@ -1,10 +1,13 @@
-
+// ===================================
+// LessonLink Types - Baseline v6
+// Last updated: February 2026
+// ===================================
 
 export type StudentStatus = 'currently enrolled' | 'unenrolled (package over)' | 'unenrolled (goal met)' | 'MIA';
 
 export interface Student {
   id: string;
-  authUid: string; // Firebase Auth UID for this student (required)
+  authUid?: string; // Firebase Auth UID for this student (optional; prefer student doc id === auth.uid long-term)
   name: string;
   email: string;
   avatarUrl: string;
@@ -16,38 +19,39 @@ export interface Student {
     balance: number;
     currency: string;
   };
-  lessons: Lesson[];
   goalMet: boolean;
   isNewStudent?: boolean; // true if never had a completed booking
   assignedTeacherId?: string;
 }
 
-export interface Lesson {
+export interface SessionInstance {
   id: string;
 
   // scheduling
-  studentId: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  rate: number;
-  status: 'scheduled' | 'completed' | 'paid' | 'deducted';
-
-  // completion + linkage
+  studentId: string; // student doc id
+  studentAuthUid: string; // Firebase Auth UID for the student
+  teacherUid: string; // Firebase Auth UID for the teacher
   courseId: string;
   unitId: string;
   sessionId: string; // template session id
+
+  title?: string; // session title (denormalized for UI)
+
+  lessonDate: string; // YYYY-MM-DD (local date string)
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
   durationHours: number; // 0.5 | 1
-  teacherUid: string;
-  studentAuthUid: string;
+
+  // billing
+  billingType: 'trial' | 'credit' | 'one_off';
+  rate?: number;
 
   // lifecycle
-  completedAt?: any | null;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
   createdAt?: any;
   updatedAt?: any;
+  completedAt?: any | null;
 }
-
 
 export interface Availability {
   id: string;
@@ -63,7 +67,7 @@ export interface PackageOption {
 }
 
 export interface Course {
-  id:string;
+  id: string;
   title: string;
   pitch: string;
   description: string;
@@ -74,44 +78,44 @@ export interface Course {
 }
 
 export interface Level {
-    id: string;
-    courseId: string;
-    title: string;
-    gseRange: string;
-    order: number;
-    createdAt: string;
-    updatedAt: string;
+  id: string;
+  courseId: string;
+  title: string;
+  gseRange: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Unit {
-    id: string;
-    courseId: string;
-    levelId?: string;
-    title: string;
-    bigQuestion: string;
-    description: string;
-    order: number;
-    estimatedHours: number;
-    thumbnailUrl: string;
-    initialAssessmentId?: string | null;
-    finalEvaluationId?: string | null;
-    finalProjectId?: string | null;
-    finalProjectType?: string | null;
+  id: string;
+  courseId: string;
+  levelId?: string;
+  title: string;
+  bigQuestion: string;
+  description: string;
+  order: number;
+  estimatedHours: number;
+  thumbnailUrl: string;
+  initialAssessmentId?: string | null;
+  finalEvaluationId?: string | null;
+  finalProjectId?: string | null;
+  finalProjectType?: string | null;
 }
 
 export interface Session {
-    id: string;
-    unitId: string;
-    courseId: string;
-    levelId?: string;
-    title: string;
-    littleQuestion: string;
-    description: string;
-    order: number;
-    duration: number;
-    thumbnailUrl: string;
-    materials: string[];
-    homeworkId?: string | null;
+  id: string;
+  unitId: string;
+  courseId: string;
+  levelId?: string;
+  title: string;
+  littleQuestion: string;
+  description: string;
+  order: number;
+  duration: number;
+  thumbnailUrl: string;
+  materials: string[];
+  homeworkId?: string | null;
 }
 
 export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request';
@@ -122,7 +126,7 @@ export interface ApprovalRequest {
   studentId: string;
   studentName: string;
   studentEmail: string;
-  lessonId?: string;
+  lessonId?: string; // back-compat: refers to sessionInstance id
   lessonTitle?: string;
   lessonDate?: string;
   lessonTime?: string;
@@ -133,7 +137,7 @@ export interface ApprovalRequest {
   status: 'pending' | 'approved' | 'denied';
   createdAt: string; // ISO string
   resolvedAt?: string; // ISO string
-  // NEW: needed to create a valid lesson on approval (Phase 3D)
+  // Required for Variant-1 approval flow
   courseId?: string;
   unitId?: string;
   sessionId?: string;
@@ -173,36 +177,43 @@ export interface StudentCredit {
   id: string;
   studentId: string;
   courseId: string;
-  packageId: string;              // Links to studentPackages
-  totalHours: number;             // Total hours purchased (e.g., 10)
-  uncommittedHours: number;       // Hours available for new units
-  committedHours: number;         // Hours reserved for assigned units
-  completedHours: number;         // Hours already used/consumed
-  currency: string;               // USD, EUR, etc.
-  createdAt: string;              // ISO timestamp
-  updatedAt: string;              // ISO timestamp
+  packageId: string; // Links to studentPackages
+  totalHours: number; // Total hours purchased (e.g., 10)
+  uncommittedHours: number; // Hours available for new units
+  committedHours: number; // Hours reserved for assigned units
+  completedHours: number; // Hours already used/consumed
+  currency: string; // USD, EUR, etc.
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
 }
 
+// FIX v6: Added id, unitId, status, assignedAt, hoursReserved to match firestore.ts writes
 export interface StudentProgress {
-    studentId: string;
-    courseId: string;
-    levelId?: string;
-    totalHoursCompleted: number;
-    targetHours: number;
-    percentComplete: number;
-    unitsCompleted: number;
-    unitsTotal: number;
-    sessionsCompleted: number;
-    sessionsTotal: number;
-    homeworkAccuracyAvg?: number | null;
-    assessmentScoreAvg?: number | null;
-    evaluationScoreAvg?: number | null;
-    overallAccuracy?: number | null;
-    lastActivityAt: string;
-    startedAt: string;
-    completedAt?: string | null;
+  id?: string; // Firestore document ID (added by asId helper)
+  studentId: string;
+  courseId: string;
+  unitId: string; // FIX: was missing - required for Variant-1 progress tracking per unit
+  levelId?: string;
+  totalHoursCompleted: number;
+  targetHours: number;
+  percentComplete: number;
+  unitsCompleted: number;
+  unitsTotal: number;
+  sessionsCompleted: number;
+  sessionsTotal: number;
+  hoursReserved?: number; // Hours reserved from credit for this unit
+  status?: 'assigned' | 'in_progress' | 'completed'; // Progress status
+  assignedAt?: string; // ISO timestamp when unit was assigned
+  homeworkAccuracyAvg?: number | null;
+  assessmentScoreAvg?: number | null;
+  evaluationScoreAvg?: number | null;
+  overallAccuracy?: number | null;
+  lastActivityAt: string;
+  startedAt: string;
+  completedAt?: string | null;
+  createdAt?: string; // ISO timestamp
+  updatedAt?: string; // ISO timestamp
 }
-
 
 // ============================================
 // TEACHER PROFILE
@@ -234,17 +245,17 @@ export interface TeacherProfile {
   avatarUrl: string;
   coverImageUrl?: string;
   videoUrl?: string; // YouTube intro video
-  
+
   // Bio sections
   aboutMe: string;
   teachingPhilosophy?: string; // "Me as a Teacher"
   lessonStyle?: string; // "My lessons & teaching style"
   teachingMaterials?: string[]; // e.g., ["Presentation slides", "Flashcards"]
-  
+
   // Languages
   nativeLanguage: string;
   otherLanguages?: string[];
-  
+
   // Details
   specialties?: string[]; // e.g., ["Test Preparation", "Kids"]
   interests?: string[]; // e.g., ["Gaming", "Films & TV Series"]
@@ -252,11 +263,11 @@ export interface TeacherProfile {
   cityLiving: string;
   timezone: string;
   teachingSince?: string; // e.g., "Mar 16, 2013"
-  
+
   // Credentials
   certificates?: TeacherCertificate[];
   experience?: TeacherExperience[];
-  
+
   // Stats (auto-calculated or manually set)
   stats: {
     rating: number; // 0-5
@@ -265,7 +276,7 @@ export interface TeacherProfile {
     attendanceRate: number; // 0-100
     responseRate: number; // 0-100
   };
-  
+
   // Status
   isOnline?: boolean;
   isPublished: boolean; // false = draft, not visible to students
@@ -279,7 +290,8 @@ export interface TeacherProfile {
 
 export interface Review {
   id: string;
-  lessonId?: string; // optional, may be imported without lesson link
+  sessionInstanceId?: string; // preferred link to SessionInstance
+  lessonId?: string; // back-compat; historically used for SessionInstance id
   studentId?: string; // optional for imported reviews
   studentName: string;
   studentAvatarUrl?: string;
@@ -287,18 +299,19 @@ export interface Review {
   rating: number; // 1-5
   comment: string;
   createdAt: string; // ISO string
-  
+
   // Moderation
   pinned: boolean; // teacher can pin up to 5
   visible: boolean; // admin can hide reviews
-  
+
   // Tags (e.g., "Structured lessons", "Provides materials", "For beginners")
   tags?: string[];
-  
+
   // For imported reviews
   imported?: boolean;
   importSource?: string; // e.g., "italki"
 }
+
 // Helper function to calculate lesson price based on duration
 export function calculateLessonPrice(
   hourlyRate: number,
@@ -322,9 +335,10 @@ export function calculateLessonPrice(
 // Messages & Notifications
 // ===================================
 
-export type MessageType = 'notification' | 'communication';
+export type MessageType = 'notification' | 'communications';
 export type ParticipantType = 'teacher' | 'student' | 'system';
-export type RelatedEntityType = 'unit' | 'session' | 'package' | 'credit';
+// FIX v6: Added 'approvalRequest' to match firestore.ts usage in resolveApprovalRequest
+export type RelatedEntityType = 'unit' | 'session' | 'package' | 'credit' | 'approvalRequest';
 
 export interface Message {
   id: string;

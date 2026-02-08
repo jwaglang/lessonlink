@@ -23,39 +23,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Legacy helper (kept for non-query use; DO NOT use for list/query auth in /messages)
-    function isAssociatedStudent(studentId) {
-      return isAuthenticated() &&
-        exists(/databases/$(database)/documents/students/$(studentId)) &&
-        get(/databases/$(database)/documents/students/$(studentId)).data.email == request.auth.token.email;
-    }
-
     // Returns teacher UID assigned to a given studentId (or null if missing)
     function assignedTeacherUid(studentId) {
       return get(/databases/$(database)/documents/students/$(studentId)).data.assignedTeacherId;
     }
 
-    // Checks whether a uid belongs to a teacher profile
-    function isTeacherUid(uid) {
-      return exists(/databases/$(database)/documents/teacherProfiles/$(uid));
-    }
-
-    // Checks whether a uid belongs to a student document id (studentId)
-    function isStudentUid(uid) {
-      return exists(/databases/$(database)/documents/students/$(uid));
-    }
-
-    // NEW: Get the auth UID stored on a student document
-    // Safe to use for create validation, but not for list/query auth.
+    // Get the auth UID stored on a student document (students/{studentId}.authUid)
     function studentAuthUid(studentId) {
       return get(/databases/$(database)/documents/students/$(studentId)).data.authUid;
-    }
-
-    // For creates: validate participants matches the student<->teacher relationship
-    function isParticipantForCreate() {
-      return (request.resource.data.participants is list) &&
-        request.resource.data.participants.size() == 1 &&
-        request.resource.data.participants[0] == (request.resource.data.to + ":" + request.resource.data.from);
     }
 
     // ===================================
@@ -63,8 +38,23 @@ service cloud.firestore {
     // ===================================
 
     match /students/{studentId} {
-      allow read, list: if isAuthenticated();
+      // QUERY-SAFE:
+      // - Admin can read all
+      // - Teacher can read only students assigned to them
+      // - Student can read only their own student doc (authUid == request.auth.uid)
+      //
+      // For list/query: Firestore will only allow the query if EVERY returned doc
+      // satisfies this predicate (so teachers must query with assignedTeacherId == uid).
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && resource.data.assignedTeacherId == request.auth.uid) ||
+        (resource.data.authUid == request.auth.uid)
+      );
+
+      // Create: only if they are creating their own student record (email matches auth token)
       allow create: if isAuthenticated() && request.resource.data.email == request.auth.token.email;
+
+      // Updates: admin or teacher only (students cannot edit student docs)
       allow update, delete: if isAdmin() || isTeacher();
     }
 
@@ -76,9 +66,56 @@ service cloud.firestore {
     // ===================================
     // SESSION INSTANCES (booked classes)
     // ===================================
-    match /sessionInstances/{sessionInstanceId} {
-      allow read, list: if isAuthenticated();
-      allow create, update, delete: if isAdmin() || isTeacher();
+    match /sessionInstances/{instanceId} {
+      allow read, list: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.teacherUid == request.auth.uid
+      );
+
+      // Student booking creates a sessionInstance for themselves
+      allow create: if isAuthenticated() && (
+        // Admin can create anything
+        isAdmin() ||
+
+        // Teacher can create only if they are the teacher on the instance
+        (isTeacher() && request.resource.data.teacherUid == request.auth.uid) ||
+
+        // Student can create only for themselves and must target a teacher UID
+        (
+          request.resource.data.studentAuthUid == request.auth.uid &&
+          request.resource.data.teacherUid is string &&
+          request.resource.data.courseId is string &&
+          request.resource.data.unitId is string &&
+          request.resource.data.sessionId is string &&
+          request.resource.data.status == 'scheduled'
+        )
+      );
+
+      // Teacher or admin can update; student can only update their own (limited)
+      allow update: if isAuthenticated() && (
+        // Admin override
+        isAdmin() ||
+
+        // Owning teacher only
+        resource.data.teacherUid == request.auth.uid ||
+
+        // Owning student, with strict field locking
+        (
+          resource.data.studentAuthUid == request.auth.uid &&
+          request.resource.data.studentAuthUid == resource.data.studentAuthUid &&
+          request.resource.data.teacherUid == resource.data.teacherUid &&
+          request.resource.data.courseId == resource.data.courseId &&
+          request.resource.data.unitId == resource.data.unitId &&
+          request.resource.data.sessionId == resource.data.sessionId
+        )
+      );
+
+      // Only admin or owning teacher can delete
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.teacherUid == request.auth.uid
+      );
     }
 
     match /courseTemplates/{courseId} {
@@ -113,7 +150,11 @@ service cloud.firestore {
     }
 
     match /studentPackages/{pkgId} {
-      allow read, list: if isAuthenticated();
+      allow read, list: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
+        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+      );
       allow write: if isAdmin() || isTeacher();
     }
 
@@ -150,22 +191,38 @@ service cloud.firestore {
     }
 
     match /studentProgress/{progressId} {
-      allow read, list: if isAuthenticated();
+      allow read, list: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
+        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+      );
       allow write: if isAdmin() || isTeacher();
     }
 
     match /studentRewards/{rewardId} {
-      allow read, list: if isAuthenticated();
+      allow read, list: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
+        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+      );
       allow write: if isAdmin() || isTeacher();
     }
 
     match /assessmentReports/{reportId} {
-      allow read, list: if isAuthenticated();
+      allow read, list: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
+        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+      );
       allow write: if isAdmin() || isTeacher();
     }
 
     match /studentCredit/{creditId} {
-      allow read, list: if isAuthenticated();
+      allow read, list: if isAuthenticated() && (
+        isAdmin() ||
+        (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
+        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+      );
       allow write: if isAdmin() || isTeacher();
     }
 
@@ -173,40 +230,27 @@ service cloud.firestore {
     // MESSAGES (Chat + Notifications)
     // ===================================
     match /messages/{messageId} {
+      allow read, list: if isAuthenticated() && (
+        resource.data.to == request.auth.uid ||
+        resource.data.from == request.auth.uid ||
+        isAdmin()
+      );
 
-      // Teachers/Admins have full access
-      allow read, list, write: if isTeacher() || isAdmin();
+      allow create: if isAuthenticated() &&
+        request.resource.data.from == request.auth.uid &&
+        (request.resource.data.type == 'notification' || request.resource.data.type == 'communications') &&
+        request.resource.data.timestamp is string &&
+        request.resource.data.content is string;
 
-      // Students: query-safe authorization (NO get()/exists() here)
-      // Requires each message doc to include: studentAuthUid (string)
-      allow read, list: if
-        isAuthenticated() &&
-        resource.data.studentAuthUid == request.auth.uid;
+      // Only sender can update (e.g. edits) and recipient can update read state
+      allow update: if isAuthenticated() &&
+        (
+          request.auth.uid == resource.data.from ||
+          (request.auth.uid == resource.data.to && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']))
+        );
 
-      // Students can create messages originating from themselves,
-      // only to their assigned teacher, and must tag studentAuthUid correctly.
-      allow create: if
-        isAuthenticated() &&
-        request.resource.data.fromType == 'student' &&
-        request.resource.data.toType == 'teacher' &&
-        (request.resource.data.type == 'communications' || request.resource.data.type == 'notification') &&
-        // studentAuthUid must be present and match the authed user
-        request.resource.data.studentAuthUid == request.auth.uid &&
-        // The claimed studentId (from) must belong to this auth uid (validated via student doc)
-        request.resource.data.studentAuthUid == studentAuthUid(request.resource.data.from) &&
-        // To must be the assigned teacher uid for that student
-        (request.resource.data.to == assignedTeacherUid(request.resource.data.from)) &&
-        // participants must be ["teacherUid:studentId"]
-        isParticipantForCreate();
-
-      // Students may only mark a message as read if the message belongs to them,
-      // only toggling read false->true, and changing nothing else.
-      allow update: if
-        isAuthenticated() &&
-        resource.data.studentAuthUid == request.auth.uid &&
-        resource.data.read == false &&
-        request.resource.data.read == true &&
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
+      allow delete: if isAdmin();
     }
+
   }
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -15,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Availability, Lesson } from '@/lib/types';
+import type { Availability, SessionInstance } from '@/lib/types';
 import TimeSlot from './time-slot';
 import { toggleAvailability } from '@/lib/firestore';
 
@@ -23,19 +22,27 @@ const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '
 
 // Helper functions to handle dates without timezones messing things up
 function isSameDay(d1: Date, d2: Date) {
-    return d1.getFullYear() === d2.getFullYear() &&
-           d1.getMonth() === d2.getMonth() &&
-           d1.getDate() === d2.getDate();
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
 }
 
+// Helper to get date from SessionInstance (handles legacy `date` field)
+function getSessionDate(instance: SessionInstance): string {
+  return (instance as any).lessonDate || (instance as any).date || '';
+}
 
 interface AvailabilityCalendarProps {
   initialAvailability: Availability[];
-  lessons: Lesson[];
+  sessionInstances: SessionInstance[];
   onSlotDoubleClick: (date: Date, time: string) => void;
 }
 
-export default function AvailabilityCalendar({ initialAvailability, lessons, onSlotDoubleClick }: AvailabilityCalendarProps) {
+export default function AvailabilityCalendar({ 
+  initialAvailability, 
+  sessionInstances, 
+  onSlotDoubleClick 
+}: AvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
 
@@ -46,18 +53,19 @@ export default function AvailabilityCalendar({ initialAvailability, lessons, onS
   const handleSlotClick = async (date: Date, time: string) => {
     const updatedSlot = await toggleAvailability(date, time);
     setAvailability(prev => {
-        // use startOfDay to prevent timezone issues
-        const updatedDate = startOfDay(new Date(updatedSlot.date));
-        const existingIndex = prev.findIndex(a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updatedSlot.time);
-        if (existingIndex > -1) {
-            const newAvail = [...prev];
-            newAvail[existingIndex] = updatedSlot;
-            return newAvail;
-        }
-        return [...prev, updatedSlot];
+      // use startOfDay to prevent timezone issues
+      const updatedDate = startOfDay(new Date(updatedSlot.date));
+      const existingIndex = prev.findIndex(
+        a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updatedSlot.time
+      );
+      if (existingIndex > -1) {
+        const newAvail = [...prev];
+        newAvail[existingIndex] = updatedSlot;
+        return newAvail;
+      }
+      return [...prev, updatedSlot];
     });
   };
-  
 
   return (
     <Card>
@@ -101,23 +109,35 @@ export default function AvailabilityCalendar({ initialAvailability, lessons, onS
           
           {hours.map(hour => (
             <React.Fragment key={hour}>
-                <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs" key={`${hour}-label`}>{hour}</div>
-                {days.map(day => {
-                    const bookedLesson = lessons.find(l => isSameDay(parseISO(l.date), day) && l.startTime === hour);
-                    const availableSlot = availability.find(a => isSameDay(startOfDay(parseISO(a.date)), day) && a.time === hour);
-                    
-                    return (
-                        <TimeSlot
-                            key={`${day.toString()}-${hour}`}
-                            date={day}
-                            time={hour}
-                            isAvailable={availableSlot?.isAvailable ?? false}
-                            isBooked={!!bookedLesson}
-                            onClick={handleSlotClick}
-                            onDoubleClick={onSlotDoubleClick}
-                        />
-                    )
-                })}
+              <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs" key={`${hour}-label`}>
+                {hour}
+              </div>
+              {days.map(day => {
+                const bookedSession = sessionInstances.find(instance => {
+                  const dateStr = getSessionDate(instance);
+                  if (!dateStr) return false;
+                  try {
+                    return isSameDay(parseISO(dateStr), day) && instance.startTime === hour;
+                  } catch {
+                    return false;
+                  }
+                });
+                const availableSlot = availability.find(
+                  a => isSameDay(startOfDay(parseISO(a.date)), day) && a.time === hour
+                );
+                
+                return (
+                  <TimeSlot
+                    key={`${day.toString()}-${hour}`}
+                    date={day}
+                    time={hour}
+                    isAvailable={availableSlot?.isAvailable ?? false}
+                    isBooked={!!bookedSession}
+                    onClick={handleSlotClick}
+                    onDoubleClick={onSlotDoubleClick}
+                  />
+                );
+              })}
             </React.Fragment>
           ))}
         </div>

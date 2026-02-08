@@ -6,13 +6,13 @@ import { useAuth } from '@/components/auth-provider';
 import { logOut } from '@/lib/auth';
 import {
   getOrCreateStudentByEmail,
-  getLessonsByStudentId,
+  getSessionInstancesByStudentId,
   getAvailableSlots,
-  rescheduleLesson,
-  cancelLesson,
+  rescheduleSessionInstance,
+  cancelSessionInstance,
   createReview,
-  getReviewedLessonIds,
-  getTeacherProfileByEmail,
+  getReviewedSessionInstanceIds,
+  getTeacherProfileById,
   getStudentCredit,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
@@ -46,29 +46,34 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart } from 'lucide-react';
 import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
-import type { Lesson, Student, Availability, StudentCredit } from '@/lib/types';
+import type { SessionInstance, Student, Availability, StudentCredit } from '@/lib/types';
 import Link from 'next/link';
 import TimezonePrompt from '@/components/timezone-prompt';
 import PageHeader from '@/components/page-header';
 import PurchasePlanCard from '@/components/purchase-plan-card';
 
+function instanceDateIso(instance: SessionInstance): string {
+  const anyInst = instance as any;
+  return anyInst.lessonDate || anyInst.date || '';
+}
+
 export default function StudentPortalPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [student, setStudent] = useState<Student | null>(null);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [sessions, setSessions] = useState<SessionInstance[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [timezone, setTimezone] = useState<string>('');
   const [studentCredit, setStudentCredit] = useState<StudentCredit | null>(null);
 
   // Reschedule state
-  const [rescheduleLesson_, setRescheduleLesson] = useState<Lesson | null>(null);
+  const [rescheduleSessionInstance_, setRescheduleSession] = useState<SessionInstance | null>(null);
   const [availableSlots, setAvailableSlots] = useState<Availability[]>([]);
   const [selectedNewSlot, setSelectedNewSlot] = useState<string>('');
   const [isRescheduling, setIsRescheduling] = useState(false);
 
   // Cancel state
-  const [cancelLesson_, setCancelLesson] = useState<Lesson | null>(null);
+  const [cancelSessionInstance_, setCancelSession] = useState<SessionInstance | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Notification state
@@ -79,11 +84,11 @@ export default function StudentPortalPage() {
   } | null>(null);
 
   // Review state
-  const [reviewLesson, setReviewLesson] = useState<Lesson | null>(null);
+  const [reviewSession, setReviewSession] = useState<SessionInstance | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewedLessonIds, setReviewedLessonIds] = useState<string[]>([]);
+  const [reviewedSessionInstanceIds, setReviewedSessionInstanceIds] = useState<string[]>([]);
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,8 +103,8 @@ export default function StudentPortalPage() {
         const studentRecord = await getOrCreateStudentByEmail(user.email);
         setStudent(studentRecord);
         
-        const studentLessons = await getLessonsByStudentId(studentRecord.id);
-        setLessons(studentLessons);
+        const studentSessions = await getSessionInstancesByStudentId(studentRecord.id);
+        setSessions(studentSessions);
         
         // Fetch student credit
         const courseId = '45Jkyfg94otjc4d22dZT'; // Hardcoded for now (Kiddoland course)
@@ -107,16 +112,17 @@ export default function StudentPortalPage() {
         setStudentCredit(credit);
         
         // Fetch reviewed lesson IDs
-        const reviewedIds = await getReviewedLessonIds(studentRecord.id);
-        setReviewedLessonIds(reviewedIds);
+        const reviewedIds = await getReviewedSessionInstanceIds(studentRecord.id);
+        setReviewedSessionInstanceIds(reviewedIds);
         
-        // Fetch teacher ID (hardcoded teacher email for now)
-        const teacherProfile = await getTeacherProfileByEmail('jwag.lang@gmail.com');
-        if (teacherProfile) {
-          setTeacherId(teacherProfile.id);
+        // Fetch teacher ID (from student assignment)
+        if (studentRecord.assignedTeacherId) {
+          const teacherProfile = await getTeacherProfileById(studentRecord.assignedTeacherId);
+          if (teacherProfile) {
+            setTeacherId(teacherProfile.id);
+          }
         }
-        
-        setLoadingData(false);
+setLoadingData(false);
       }
     }
     fetchStudentData();
@@ -126,19 +132,19 @@ export default function StudentPortalPage() {
     setTimezone(tz);
   }
 
-  async function openRescheduleDialog(lesson: Lesson) {
-    setRescheduleLesson(lesson);
+  async function openRescheduleDialog(lesson: SessionInstance) {
+    setRescheduleSession(lesson);
     const slots = await getAvailableSlots();
     // Filter to only future slots
     const futureSlots = slots.filter(slot => {
-      const slotDate = parseISO(slot.date);
+      const slotDate = parseISO(instanceDateIso(slot));
       return isFuture(slotDate) || startOfDay(slotDate).getTime() === startOfDay(new Date()).getTime();
     });
     setAvailableSlots(futureSlots);
   }
 
   async function handleReschedule() {
-    if (!rescheduleLesson_ || !selectedNewSlot || !student) return;
+    if (!rescheduleSessionInstance_ || !selectedNewSlot || !student) return;
     
     setIsRescheduling(true);
     
@@ -147,27 +153,27 @@ export default function StudentPortalPage() {
 
     // Calculate end time based on lesson duration
     const startHour = parseInt(slot.time.split(':')[0]);
-    const originalStart = parseInt(rescheduleLesson_.startTime.split(':')[0]);
-    const originalEnd = parseInt(rescheduleLesson_.endTime.split(':')[0]);
+    const originalStart = parseInt(rescheduleSessionInstance_.startTime.split(':')[0]);
+    const originalEnd = parseInt(rescheduleSessionInstance_.endTime.split(':')[0]);
     const duration = originalEnd - originalStart;
     const endTime = `${(startHour + duration).toString().padStart(2, '0')}:00`;
 
     try {
-      const result = await rescheduleLesson(
-        rescheduleLesson_.id,
+      const result = await rescheduleSessionInstance(
+        rescheduleSessionInstance_.id,
         slot.date,
         slot.time,
         endTime,
         student.id
       );
       
-      if (result.success && result.lesson) {
-        // Update lessons list
-        setLessons(prev => prev.map(l => l.id === result.lesson!.id ? result.lesson! : l));
+      if (result.success && result.session) {
+        // Update sessions list
+        setSessions(prev => prev.map(x => x.id === result.session!.id ? result.session! : x));
         setNotification({
           type: 'success',
-          title: 'Lesson Rescheduled',
-          message: `Your lesson has been moved to ${format(parseISO(slot.date), 'EEEE, MMM d')} at ${slot.time}.`
+          title: 'Session Rescheduled',
+          message: `Your session has been moved to ${format(parseISO(instanceDateIso(slot)), 'EEEE, MMM d')} at ${slot.time}.`
         });
       } else if (result.approvalRequired) {
         // Approval needed
@@ -179,7 +185,7 @@ export default function StudentPortalPage() {
       }
       
       // Close dialog
-      setRescheduleLesson(null);
+      setRescheduleSession(null);
       setSelectedNewSlot('');
     } catch (error) {
       console.error('Reschedule failed:', error);
@@ -194,20 +200,20 @@ export default function StudentPortalPage() {
   }
 
   async function handleCancel() {
-    if (!cancelLesson_ || !student) return;
+    if (!cancelSessionInstance_ || !student) return;
     
     setIsCancelling(true);
 
     try {
-      const result = await cancelLesson(cancelLesson_.id, student.id);
+      const result = await cancelSessionInstance(cancelSessionInstance_.id, student.id);
       
       if (result.success) {
-        // Remove from lessons list
-        setLessons(prev => prev.filter(l => l.id !== cancelLesson_.id));
+        // Remove from sessions list
+        setSessions(prev => prev.filter(l => l.id !== cancelSessionInstance_.id));
         setNotification({
           type: 'success',
-          title: 'Lesson Cancelled',
-          message: 'Your lesson has been cancelled and the time slot is now available.'
+          title: 'Session Cancelled',
+          message: 'Your session has been cancelled and the time slot is now available.'
         });
       } else if (result.approvalRequired) {
         // Approval needed
@@ -219,7 +225,7 @@ export default function StudentPortalPage() {
       }
       
       // Close dialog
-      setCancelLesson(null);
+      setCancelSession(null);
     } catch (error) {
       console.error('Cancel failed:', error);
       setNotification({
@@ -233,13 +239,13 @@ export default function StudentPortalPage() {
   }
 
   async function handleSubmitReview() {
-    if (!reviewLesson || !student || !teacherId) return;
+    if (!reviewSession || !student || !teacherId) return;
     
     setIsSubmittingReview(true);
     
     try {
       await createReview({
-        lessonId: reviewLesson.id,
+        lessonId: reviewSession.id,
         studentId: student.id,
         studentName: student.name || user?.email || 'Student',
         teacherId: teacherId,
@@ -248,7 +254,7 @@ export default function StudentPortalPage() {
       });
       
       // Add to reviewed list
-      setReviewedLessonIds(prev => [...prev, reviewLesson.id]);
+      setReviewedSessionInstanceIds(prev => [...prev, reviewSession.id]);
       
       setNotification({
         type: 'success',
@@ -257,7 +263,7 @@ export default function StudentPortalPage() {
       });
       
       // Reset and close
-      setReviewLesson(null);
+      setReviewSession(null);
       setReviewRating(5);
       setReviewComment('');
     } catch (error) {
@@ -288,13 +294,13 @@ export default function StudentPortalPage() {
     );
   }
 
-  const upcomingLessons = lessons
-    .filter((l) => isFuture(parseISO(l.date)))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const upcomingSessions = sessions
+    .filter((l) => isFuture(parseISO(instanceDateIso(l))))
+    .sort((a, b) => new Date(instanceDateIso(a)).getTime() - new Date(instanceDateIso(b)).getTime());
 
-  const pastLessons = lessons
-    .filter((l) => isPast(parseISO(l.date)))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const pastSessions = sessions
+    .filter((l) => isPast(parseISO(instanceDateIso(l))))
+    .sort((a, b) => new Date(instanceDateIso(b)).getTime() - new Date(instanceDateIso(a)).getTime());
 
   const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     scheduled: 'default',
@@ -319,12 +325,12 @@ export default function StudentPortalPage() {
       <main className="p-4 md:p-8">
         <PageHeader
           title="Learner Portal"
-          description="Here's an overview of your lessons"
+          description="Here's an overview of your sessions"
         >
             <Link href="/s-portal/calendar">
                 <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Book a Lesson
+                Book a Session
                 </Button>
             </Link>
         </PageHeader>
@@ -368,7 +374,7 @@ export default function StudentPortalPage() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{upcomingLessons.length}</div>
+              <div className="text-2xl font-bold">{upcomingSessions.length}</div>
               <p className="text-xs text-muted-foreground">sessions</p>
             </CardContent>
           </Card>
@@ -378,25 +384,25 @@ export default function StudentPortalPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{pastLessons.length}</div>
+              <div className="text-2xl font-bold">{pastSessions.length}</div>
               <p className="text-xs text-muted-foreground">sessions</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Upcoming Lessons */}
+          {/* Upcoming Sessions */}
           <Card>
             <CardHeader>
-              <CardTitle>Upcoming Lessons</CardTitle>
+              <CardTitle>Upcoming Sessions</CardTitle>
               <CardDescription>Your scheduled sessions</CardDescription>
             </CardHeader>
             <CardContent>
               {loadingData ? (
                 <p className="text-muted-foreground">Loading...</p>
-              ) : upcomingLessons.length > 0 ? (
+              ) : upcomingSessions.length > 0 ? (
                 <div className="space-y-4">
-                  {upcomingLessons.map((lesson) => (
+                  {upcomingSessions.map((lesson) => (
                     <div
                       key={lesson.id}
                       className="flex items-center justify-between p-3 rounded-lg border"
@@ -404,7 +410,7 @@ export default function StudentPortalPage() {
                       <div className="flex-1">
                         <p className="font-medium">{lesson.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(parseISO(lesson.date), 'EEEE, MMM d')} at {lesson.startTime}
+                          {format(parseISO(instanceDateIso(lesson)), 'EEEE, MMM d')} at {lesson.startTime}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -420,7 +426,7 @@ export default function StudentPortalPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setCancelLesson(lesson)}
+                          onClick={() => setCancelSession(lesson)}
                           title="Cancel"
                         >
                           <X className="h-4 w-4" />
@@ -431,10 +437,10 @@ export default function StudentPortalPage() {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <p className="text-muted-foreground mb-4">No upcoming lessons</p>
+                  <p className="text-muted-foreground mb-4">No upcoming sessions</p>
                   <Link href="/s-portal/calendar">
                     <Button variant="secondary">
-                      Book Your First Lesson
+                      Book Your First Session
                     </Button>
                   </Link>
                 </div>
@@ -442,19 +448,19 @@ export default function StudentPortalPage() {
             </CardContent>
           </Card>
 
-          {/* Past Lessons */}
+          {/* Past Sessions */}
           <Card>
             <CardHeader>
-              <CardTitle>Past Lessons</CardTitle>
-              <CardDescription>Your lesson history</CardDescription>
+              <CardTitle>Past Sessions</CardTitle>
+              <CardDescription>Your session history</CardDescription>
             </CardHeader>
             <CardContent>
               {loadingData ? (
                 <p className="text-muted-foreground">Loading...</p>
-              ) : pastLessons.length > 0 ? (
+              ) : pastSessions.length > 0 ? (
                 <div className="space-y-4">
-                  {pastLessons.slice(0, 5).map((lesson) => {
-                    const hasReviewed = reviewedLessonIds.includes(lesson.id);
+                  {pastSessions.slice(0, 5).map((lesson) => {
+                    const hasReviewed = reviewedSessionInstanceIds.includes(lesson.id);
                     return (
                       <div
                         key={lesson.id}
@@ -463,7 +469,7 @@ export default function StudentPortalPage() {
                         <div>
                           <p className="font-medium">{lesson.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {format(parseISO(lesson.date), 'EEEE, MMM d')} at {lesson.startTime}
+                            {format(parseISO(instanceDateIso(lesson)), 'EEEE, MMM d')} at {lesson.startTime}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -476,7 +482,7 @@ export default function StudentPortalPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setReviewLesson(lesson)}
+                              onClick={() => setReviewSession(lesson)}
                             >
                               <Star className="h-4 w-4 mr-1" />
                               Review
@@ -488,7 +494,7 @@ export default function StudentPortalPage() {
                   })}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No past lessons yet</p>
+                <p className="text-muted-foreground">No past sessions yet</p>
               )}
             </CardContent>
           </Card>
@@ -496,17 +502,17 @@ export default function StudentPortalPage() {
       </main>
 
       {/* Reschedule Dialog */}
-      <Dialog open={!!rescheduleLesson_} onOpenChange={() => {
-        setRescheduleLesson(null);
+      <Dialog open={!!rescheduleSessionInstance_} onOpenChange={() => {
+        setRescheduleSession(null);
         setSelectedNewSlot('');
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reschedule Lesson</DialogTitle>
+            <DialogTitle>Reschedule Session</DialogTitle>
             <DialogDescription>
-              {rescheduleLesson_ && (
+              {rescheduleSessionInstance_ && (
                 <>
-                  Current: {format(parseISO(rescheduleLesson_.date), 'EEEE, MMM d')} at {rescheduleLesson_.startTime}
+                  Current: {format(parseISO(instanceDateIso(rescheduleSessionInstance_)), 'EEEE, MMM d')} at {rescheduleSessionInstance_.startTime}
                 </>
               )}
             </DialogDescription>
@@ -521,7 +527,7 @@ export default function StudentPortalPage() {
               <SelectContent>
                 {availableSlots.map(slot => (
                   <SelectItem key={slot.id} value={slot.id}>
-                    {format(parseISO(slot.date), 'EEE, MMM d')} at {slot.time}
+                    {format(parseISO(instanceDateIso(slot)), 'EEE, MMM d')} at {slot.time}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -538,7 +544,7 @@ export default function StudentPortalPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setRescheduleLesson(null);
+              setRescheduleSession(null);
               setSelectedNewSlot('');
             }}>
               Cancel
@@ -554,15 +560,15 @@ export default function StudentPortalPage() {
       </Dialog>
 
       {/* Cancel Confirmation Dialog */}
-      <AlertDialog open={!!cancelLesson_} onOpenChange={() => setCancelLesson(null)}>
+      <AlertDialog open={!!cancelSessionInstance_} onOpenChange={() => setCancelSession(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Lesson?</AlertDialogTitle>
+            <AlertDialogTitle>Cancel Session?</AlertDialogTitle>
             <AlertDialogDescription>
-              {cancelLesson_ && (
+              {cancelSessionInstance_ && (
                 <>
-                  Are you sure you want to cancel your {cancelLesson_.title} lesson on{' '}
-                  {format(parseISO(cancelLesson_.date), 'EEEE, MMM d')} at {cancelLesson_.startTime}?
+                  Are you sure you want to cancel your {cancelSessionInstance_.title} lesson on{' '}
+                  {format(parseISO(instanceDateIso(cancelSessionInstance_)), 'EEEE, MMM d')} at {cancelSessionInstance_.startTime}?
                   <br /><br />
                   <span className="text-xs">
                     Note: Cancelling within 24 hours of the lesson requires teacher approval.
@@ -572,21 +578,21 @@ export default function StudentPortalPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Lesson</AlertDialogCancel>
+            <AlertDialogCancel>Keep Session</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleCancel}
               disabled={isCancelling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isCancelling ? 'Cancelling...' : 'Yes, Cancel Lesson'}
+              {isCancelling ? 'Cancelling...' : 'Yes, Cancel Session'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Review Dialog */}
-      <Dialog open={!!reviewLesson} onOpenChange={() => {
-        setReviewLesson(null);
+      <Dialog open={!!reviewSession} onOpenChange={() => {
+        setReviewSession(null);
         setReviewRating(5);
         setReviewComment('');
       }}>
@@ -594,10 +600,10 @@ export default function StudentPortalPage() {
           <DialogHeader>
             <DialogTitle>Leave a Review</DialogTitle>
             <DialogDescription>
-              {reviewLesson && (
+              {reviewSession && (
                 <>
-                  How was your {reviewLesson.title} lesson on{' '}
-                  {format(parseISO(reviewLesson.date), 'EEEE, MMM d')}?
+                  How was your {reviewSession.title} lesson on{' '}
+                  {format(parseISO(instanceDateIso(reviewSession)), 'EEEE, MMM d')}?
                 </>
               )}
             </DialogDescription>
@@ -641,7 +647,7 @@ export default function StudentPortalPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setReviewLesson(null);
+              setReviewSession(null);
               setReviewRating(5);
               setReviewComment('');
             }}>
