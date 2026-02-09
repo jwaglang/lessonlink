@@ -113,8 +113,7 @@ export default function TimezonePrompt({ userIdOrEmail, userType, onTimezoneSet 
   async function handleConfirm() {
     setIsSaving(true);
     
-    await saveUserSettings({
-      userIdOrEmail,
+    await saveUserSettings(userIdOrEmail, {
       userType,
       timezone: selectedTimezone,
       timezoneConfirmed: true,

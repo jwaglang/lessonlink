@@ -16,10 +16,12 @@ import {
   getStudentCredit,
   getStudents,
   createMessage,
-  createStudentProgress
+  createStudentProgress,
+  createStudentCredit
 } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import UnitForm from './components/unit-form';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +46,8 @@ export default function UnitsPage() {
     const [selectedStudent, setSelectedStudent] = useState<string>('');
     const [isAssigning, setIsAssigning] = useState(false);
     const [studentCreditInfo, setStudentCreditInfo] = useState<StudentCredit | null>(null);
+    const [creditHoursInput, setCreditHoursInput] = useState<string>('');
+    const [isCreatingCredit, setIsCreatingCredit] = useState(false);
 
     useEffect(() => {
         // Fetch level name
@@ -120,7 +124,38 @@ export default function UnitsPage() {
         setAssigningUnit(unit);
         setSelectedStudent('');
         setStudentCreditInfo(null);
+        setCreditHoursInput('');
         setIsAssignDialogOpen(true);
+    };
+
+    const handleCreateCredit = async () => {
+        const hours = parseFloat(creditHoursInput);
+        if (!hours || hours <= 0 || !selectedStudent) return;
+        
+        setIsCreatingCredit(true);
+        try {
+            await createStudentCredit({
+                studentId: selectedStudent,
+                courseId: courseId,
+                uncommittedHours: hours,
+                committedHours: 0,
+                completedHours: 0,
+                totalPurchasedHours: hours,
+                currency: 'EUR',
+            });
+            
+            // Refresh credit info
+            const credit = await getStudentCredit(selectedStudent, courseId);
+            setStudentCreditInfo(credit || null);
+            setCreditHoursInput('');
+            
+            toast({ title: 'Credit Created', description: `${hours}h added for this learner.` });
+        } catch (error) {
+            console.error('Create credit error:', error);
+            toast({ title: 'Error', description: 'Failed to create credit.', variant: 'destructive' });
+        } finally {
+            setIsCreatingCredit(false);
+        }
     };
 
     const handleAssignUnit = async () => {
@@ -130,22 +165,12 @@ export default function UnitsPage() {
         try {
             const student = students.find(s => s.id === selectedStudent);
             
-            // Reserve credit
-            const result = await reserveCredit(
+            // Reserve credit (throws on failure)
+            await reserveCredit(
                 selectedStudent, 
                 courseId, 
                 assigningUnit.estimatedHours
             );
-            
-            if (!result.success) {
-                toast({ 
-                    title: 'Cannot Assign', 
-                    description: result.message, 
-                    variant: 'destructive' 
-                });
-                setIsAssigning(false);
-                return;
-            }
             
             // Get session count for this unit
             const sessions = await getSessionsByUnitId(assigningUnit.id);
@@ -160,7 +185,7 @@ export default function UnitsPage() {
                 status: 'assigned'
             });
             
-            // Send notification to student
+            // Send notification to learner
             await createMessage({
                 type: 'notification',
                 from: 'system',
@@ -203,6 +228,7 @@ export default function UnitsPage() {
 
     const handleStudentSelect = async (studentId: string) => {
         setSelectedStudent(studentId);
+        setCreditHoursInput('');
         
         // Fetch student's credit for this course
         const credit = await getStudentCredit(studentId, courseId);
@@ -255,7 +281,7 @@ export default function UnitsPage() {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleAssignClick(unit); }}>
                                                 <UserPlus className="mr-2 h-4 w-4" />
-                                                Assign to Student
+                                                Assign to Learner
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(unit); }}>
                                                 <Edit className="mr-2 h-4 w-4" />
@@ -370,6 +396,7 @@ export default function UnitsPage() {
                 if (!open) {
                     setAssigningUnit(null);
                     setSelectedStudent('');
+                    setCreditHoursInput('');
                     setTimeout(() => {
                         document.body.style.pointerEvents = '';
                     }, 500);
@@ -377,7 +404,7 @@ export default function UnitsPage() {
             }}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Assign Unit to Student</DialogTitle>
+                        <DialogTitle>Assign Unit to Learner</DialogTitle>
                     </DialogHeader>
                     
                     {assigningUnit && (
@@ -395,12 +422,12 @@ export default function UnitsPage() {
                                 </div>
                             </div>
 
-                            {/* Student Selection */}
+                            {/* Learner Selection */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Select Student</label>
+                                <label className="text-sm font-medium">Select Learner</label>
                                 <Select value={selectedStudent} onValueChange={handleStudentSelect}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Choose a student..." />
+                                        <SelectValue placeholder="Choose a learner..." />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {students.map(student => (
@@ -428,9 +455,31 @@ export default function UnitsPage() {
                                     </div>
                                 )}
                                 {selectedStudent && !studentCreditInfo && (
-                                    <p className="text-xs text-amber-600">
-                                        ⚠️ No credit found for this student in this course
-                                    </p>
+                                    <div className="rounded-lg border bg-muted/50 p-3 space-y-3">
+                                        <p className="text-xs text-amber-600">
+                                            ⚠️ No credit found for this learner in this course
+                                        </p>
+                                        <div className="flex gap-2 items-end">
+                                            <div className="flex-1">
+                                                <label className="text-xs font-medium mb-1 block">Hours to add</label>
+                                                <Input
+                                                    type="number"
+                                                    min="0.5"
+                                                    step="0.5"
+                                                    placeholder="e.g. 10"
+                                                    value={creditHoursInput}
+                                                    onChange={(e) => setCreditHoursInput(e.target.value)}
+                                                />
+                                            </div>
+                                            <Button 
+                                                onClick={handleCreateCredit}
+                                                disabled={!creditHoursInput || parseFloat(creditHoursInput) <= 0 || isCreatingCredit}
+                                                size="sm"
+                                            >
+                                                {isCreatingCredit ? 'Creating...' : 'Create Credit'}
+                                            </Button>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
