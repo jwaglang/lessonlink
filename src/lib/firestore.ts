@@ -1,5 +1,5 @@
 // ===================================
-// LessonLink Firestore - Baseline v6
+// LessonLink Firestore - Baseline v7
 // Last updated: February 2026
 // ===================================
 // 
@@ -12,6 +12,11 @@
 // - Booking creates `sessionInstance`
 // - Completion settles credit + updates progress
 // - NO `lessons` collection anywhere
+//
+// ID CONVENTION (v7):
+// - `studentId` = Firebase Auth UID (doc ID = Auth UID)
+// - `teacherUid` = Firebase Auth UID
+// - No separate `authUid` or `studentAuthUid` fields
 // ===================================
 
 import {
@@ -312,12 +317,17 @@ export async function getStudentByEmail(email: string): Promise<Student | null> 
   return asId<Student>(d.id, d.data());
 }
 
-export async function addStudent(student: Omit<Student, 'id'>): Promise<Student> {
-  const ref = await addDoc(studentsCollection, {
+/**
+ * Create a student document with a specific ID (typically Auth UID).
+ * Uses setDoc instead of addDoc to control the document ID.
+ */
+export async function createStudent(studentId: string, student: Omit<Student, 'id'>): Promise<Student> {
+  const ref = doc(db, 'students', studentId);
+  await setDoc(ref, {
     ...student,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
-  } as any);
+  });
   const snap = await getDoc(ref);
   return asId<Student>(snap.id, snap.data());
 }
@@ -330,10 +340,21 @@ export async function updateStudent(studentId: string, updates: Partial<Student>
   await updateDoc(doc(db, 'students', studentId), { ...updates, updatedAt: Timestamp.now() } as any);
 }
 
-export async function getOrCreateStudentByEmail(email: string, defaults?: Partial<Student>): Promise<Student> {
+/**
+ * Get or create a student by email.
+ * IMPORTANT: authUid must be provided to create the student with Auth UID as document ID.
+ * This ensures studentId === Auth UID everywhere.
+ */
+export async function getOrCreateStudentByEmail(
+  email: string, 
+  authUid: string,
+  defaults?: Partial<Student>
+): Promise<Student> {
+  // First check if student already exists by email
   const existing = await getStudentByEmail(email);
   if (existing) return existing;
 
+  // Create new student with Auth UID as document ID
   const toCreate: Omit<Student, 'id'> = {
     name: defaults?.name ?? email.split('@')[0],
     email,
@@ -345,10 +366,9 @@ export async function getOrCreateStudentByEmail(email: string, defaults?: Partia
     goalMet: defaults?.goalMet ?? false,
     isNewStudent: defaults?.isNewStudent ?? true,
     assignedTeacherId: defaults?.assignedTeacherId,
-    authUid: (defaults as any)?.authUid,
   };
 
-  return addStudent(toCreate);
+  return createStudent(authUid, toCreate);
 }
 
 export async function deleteStudent(studentId: string): Promise<void> {
@@ -401,11 +421,12 @@ export async function getSessionInstance(instanceId: string): Promise<SessionIns
  * Variant-1 booking gate:
  * - Requires studentProgress for (studentId, courseId, unitId)
  * - Requires studentCredit for (studentId, courseId) unless billingType === 'trial'
+ * 
+ * Note: studentId IS the Auth UID (v7 convention)
  */
 export async function bookLesson(input: {
-  studentId: string;
-  studentAuthUid: string;
-  teacherUid: string;
+  studentId: string;        // Auth UID (= doc ID)
+  teacherUid: string;       // Auth UID of teacher
   courseId: string;
   unitId: string;
   sessionId: string;
@@ -444,9 +465,8 @@ export async function bookLesson(input: {
   }
 
   const payload: any = {
-    studentId: input.studentId,
-    studentAuthUid: input.studentAuthUid,
-    teacherUid: input.teacherUid,
+    studentId: input.studentId,       // Auth UID
+    teacherUid: input.teacherUid,     // Auth UID
     courseId: input.courseId,
     unitId: input.unitId,
     sessionId: input.sessionId,
@@ -575,7 +595,6 @@ export async function rescheduleSessionInstance(
       unitId: existing.unitId,
       sessionId: existing.sessionId,
       teacherUid: existing.teacherUid,
-      studentAuthUid: existing.studentAuthUid,
       lessonDate: existing.lessonDate,
       lessonTime: existing.startTime,
       newDate: newLessonDate,
@@ -626,7 +645,6 @@ export async function cancelSessionInstance(
       unitId: existing.unitId,
       sessionId: existing.sessionId,
       teacherUid: existing.teacherUid,
-      studentAuthUid: existing.studentAuthUid,
       lessonDate: existing.lessonDate,
       lessonTime: existing.startTime,
       status: 'pending',
@@ -780,21 +798,20 @@ export async function resolveApprovalRequest(
     await updateDoc(approvalRef, { status: 'approved', resolvedAt: nowIso() } as any);
 
     // Notify student to complete payment to book
-    if (r.studentAuthUid) {
-      await createMessage({
-        to: r.studentAuthUid,
-        from: req.teacherUid || 'system',
-        fromType: 'system',
-        toType: 'student',
-        type: 'notification',
-        content: 'Approved. Please complete payment to book your sessions.',
-        timestamp: nowIso(),
-        read: false,
-        relatedEntity: { type: 'approvalRequest', id: requestId },
-        actionLink: '/s-portal/book',
-        createdAt: nowIso(),
-      } as any);
-    }
+    // studentId IS the Auth UID in v7
+    await createMessage({
+      to: req.studentId,
+      from: req.teacherUid || 'system',
+      fromType: 'system',
+      toType: 'student',
+      type: 'notification',
+      content: 'Approved. Please complete payment to book your sessions.',
+      timestamp: nowIso(),
+      read: false,
+      relatedEntity: { type: 'approvalRequest', id: requestId },
+      actionLink: '/s-portal/book',
+      createdAt: nowIso(),
+    } as any);
   } else {
     // fallback: approve without side effects
     await updateDoc(approvalRef, { status: 'approved', resolvedAt: nowIso() } as any);

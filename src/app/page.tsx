@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logIn, signUp } from '@/lib/auth';
+import { createStudent } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,7 +68,23 @@ export default function LandingPage() {
     setLoading(true);
 
     try {
-      await signUp(signupEmail, signupPassword);
+      const user = await signUp(signupEmail, signupPassword);
+
+      // Create student doc if learner (v7: doc ID = Auth UID)
+      if (role === 'learner') {
+        await createStudent(user.uid, {
+          name: user.displayName || signupEmail.split('@')[0],
+          email: signupEmail,
+          avatarUrl: '',
+          status: 'currently enrolled',
+          enrollmentStatus: 'unknown',
+          paymentStatus: 'unknown',
+          prepaidPackage: { initialValue: 0, balance: 0, currency: 'EUR' },
+          goalMet: false,
+          isNewStudent: true,
+        });
+      }
+
       const redirectPath = role === 'learner' ? '/s-portal' : '/t-portal';
       router.push(redirectPath);
     } catch (err: any) {

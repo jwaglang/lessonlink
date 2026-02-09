@@ -16,16 +16,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { addStudent } from '@/lib/firestore';
+import { getStudentByEmail } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
 });
 
 interface AddStudentFormProps {
-  onSuccess: (newStudent: Student) => void;
+  onSuccess: (student: Student) => void;
 }
 
 export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
@@ -35,7 +34,6 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
       email: '',
     },
   });
@@ -43,16 +41,24 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
       try {
-        const newStudent = await addStudent(values);
-        toast({
-          title: 'Student Added',
-          description: `${newStudent.name} has been added to your roster.`,
-        });
-        onSuccess(newStudent);
+        const student = await getStudentByEmail(values.email);
+        if (student) {
+          toast({
+            title: 'Student Found',
+            description: `${student.name} has been added to your roster.`,
+          });
+          onSuccess(student);
+        } else {
+          toast({
+            title: 'Student Not Found',
+            description: 'No account found for that email. Ask the student to sign in first.',
+            variant: 'destructive',
+          });
+        }
       } catch (error) {
         toast({
           title: 'Error',
-          description: 'Failed to add student. Please try again.',
+          description: 'Failed to look up student. Please try again.',
           variant: 'destructive',
         });
       }
@@ -64,23 +70,10 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6">
         <FormField
           control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Student's full name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Student Email</FormLabel>
               <FormControl>
                 <Input placeholder="student@example.com" {...field} />
               </FormControl>
@@ -89,7 +82,7 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
           )}
         />
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? <Loader2 className="animate-spin" /> : 'Add Student'}
+          {isPending ? <Loader2 className="animate-spin" /> : 'Find Student'}
         </Button>
       </form>
     </Form>

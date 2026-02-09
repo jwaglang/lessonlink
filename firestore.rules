@@ -23,38 +23,32 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
-    // Returns teacher UID assigned to a given studentId (or null if missing)
+    // Returns teacher UID assigned to a given studentId
+    // Note: studentId IS the Auth UID in v7 convention
     function assignedTeacherUid(studentId) {
       return get(/databases/$(database)/documents/students/$(studentId)).data.assignedTeacherId;
-    }
-
-    // Get the auth UID stored on a student document (students/{studentId}.authUid)
-    function studentAuthUid(studentId) {
-      return get(/databases/$(database)/documents/students/$(studentId)).data.authUid;
     }
 
     // ===================================
     // Collection Rules
     // ===================================
 
+    // STUDENTS
+    // studentId (doc ID) = Auth UID
     match /students/{studentId} {
-      // QUERY-SAFE:
-      // - Admin can read all
-      // - Teacher can read only students assigned to them
-      // - Student can read only their own student doc (authUid == request.auth.uid)
-      //
-      // For list/query: Firestore will only allow the query if EVERY returned doc
-      // satisfies this predicate (so teachers must query with assignedTeacherId == uid).
+      // Read: admin, assigned teacher, or the student themselves (doc ID == auth.uid)
       allow read: if isAuthenticated() && (
         isAdmin() ||
         (isTeacher() && resource.data.assignedTeacherId == request.auth.uid) ||
-        (resource.data.authUid == request.auth.uid)
+        (studentId == request.auth.uid)
       );
 
-      // Create: only if they are creating their own student record (email matches auth token)
-      allow create: if isAuthenticated() && request.resource.data.email == request.auth.token.email;
+      // Create: only if creating their own record (doc ID == auth.uid, email matches)
+      allow create: if isAuthenticated() && 
+        studentId == request.auth.uid &&
+        request.resource.data.email == request.auth.token.email;
 
-      // Updates: admin or teacher only (students cannot edit student docs)
+      // Updates: admin or teacher only
       allow update, delete: if isAdmin() || isTeacher();
     }
 
@@ -65,25 +59,21 @@ service cloud.firestore {
 
     // ===================================
     // SESSION INSTANCES (booked classes)
+    // studentId = Auth UID (v7 convention)
     // ===================================
     match /sessionInstances/{instanceId} {
       allow read, list: if isAuthenticated() && (
         isAdmin() ||
-        resource.data.studentAuthUid == request.auth.uid ||
+        resource.data.studentId == request.auth.uid ||
         resource.data.teacherUid == request.auth.uid
       );
 
       // Student booking creates a sessionInstance for themselves
       allow create: if isAuthenticated() && (
-        // Admin can create anything
         isAdmin() ||
-
-        // Teacher can create only if they are the teacher on the instance
         (isTeacher() && request.resource.data.teacherUid == request.auth.uid) ||
-
-        // Student can create only for themselves and must target a teacher UID
         (
-          request.resource.data.studentAuthUid == request.auth.uid &&
+          request.resource.data.studentId == request.auth.uid &&
           request.resource.data.teacherUid is string &&
           request.resource.data.courseId is string &&
           request.resource.data.unitId is string &&
@@ -94,16 +84,11 @@ service cloud.firestore {
 
       // Teacher or admin can update; student can only update their own (limited)
       allow update: if isAuthenticated() && (
-        // Admin override
         isAdmin() ||
-
-        // Owning teacher only
         resource.data.teacherUid == request.auth.uid ||
-
-        // Owning student, with strict field locking
         (
-          resource.data.studentAuthUid == request.auth.uid &&
-          request.resource.data.studentAuthUid == resource.data.studentAuthUid &&
+          resource.data.studentId == request.auth.uid &&
+          request.resource.data.studentId == resource.data.studentId &&
           request.resource.data.teacherUid == resource.data.teacherUid &&
           request.resource.data.courseId == resource.data.courseId &&
           request.resource.data.unitId == resource.data.unitId &&
@@ -149,11 +134,12 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
+    // studentId = Auth UID
     match /studentPackages/{pkgId} {
       allow read, list: if isAuthenticated() && (
         isAdmin() ||
         (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
-        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+        (resource.data.studentId == request.auth.uid)
       );
       allow write: if isAdmin() || isTeacher();
     }
@@ -190,38 +176,42 @@ service cloud.firestore {
       allow delete: if isAdmin() || isTeacher();
     }
 
+    // studentId = Auth UID
     match /studentProgress/{progressId} {
       allow read, list: if isAuthenticated() && (
         isAdmin() ||
         (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
-        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+        (resource.data.studentId == request.auth.uid)
       );
       allow write: if isAdmin() || isTeacher();
     }
 
+    // studentId = Auth UID
     match /studentRewards/{rewardId} {
       allow read, list: if isAuthenticated() && (
         isAdmin() ||
         (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
-        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+        (resource.data.studentId == request.auth.uid)
       );
       allow write: if isAdmin() || isTeacher();
     }
 
+    // studentId = Auth UID
     match /assessmentReports/{reportId} {
       allow read, list: if isAuthenticated() && (
         isAdmin() ||
         (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
-        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+        (resource.data.studentId == request.auth.uid)
       );
       allow write: if isAdmin() || isTeacher();
     }
 
+    // studentId = Auth UID
     match /studentCredit/{creditId} {
       allow read, list: if isAuthenticated() && (
         isAdmin() ||
         (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
-        (studentAuthUid(resource.data.studentId) == request.auth.uid)
+        (resource.data.studentId == request.auth.uid)
       );
       allow write: if isAdmin() || isTeacher();
     }
@@ -242,7 +232,7 @@ service cloud.firestore {
         request.resource.data.timestamp is string &&
         request.resource.data.content is string;
 
-      // Only sender can update (e.g. edits) and recipient can update read state
+      // Sender can update, recipient can only update read state
       allow update: if isAuthenticated() &&
         (
           request.auth.uid == resource.data.from ||

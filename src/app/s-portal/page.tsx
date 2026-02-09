@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { logOut } from '@/lib/auth';
 import {
-  getOrCreateStudentByEmail,
+  getStudentById,
   getSessionInstancesByStudentId,
   getAvailableSlots,
   rescheduleSessionInstance,
@@ -100,7 +100,13 @@ export default function StudentPortalPage() {
   useEffect(() => {
     async function fetchStudentData() {
       if (user?.email) {
-        const studentRecord = await getOrCreateStudentByEmail(user.email);
+        console.log('🔍 Attempting to get/create student:', { email: user.email, uid: user.uid });
+        const studentRecord = await getStudentById(user.uid);
+        if (!studentRecord) {
+          setLoadingData(false);
+          return;
+        }
+        console.log('✅ Student record result:', studentRecord);
         setStudent(studentRecord);
         
         const studentSessions = await getSessionInstancesByStudentId(studentRecord.id);

@@ -1,13 +1,18 @@
 // ===================================
-// LessonLink Types - Baseline v6
+// LessonLink Types - Baseline v7
 // Last updated: February 2026
+// ===================================
+//
+// ID CONVENTION (v7):
+// - `studentId` = Firebase Auth UID (student doc ID = Auth UID)
+// - `teacherUid` = Firebase Auth UID
+// - No separate `authUid` or `studentAuthUid` fields
 // ===================================
 
 export type StudentStatus = 'currently enrolled' | 'unenrolled (package over)' | 'unenrolled (goal met)' | 'MIA';
 
 export interface Student {
-  id: string;
-  authUid?: string; // Firebase Auth UID for this student (optional; prefer student doc id === auth.uid long-term)
+  id: string; // Firebase Auth UID (doc ID = Auth UID)
   name: string;
   email: string;
   avatarUrl: string;
@@ -21,25 +26,24 @@ export interface Student {
   };
   goalMet: boolean;
   isNewStudent?: boolean; // true if never had a completed booking
-  assignedTeacherId?: string;
+  assignedTeacherId?: string; // teacherUid of assigned teacher
 }
 
 export interface SessionInstance {
   id: string;
 
   // scheduling
-  studentId: string; // student doc id
-  studentAuthUid: string; // Firebase Auth UID for the student
-  teacherUid: string; // Firebase Auth UID for the teacher
+  studentId: string;   // Firebase Auth UID (= student doc ID)
+  teacherUid: string;  // Firebase Auth UID of teacher
   courseId: string;
   unitId: string;
-  sessionId: string; // template session id
+  sessionId: string;   // template session id
 
   title?: string; // session title (denormalized for UI)
 
   lessonDate: string; // YYYY-MM-DD (local date string)
-  startTime: string; // "HH:mm"
-  endTime: string; // "HH:mm"
+  startTime: string;  // "HH:mm"
+  endTime: string;    // "HH:mm"
   durationHours: number; // 0.5 | 1
 
   // billing
@@ -118,15 +122,15 @@ export interface Session {
   homeworkId?: string | null;
 }
 
-export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request';
+export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request' | 'approvalRequest';
 
 export interface ApprovalRequest {
   id: string;
   type: ApprovalRequestType;
-  studentId: string;
+  studentId: string; // Firebase Auth UID
   studentName: string;
   studentEmail: string;
-  lessonId?: string; // back-compat: refers to sessionInstance id
+  lessonId?: string;
   lessonTitle?: string;
   lessonDate?: string;
   lessonTime?: string;
@@ -137,13 +141,12 @@ export interface ApprovalRequest {
   status: 'pending' | 'approved' | 'denied';
   createdAt: string; // ISO string
   resolvedAt?: string; // ISO string
-  // Required for Variant-1 approval flow
+  // Needed to create a valid sessionInstance on approval
   courseId?: string;
   unitId?: string;
   sessionId?: string;
   durationHours?: number;
   teacherUid?: string;
-  studentAuthUid?: string;
 }
 
 export interface UserSettings {
@@ -156,7 +159,7 @@ export interface UserSettings {
 
 export interface StudentPackage {
   id: string;
-  studentId: string;
+  studentId: string; // Firebase Auth UID
   courseId: string;
   levelId?: string;
   courseTitle: string;
@@ -175,24 +178,23 @@ export interface StudentPackage {
 
 export interface StudentCredit {
   id: string;
-  studentId: string;
+  studentId: string; // Firebase Auth UID
   courseId: string;
-  packageId: string; // Links to studentPackages
-  totalHours: number; // Total hours purchased (e.g., 10)
-  uncommittedHours: number; // Hours available for new units
-  committedHours: number; // Hours reserved for assigned units
-  completedHours: number; // Hours already used/consumed
-  currency: string; // USD, EUR, etc.
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
+  packageId: string;              // Links to studentPackages
+  totalHours: number;             // Total hours purchased (e.g., 10)
+  uncommittedHours: number;       // Hours available for new units
+  committedHours: number;         // Hours reserved for assigned units
+  completedHours: number;         // Hours already used/consumed
+  currency: string;               // USD, EUR, etc.
+  createdAt: string;              // ISO timestamp
+  updatedAt: string;              // ISO timestamp
 }
 
-// FIX v6: Added id, unitId, status, assignedAt, hoursReserved to match firestore.ts writes
 export interface StudentProgress {
-  id?: string; // Firestore document ID (added by asId helper)
-  studentId: string;
+  id?: string;
+  studentId: string; // Firebase Auth UID
   courseId: string;
-  unitId: string; // FIX: was missing - required for Variant-1 progress tracking per unit
+  unitId: string;    // Required in v7
   levelId?: string;
   totalHoursCompleted: number;
   targetHours: number;
@@ -201,9 +203,6 @@ export interface StudentProgress {
   unitsTotal: number;
   sessionsCompleted: number;
   sessionsTotal: number;
-  hoursReserved?: number; // Hours reserved from credit for this unit
-  status?: 'assigned' | 'in_progress' | 'completed'; // Progress status
-  assignedAt?: string; // ISO timestamp when unit was assigned
   homeworkAccuracyAvg?: number | null;
   assessmentScoreAvg?: number | null;
   evaluationScoreAvg?: number | null;
@@ -211,9 +210,14 @@ export interface StudentProgress {
   lastActivityAt: string;
   startedAt: string;
   completedAt?: string | null;
-  createdAt?: string; // ISO timestamp
-  updatedAt?: string; // ISO timestamp
+  // v7 additions
+  status?: 'assigned' | 'in_progress' | 'completed';
+  assignedAt?: string;
+  hoursReserved?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
 
 // ============================================
 // TEACHER PROFILE
@@ -237,7 +241,7 @@ export interface TeacherExperience {
 }
 
 export interface TeacherProfile {
-  id: string;
+  id: string; // Firebase Auth UID (doc ID = Auth UID)
   username: string; // unique, used in URL /t/[username]
   email: string; // linked to auth
   name: string;
@@ -245,17 +249,17 @@ export interface TeacherProfile {
   avatarUrl: string;
   coverImageUrl?: string;
   videoUrl?: string; // YouTube intro video
-
+  
   // Bio sections
   aboutMe: string;
   teachingPhilosophy?: string; // "Me as a Teacher"
   lessonStyle?: string; // "My lessons & teaching style"
   teachingMaterials?: string[]; // e.g., ["Presentation slides", "Flashcards"]
-
+  
   // Languages
   nativeLanguage: string;
   otherLanguages?: string[];
-
+  
   // Details
   specialties?: string[]; // e.g., ["Test Preparation", "Kids"]
   interests?: string[]; // e.g., ["Gaming", "Films & TV Series"]
@@ -263,11 +267,11 @@ export interface TeacherProfile {
   cityLiving: string;
   timezone: string;
   teachingSince?: string; // e.g., "Mar 16, 2013"
-
+  
   // Credentials
   certificates?: TeacherCertificate[];
   experience?: TeacherExperience[];
-
+  
   // Stats (auto-calculated or manually set)
   stats: {
     rating: number; // 0-5
@@ -276,7 +280,7 @@ export interface TeacherProfile {
     attendanceRate: number; // 0-100
     responseRate: number; // 0-100
   };
-
+  
   // Status
   isOnline?: boolean;
   isPublished: boolean; // false = draft, not visible to students
@@ -292,21 +296,21 @@ export interface Review {
   id: string;
   sessionInstanceId?: string; // preferred link to SessionInstance
   lessonId?: string; // back-compat; historically used for SessionInstance id
-  studentId?: string; // optional for imported reviews
+  studentId?: string; // Firebase Auth UID (optional for imported reviews)
   studentName: string;
   studentAvatarUrl?: string;
-  teacherId: string;
+  teacherId: string; // Firebase Auth UID
   rating: number; // 1-5
   comment: string;
   createdAt: string; // ISO string
-
+  
   // Moderation
   pinned: boolean; // teacher can pin up to 5
   visible: boolean; // admin can hide reviews
-
+  
   // Tags (e.g., "Structured lessons", "Provides materials", "For beginners")
   tags?: string[];
-
+  
   // For imported reviews
   imported?: boolean;
   importSource?: string; // e.g., "italki"
@@ -337,15 +341,14 @@ export function calculateLessonPrice(
 
 export type MessageType = 'notification' | 'communications';
 export type ParticipantType = 'teacher' | 'student' | 'system';
-// FIX v6: Added 'approvalRequest' to match firestore.ts usage in resolveApprovalRequest
 export type RelatedEntityType = 'unit' | 'session' | 'package' | 'credit' | 'approvalRequest';
 
 export interface Message {
   id: string;
   type: MessageType;
-  from: string; // studentId or teacher UID or 'system'
+  from: string; // studentId (Auth UID) or teacher UID or 'system'
   fromType: ParticipantType;
-  to: string; // studentId or teacher UID
+  to: string; // studentId (Auth UID) or teacher UID
   toType: ParticipantType;
   content: string;
   timestamp: string; // ISO string
