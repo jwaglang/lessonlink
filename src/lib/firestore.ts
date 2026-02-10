@@ -162,8 +162,10 @@ export async function addCourse(course: Omit<Course, 'id'>): Promise<Course> {
   return asId<Course>(snap.id, snap.data());
 }
 
-export async function updateCourse(courseId: string, updates: Partial<Course>): Promise<void> {
+export async function updateCourse(courseId: string, updates: Partial<Course>): Promise<Course> {
   await updateDoc(doc(db, 'courses', courseId), { ...updates, updatedAt: Timestamp.now() } as any);
+  const snap = await getDoc(doc(db, 'courses', courseId));
+  return asId<Course>(snap.id, snap.data());
 }
 
 export async function deleteCourse(courseId: string): Promise<void> {
@@ -332,12 +334,16 @@ export async function createStudent(studentId: string, student: Omit<Student, 'i
   return asId<Student>(snap.id, snap.data());
 }
 
-export async function updateStudentStatus(studentId: string, status: Student['status']): Promise<void> {
+export async function updateStudentStatus(studentId: string, status: Student['status']): Promise<Student> {
   await updateDoc(doc(db, 'students', studentId), { status, updatedAt: Timestamp.now() } as any);
+  const snap = await getDoc(doc(db, 'students', studentId));
+  return asId<Student>(snap.id, snap.data());
 }
 
-export async function updateStudent(studentId: string, updates: Partial<Student>): Promise<void> {
+export async function updateStudent(studentId: string, updates: Partial<Student>): Promise<Student> {
   await updateDoc(doc(db, 'students', studentId), { ...updates, updatedAt: Timestamp.now() } as any);
+  const snap = await getDoc(doc(db, 'students', studentId));
+  return asId<Student>(snap.id, snap.data());
 }
 
 /**
@@ -350,9 +356,13 @@ export async function getOrCreateStudentByEmail(
   authUid: string,
   defaults?: Partial<Student>
 ): Promise<Student> {
-  // First check if student already exists by email
-  const existing = await getStudentByEmail(email);
-  if (existing) return existing;
+  // First check if student already exists with this UID
+  const existingByUid = await getStudentById(authUid);
+  if (existingByUid) return existingByUid;
+  
+  // Next check by email (in case of old data model)
+  const existingByEmail = await getStudentByEmail(email);
+  if (existingByEmail) return existingByEmail;
 
   // Create new student with Auth UID as document ID
   const toCreate: Omit<Student, 'id'> = {
@@ -730,7 +740,7 @@ export async function getApprovalRequests(status?: ApprovalRequest['status']): P
   return snapshot.docs.map(d => asId<ApprovalRequest>(d.id, d.data()));
 }
 
-export async function createApprovalRequest(request: Omit<ApprovalRequest, 'id'>): Promise<ApprovalRequest> {
+export async function createApprovalRequest(request: Omit<ApprovalRequest, 'id' | 'studentAuthUid'>): Promise<ApprovalRequest> {
   const ref = await addDoc(approvalRequestsCollection, {
     ...request,
     createdAt: request.createdAt ?? nowIso(),
@@ -811,6 +821,7 @@ export async function resolveApprovalRequest(
       relatedEntity: { type: 'approvalRequest', id: requestId },
       actionLink: '/s-portal/book',
       createdAt: nowIso(),
+      studentAuthUid: req.studentAuthUid,
     } as any);
   } else {
     // fallback: approve without side effects
@@ -825,17 +836,15 @@ export async function resolveApprovalRequest(
    User Settings
    ========================================================= */
 
-export async function getUserSettings(userId: string): Promise<UserSettings | null> {
-  const snap = await getDoc(doc(db, 'userSettings', userId));
+export async function getUserSettings(userId: string, userType: 'teacher' | 'student'): Promise<UserSettings | null> {
+  const id = `${userType}-${userId}`;
+  const snap = await getDoc(doc(db, 'userSettings', id));
   return snap.exists() ? asId<UserSettings>(snap.id, snap.data()) : null;
 }
 
-export async function getTeacherSettings(teacherUid: string): Promise<UserSettings | null> {
-  return getUserSettings(teacherUid);
-}
-
-export async function saveUserSettings(userId: string, settings: Partial<UserSettings>): Promise<void> {
-  const ref = doc(db, 'userSettings', userId);
+export async function saveUserSettings(userId: string, settings: Partial<Omit<UserSettings, 'id'>>): Promise<void> {
+  const id = `${settings.userType}-${userId}`;
+  const ref = doc(db, 'userSettings', id);
   const snap = await getDoc(ref);
   if (snap.exists()) {
     await updateDoc(ref, { ...settings, updatedAt: Timestamp.now() } as any);
@@ -891,8 +900,10 @@ export async function decrementPackageLessons(pkgId: string, decrementBy = 1): P
    Teacher Profiles
    ========================================================= */
 
-export async function createTeacherProfile(profile: Omit<TeacherProfile, 'id'>, teacherUid: string): Promise<void> {
-  await setDoc(doc(db, 'teacherProfiles', teacherUid), { ...profile, createdAt: Timestamp.now(), updatedAt: Timestamp.now() } as any);
+export async function createTeacherProfile(profile: Omit<TeacherProfile, 'id'>): Promise<TeacherProfile> {
+  const ref = await addDoc(teacherProfilesCollection, { ...profile, createdAt: Timestamp.now(), updatedAt: Timestamp.now() } as any);
+  const snap = await getDoc(ref);
+  return asId<TeacherProfile>(snap.id, snap.data());
 }
 
 export async function getTeacherProfileByUsername(username: string): Promise<TeacherProfile | null> {
@@ -909,13 +920,15 @@ export async function getTeacherProfileByEmail(email: string): Promise<TeacherPr
   return asId<TeacherProfile>(d.id, d.data());
 }
 
-export async function getTeacherProfileById(teacherUid: string): Promise<TeacherProfile | null> {
-  const snap = await getDoc(doc(db, 'teacherProfiles', teacherUid));
+export async function getTeacherProfileById(teacherId: string): Promise<TeacherProfile | null> {
+  const snap = await getDoc(doc(db, 'teacherProfiles', teacherId));
   return snap.exists() ? asId<TeacherProfile>(snap.id, snap.data()) : null;
 }
 
-export async function updateTeacherProfile(teacherUid: string, updates: Partial<TeacherProfile>): Promise<void> {
-  await updateDoc(doc(db, 'teacherProfiles', teacherUid), { ...updates, updatedAt: Timestamp.now() } as any);
+export async function updateTeacherProfile(teacherId: string, updates: Partial<Omit<TeacherProfile, 'id'>>): Promise<TeacherProfile> {
+  await updateDoc(doc(db, 'teacherProfiles', teacherId), { ...updates, updatedAt: Timestamp.now() } as any);
+  const snap = await getDoc(doc(db, 'teacherProfiles', teacherId));
+  return asId<TeacherProfile>(snap.id, snap.data());
 }
 
 export async function isUsernameAvailable(username: string): Promise<boolean> {
@@ -923,8 +936,11 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
   return snapshot.empty;
 }
 
-export async function getAllTeacherProfiles(): Promise<TeacherProfile[]> {
-  const snapshot = await getDocs(query(teacherProfilesCollection, orderBy('username', 'asc')));
+export async function getAllTeacherProfiles(publishedOnly = false): Promise<TeacherProfile[]> {
+  const q = publishedOnly 
+    ? query(teacherProfilesCollection, where('isPublished', '==', true), orderBy('name', 'asc'))
+    : query(teacherProfilesCollection, orderBy('name', 'asc'));
+  const snapshot = await getDocs(q);
   return snapshot.docs.map(d => asId<TeacherProfile>(d.id, d.data()));
 }
 
@@ -938,22 +954,21 @@ export async function createReview(review: Omit<Review, 'id'>): Promise<Review> 
   return asId<Review>(snap.id, snap.data());
 }
 
-export async function getReviewsByTeacher(teacherId: string): Promise<Review[]> {
-  const snapshot = await getDocs(query(reviewsCollection, where('teacherId', '==', teacherId), where('visible', '==', true), orderBy('createdAt', 'desc')));
+export async function getReviewsByTeacher(teacherId: string, visibleOnly = true): Promise<Review[]> {
+  const constraints = [
+      where('teacherId', '==', teacherId),
+      orderBy('createdAt', 'desc')
+  ];
+  if (visibleOnly) {
+      constraints.push(where('visible', '==', true));
+  }
+  const snapshot = await getDocs(query(reviewsCollection, ...constraints));
   return snapshot.docs.map(d => asId<Review>(d.id, d.data()));
 }
 
 export async function getPinnedReviews(teacherId: string): Promise<Review[]> {
   const snapshot = await getDocs(query(reviewsCollection, where('teacherId', '==', teacherId), where('pinned', '==', true), where('visible', '==', true), orderBy('createdAt', 'desc')));
   return snapshot.docs.map(d => asId<Review>(d.id, d.data()));
-}
-
-export async function toggleReviewPin(reviewId: string, pinned: boolean): Promise<void> {
-  await updateDoc(doc(db, 'reviews', reviewId), { pinned } as any);
-}
-
-export async function toggleReviewVisibility(reviewId: string, visible: boolean): Promise<void> {
-  await updateDoc(doc(db, 'reviews', reviewId), { visible } as any);
 }
 
 export async function getReviewById(reviewId: string): Promise<Review | null> {
@@ -968,13 +983,6 @@ export async function getAllReviews(): Promise<Review[]> {
 
 export async function deleteReview(reviewId: string): Promise<void> {
   await deleteDoc(doc(db, 'reviews', reviewId));
-}
-
-export async function getReviewBySessionInstanceId(lessonId: string): Promise<Review | null> {
-  const snapshot = await getDocs(query(reviewsCollection, where('lessonId', '==', lessonId), limit(1)));
-  if (snapshot.empty) return null;
-  const d = snapshot.docs[0];
-  return asId<Review>(d.id, d.data());
 }
 
 export async function getReviewedSessionInstanceIds(studentId: string): Promise<string[]> {
