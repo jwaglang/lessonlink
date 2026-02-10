@@ -13,7 +13,7 @@ import { Bell, MessageSquare, Send, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
 
-import { createMessage, markMessageAsRead, getStudentByEmail, messagesCollection } from '@/lib/firestore';
+import { createMessage, markMessageAsRead, getStudentById, messagesCollection } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
 import { onSnapshot, orderBy, query, where } from 'firebase/firestore';
 
@@ -44,7 +44,7 @@ export default function StudentChatPage() {
     if (!user?.email) return;
 
     (async () => {
-      const s = await getStudentByEmail(user.email);
+      const s = await getStudentById(user.uid);
       if (!s || !s.assignedTeacherId) return;
       setStudent(s);
       setTeacherId(s.assignedTeacherId);
@@ -58,7 +58,6 @@ export default function StudentChatPage() {
 
     const q = query(
       messagesCollection,
-      where('studentAuthUid', '==', user.uid),
       where('to', '==', student.id),
       where('read', '==', false)
     );
@@ -83,7 +82,6 @@ export default function StudentChatPage() {
 
     const q = query(
       messagesCollection,
-      where('studentAuthUid', '==', user.uid),
       where('type', '==', 'notification'),
       where('to', '==', student.id),
       orderBy('timestamp', 'desc')
@@ -114,7 +112,6 @@ export default function StudentChatPage() {
 
     const q = query(
       messagesCollection,
-      where('studentAuthUid', '==', user.uid),
       where('type', '==', 'communications'),
       where('participants', 'array-contains', participantKey),
       orderBy('timestamp', 'desc')
@@ -148,7 +145,6 @@ export default function StudentChatPage() {
     setSending(true);
     try {
       await createMessage({
-        studentAuthUid: user.uid,
         type: 'communications',
         from: student.id,
         fromType: 'student',
