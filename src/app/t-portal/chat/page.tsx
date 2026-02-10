@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bell, MessageSquare, Send } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { createMessage, messagesCollection } from '@/lib/firestore';
+import { createMessage, markMessageAsRead, messagesCollection } from '@/lib/firestore';
 import type { Message, Student } from '@/lib/types';
 import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -34,6 +34,10 @@ export default function TeacherChatPage() {
 
   const [studentUnreadCounts, setStudentUnreadCounts] =
     useState<Record<string, number>>({});
+
+  // Refs for merging dual communications queries
+  const sentRef = useRef<Message[]>([]);
+  const receivedRef = useRef<Message[]>([]);
 
   /* ---------------- STUDENTS + UNREAD COUNTS ---------------- */
 
@@ -94,58 +98,112 @@ export default function TeacherChatPage() {
     });
   }, [user, selectedStudent]);
 
-  /* ---------------- SINGLE COMMUNICATIONS LISTENER ---------------- */
+  /* ---------------- COMMUNICATIONS (dual query: sent + received) ---------------- */
 
   useEffect(() => {
     if (!user?.uid || !selectedStudent) {
       setCommunications([]);
+      sentRef.current = [];
+      receivedRef.current = [];
       return;
     }
 
     const teacherId = user.uid;
     const studentId = selectedStudent.id;
 
-    const q = query(
+    function mergeCommunications() {
+      const all = [...sentRef.current, ...receivedRef.current];
+      all.sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
+      setCommunications(all);
+    }
+
+    // Query 1: messages FROM teacher TO student
+    const qSent = query(
       messagesCollection,
       where('type', '==', 'communications'),
-      where('participants', 'array-contains', teacherId + ':' + studentId),
+      where('from', '==', teacherId),
+      where('to', '==', studentId),
       orderBy('timestamp', 'desc')
     );
 
-    return onSnapshot(q, snap => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
-      setCommunications(list);
-    });
+    // Query 2: messages FROM student TO teacher
+    const qReceived = query(
+      messagesCollection,
+      where('type', '==', 'communications'),
+      where('from', '==', studentId),
+      where('to', '==', teacherId),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubSent = onSnapshot(
+      qSent,
+      snap => {
+        sentRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        mergeCommunications();
+      },
+      err => {
+        console.error('[TeacherChat][COMMS-SENT] snapshot error', err);
+      }
+    );
+
+    const unsubReceived = onSnapshot(
+      qReceived,
+      snap => {
+        receivedRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        mergeCommunications();
+      },
+      err => {
+        console.error('[TeacherChat][COMMS-RECEIVED] snapshot error', err);
+      }
+    );
+
+    return () => {
+      unsubSent();
+      unsubReceived();
+    };
   }, [user, selectedStudent]);
 
-/* ---------------- SEND MESSAGE ---------------- */
+  /* ---------------- SEND MESSAGE ---------------- */
 
-async function handleSendMessage() {
-  if (!user?.uid || !selectedStudent || !selectedStudent.authUid || !newMessage.trim()) return;
+  async function handleSendMessage() {
+    if (!user?.uid || !selectedStudent || !newMessage.trim()) return;
 
-  setSending(true);
-  try {
-    await createMessage({
-      studentAuthUid: selectedStudent.authUid,
-      type: activeTab === 'notifications' ? 'notification' : 'communications',
-      from: user.uid,
-      fromType: 'teacher',
-      to: selectedStudent.id,
-      toType: 'student',
-      participants: [`${user.uid}:${selectedStudent.id}`],
-      subject: activeTab === 'notifications' ? newSubject || null : null,
-      content: newMessage,
-      timestamp: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      read: false,
-    });
+    setSending(true);
+    try {
+      if (activeTab === 'notifications') {
+        // Send as system notification
+        await createMessage({
+          type: 'notification',
+          from: 'system',
+          fromType: 'system',
+          to: selectedStudent.id,
+          toType: 'student',
+          content: newSubject ? `${newSubject}: ${newMessage}` : newMessage,
+          timestamp: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+      } else {
+        // Send as communications
+        await createMessage({
+          type: 'communications',
+          from: user.uid,
+          fromType: 'teacher',
+          to: selectedStudent.id,
+          toType: 'student',
+          content: newMessage,
+          timestamp: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+      }
 
-    setNewMessage('');
-    setNewSubject('');
-  } finally {
-    setSending(false);
+      setNewMessage('');
+      setNewSubject('');
+    } finally {
+      setSending(false);
+    }
   }
-}
 
   return (
     <div className="container mx-auto p-8">
@@ -208,11 +266,15 @@ async function handleSendMessage() {
                       m.from === user?.uid ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
                     }`}
                   >
-                    {m.subject && <h4 className="font-semibold">{m.subject}</h4>}
                     <p>{m.content}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {format(parseISO(m.timestamp), 'PPp')}
                     </p>
+                    {!m.read && m.from !== user?.uid && (
+                      <Button variant="ghost" size="sm" onClick={() => markMessageAsRead(m.id)}>
+                        Mark read
+                      </Button>
+                    )}
                   </div>
                 ))}
               </ScrollArea>

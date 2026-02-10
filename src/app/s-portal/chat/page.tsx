@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,13 +20,6 @@ import { onSnapshot, orderBy, query, where } from 'firebase/firestore';
 export default function StudentChatPage() {
   const { user } = useAuth();
 
-  useEffect(() => {
-    console.log('[StudentChat][AUTH]', {
-      userEmail: user?.email,
-      userUid: user?.uid,
-    });
-  }, [user]);
-
   const [student, setStudent] = useState<Student | null>(null);
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
@@ -38,10 +31,14 @@ export default function StudentChatPage() {
   const [sending, setSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Refs to hold both directions of communications for merging
+  const sentRef = useRef<Message[]>([]);
+  const receivedRef = useRef<Message[]>([]);
+
   /* ---------------- RESOLVE STUDENT + TEACHER ---------------- */
 
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.uid) return;
 
     (async () => {
       const s = await getStudentById(user.uid);
@@ -67,7 +64,6 @@ export default function StudentChatPage() {
       snap => setUnreadCount(snap.size),
       err => {
         console.error('[StudentChat][UNREAD] snapshot error', err);
-        console.log('[StudentChat][UNREAD] studentId=', student?.id);
       }
     );
   }, [student, user]);
@@ -95,12 +91,11 @@ export default function StudentChatPage() {
       },
       err => {
         console.error('[StudentChat][NOTIFICATIONS] snapshot error', err);
-        console.log('[StudentChat][NOTIFICATIONS] studentId=', student?.id);
       }
     );
   }, [student, user]);
 
-  /* ---------------- SINGLE COMMUNICATIONS LISTENER ---------------- */
+  /* ---------------- COMMUNICATIONS (dual query: sent + received) ---------------- */
 
   useEffect(() => {
     if (!student?.id || !teacherId || !user?.uid) {
@@ -108,33 +103,56 @@ export default function StudentChatPage() {
       return;
     }
 
-    const participantKey = `${teacherId}:${student.id}`;
+    function mergeCommunications() {
+      const all = [...sentRef.current, ...receivedRef.current];
+      all.sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
+      setCommunications(all);
+    }
 
-    const q = query(
+    // Query 1: messages FROM student TO teacher
+    const qSent = query(
       messagesCollection,
       where('type', '==', 'communications'),
-      where('participants', 'array-contains', participantKey),
+      where('from', '==', student.id),
+      where('to', '==', teacherId),
       orderBy('timestamp', 'desc')
     );
 
-    return onSnapshot(
-      q,
+    // Query 2: messages FROM teacher TO student
+    const qReceived = query(
+      messagesCollection,
+      where('type', '==', 'communications'),
+      where('from', '==', teacherId),
+      where('to', '==', student.id),
+      orderBy('timestamp', 'desc')
+    );
+
+    const unsubSent = onSnapshot(
+      qSent,
       snap => {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
-        setCommunications(list);
+        sentRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        mergeCommunications();
       },
       err => {
-        console.error('[StudentChat][COMMUNICATIONS] snapshot error', err);
-        console.log(
-          '[StudentChat][COMMUNICATIONS] studentId=',
-          student?.id,
-          'teacherId=',
-          teacherId,
-          'participantKey=',
-          `${teacherId}:${student?.id}`
-        );
+        console.error('[StudentChat][COMMS-SENT] snapshot error', err);
       }
     );
+
+    const unsubReceived = onSnapshot(
+      qReceived,
+      snap => {
+        receivedRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        mergeCommunications();
+      },
+      err => {
+        console.error('[StudentChat][COMMS-RECEIVED] snapshot error', err);
+      }
+    );
+
+    return () => {
+      unsubSent();
+      unsubReceived();
+    };
   }, [student, teacherId, user]);
 
   /* ---------------- SEND MESSAGE ---------------- */
@@ -150,7 +168,6 @@ export default function StudentChatPage() {
         fromType: 'student',
         to: teacherId,
         toType: 'teacher',
-        participants: [`${teacherId}:${student.id}`],
         content: newMessage,
         timestamp: new Date().toISOString(),
         createdAt: new Date().toISOString(),
