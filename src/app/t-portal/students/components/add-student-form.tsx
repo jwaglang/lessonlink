@@ -16,7 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getStudentByEmail } from '@/lib/firestore';
+import { useAuth } from '@/components/auth-provider';
+import { getStudentByEmail, updateStudent } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
@@ -30,6 +31,7 @@ interface AddStudentFormProps {
 export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,6 +45,7 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
       try {
         const student = await getStudentByEmail(values.email);
         if (student) {
+          await updateStudent(student.id, { assignedTeacherId: user!.uid });
           toast({
             title: 'Student Found',
             description: `${student.name} has been added to your roster.`,

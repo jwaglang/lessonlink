@@ -141,8 +141,8 @@ function BookingPageContent() {
 
   useEffect(() => {
     async function fetchData() {
-      if (user?.email) {
-        const studentRecord = await getOrCreateStudentByEmail(user.email, user.displayName || undefined);
+      if (user?.email && user.uid) {
+        const studentRecord = await getOrCreateStudentByEmail(user.email, user.uid, { name: user.displayName || undefined });
         setStudent(studentRecord);
         
         const newStudent = await isNewStudent(studentRecord.id);

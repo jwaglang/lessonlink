@@ -8,18 +8,20 @@ import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, ListOrdered, UserPlu
 import type { StudentCredit } from '@/lib/types';
 import Link from 'next/link';
 import { 
-  onUnitsUpdate, 
-  getLevelById, 
-  deleteUnit, 
-  getSessionsByUnitId, 
-  reserveCredit, 
-  getStudentCredit,
-  getStudents,
-  createMessage,
-  createStudentProgress,
-  createStudentCredit
-} from '@/lib/firestore';
+    onUnitsUpdate, 
+    getLevelById, 
+    deleteUnit, 
+    getSessionsByUnitId, 
+    reserveCredit, 
+    getStudentCredit,
+    getStudents,
+    createMessage,
+    createStudentProgress,
+    createStudentCredit,
+    updateStudent
+  } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/auth-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -31,6 +33,7 @@ export default function UnitsPage() {
     const params = useParams();
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = useAuth();
     const courseId = params.courseId as string;
     const levelId = params.levelId as string;
     const [units, setUnits] = useState<any[]>([]);
@@ -165,6 +168,11 @@ export default function UnitsPage() {
         try {
             const student = students.find(s => s.id === selectedStudent);
             
+            // Fallback: ensure assignedTeacherId is set
+            if (student && !student.assignedTeacherId) {
+                await updateStudent(selectedStudent, { assignedTeacherId: user!.uid });
+            }
+
             // Reserve credit (throws on failure)
             await reserveCredit(
                 selectedStudent, 
