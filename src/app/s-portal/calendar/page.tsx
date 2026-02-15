@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import {
-  getOrCreateStudentByEmail,
+  getStudentById,
   getAvailableSlots,
   getCourses,
   bookLesson,
@@ -141,7 +141,12 @@ function BookingPageContent() {
   useEffect(() => {
     async function fetchData() {
       if (user?.email && user.uid) {
-        const studentRecord = await getOrCreateStudentByEmail(user.email, user.uid, { name: user.displayName || undefined });
+        const studentRecord = await getStudentById(user.uid);
+        if (!studentRecord) {
+          console.error('No student record found for uid:', user.uid);
+          setLoadingData(false);
+          return;
+        }
         setStudent(studentRecord);
         
         const newStudent = await isNewStudent(studentRecord.id);
@@ -214,7 +219,6 @@ function BookingPageContent() {
           sessionId,
           durationHours: selectedDuration / 60,
           teacherUid,
-          studentAuthUid: user.uid,
         });
 
         setBookingResult({
@@ -236,7 +240,6 @@ function BookingPageContent() {
           sessionId,
           durationHours: selectedDuration / 60,
           teacherUid,
-          studentAuthUid: user.uid,
         });
 
         setAvailableSlots((prev) => prev.filter((s) => s.id !== selectedSlot.id));

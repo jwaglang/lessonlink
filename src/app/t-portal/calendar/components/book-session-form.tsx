@@ -161,7 +161,6 @@ export default function BookSessionForm({
 
         const newSessionInstance = await bookLesson({
           studentId: values.studentId,
-          studentAuthUid: student.authUid || student.id, // fallback to student doc id if no authUid
           teacherUid,
           courseId: values.courseId,
           unitId: values.unitId,

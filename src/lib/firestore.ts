@@ -364,21 +364,17 @@ export async function getOrCreateStudentByEmail(
   const existingByEmail = await getStudentByEmail(email);
   if (existingByEmail) return existingByEmail;
 
-  // Create new student with Auth UID as document ID
-  const toCreate: Omit<Student, 'id'> = {
-    name: defaults?.name ?? email.split('@')[0],
-    email,
-    avatarUrl: defaults?.avatarUrl ?? '',
-    status: defaults?.status ?? 'currently enrolled',
-    enrollmentStatus: defaults?.enrollmentStatus ?? 'unknown',
-    paymentStatus: defaults?.paymentStatus ?? 'unknown',
-    prepaidPackage: defaults?.prepaidPackage ?? { initialValue: 0, balance: 0, currency: 'EUR' },
-    goalMet: defaults?.goalMet ?? false,
-    isNewStudent: defaults?.isNewStudent ?? true,
-    assignedTeacherId: defaults?.assignedTeacherId,
-  };
+// Create new student with Auth UID as document ID
+const toCreate: Omit<Student, 'id'> = {
+  name: defaults?.name ?? email.split('@')[0],
+  email,
+  avatarUrl: defaults?.avatarUrl ?? '',
+  status: defaults?.status ?? 'active',
+  isNewStudent: defaults?.isNewStudent ?? true,
+  assignedTeacherId: defaults?.assignedTeacherId,
+};
 
-  return createStudent(authUid, toCreate);
+return createStudent(authUid, toCreate);
 }
 
 export async function deleteStudent(studentId: string): Promise<void> {
@@ -821,7 +817,6 @@ export async function resolveApprovalRequest(
       relatedEntity: { type: 'approvalRequest', id: requestId },
       actionLink: '/s-portal/book',
       createdAt: nowIso(),
-      studentAuthUid: req.studentAuthUid,
     } as any);
   } else {
     // fallback: approve without side effects

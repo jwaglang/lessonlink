@@ -9,7 +9,7 @@
 // - No separate `authUid` or `studentAuthUid` fields
 // ===================================
 
-export type StudentStatus = 'currently enrolled' | 'unenrolled (package over)' | 'unenrolled (goal met)' | 'MIA';
+export type StudentStatus = 'active' | 'trial' | 'paused' | 'completed' | 'churned';
 
 export interface Student {
   id: string; // Firebase Auth UID (doc ID = Auth UID)
@@ -17,16 +17,12 @@ export interface Student {
   email: string;
   avatarUrl: string;
   status: StudentStatus;
-  enrollmentStatus: string; // for AI
-  paymentStatus: string; // for AI
-  prepaidPackage: {
-    initialValue: number;
-    balance: number;
-    currency: string;
-  };
-  goalMet: boolean;
   isNewStudent?: boolean; // true if never had a completed booking
   assignedTeacherId?: string; // teacherUid of assigned teacher
+  notes?: string; // T private notes on learner
+  enrolledAt?: string; // ISO string
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SessionInstance {
@@ -163,16 +159,16 @@ export interface StudentPackage {
   courseId: string;
   levelId?: string;
   courseTitle: string;
-  totalLessons: number;
-  lessonsRemaining: number;
+  totalHours: number;
+  hoursRemaining: number;
   price: number;
   currency: string;
   purchaseDate: string; // ISO string
-  expirationDate: string; // ISO string, calculated based on 1 class/week
-  plannedBreaks?: { start: string; end: string }[]; // planned at purchase
-  pauseUsed: boolean; // whether the one-time pause has been used
-  pauseStart?: string; // ISO string
-  pauseEnd?: string; // ISO string
+  expiresAt: string; // ISO string
+  isPaused: boolean;
+  pausedAt?: string; // ISO string
+  pauseReason?: string;
+  totalDaysPaused: number;
   status: 'active' | 'expired' | 'completed' | 'paused';
 }
 

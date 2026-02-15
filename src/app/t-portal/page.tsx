@@ -87,7 +87,7 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   const atRiskStudents = students.filter(
-    (student) => student.status === 'MIA' || (student.prepaidPackage.balance <= 0 && student.status === 'currently enrolled')
+    (student) => student.status === 'churned' || student.status === 'paused'
   );
 
   const currencySymbols: { [key: string]: string } = {
@@ -121,7 +121,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-headline">
-              {students.filter(s => s.status === 'currently enrolled').length}
+            {students.filter(s => s.status === 'active' || s.status === 'trial').length}
             </div>
             <p className="text-xs text-muted-foreground">
               Total of {students.length} students
@@ -212,8 +212,8 @@ export default function DashboardPage() {
                       <p className="text-sm text-muted-foreground">{student.email}</p>
                     </div>
                   </div>
-                  <Badge variant={student.status === 'MIA' ? 'destructive' : 'secondary'}>
-                    {student.status === 'MIA' ? 'MIA' : 'Low Balance'}
+                  <Badge variant={student.status === 'churned' ? 'destructive' : 'secondary'}>
+                    {student.status === 'churned' ? 'Churned' : 'Paused'}
                   </Badge>
                 </div>
               );

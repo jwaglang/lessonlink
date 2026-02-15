@@ -76,11 +76,7 @@ export default function LandingPage() {
           name: user.displayName || signupEmail.split('@')[0],
           email: signupEmail,
           avatarUrl: '',
-          status: 'currently enrolled',
-          enrollmentStatus: 'unknown',
-          paymentStatus: 'unknown',
-          prepaidPackage: { initialValue: 0, balance: 0, currency: 'EUR' },
-          goalMet: false,
+          status: 'active',
           isNewStudent: true,
         });
       }
