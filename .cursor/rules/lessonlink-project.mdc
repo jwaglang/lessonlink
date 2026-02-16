@@ -23,6 +23,8 @@ LessonLink is a full LMS for independent online teachers. Teachers create curric
 - Ask before doing any activity that will be costly for usage limits
 - Trust user confirmations
 - If a file has no imports and is 100% not needed in future, delete it
+- All documents get a 3-char hexdate suffix (Year+Month+Day, e.g. Q2G = 2026-Feb-16). Encoding: 1-9 normal, A=10, B=11...V=31. Year uses last two digits encoded same way.
+- Always close sessions with a handoff doc BEFORE context window fills up. Never wait for forced compaction.
 
 ## Tech Stack
 - Next.js 15.5.9 (App Router), TypeScript 5.x

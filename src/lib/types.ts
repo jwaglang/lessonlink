@@ -424,7 +424,7 @@ export interface Message {
 // ===================================
 
 export type PaymentType = 'one_off' | 'package' | 'course';
-export type PaymentMethod = 'bank_transfer' | 'cash' | 'paypal' | 'wechat_pay' | 'other';
+export type PaymentMethod = 'bank_transfer' | 'cash' | 'paypal' | 'wechat_pay' | 'stripe' | 'other';
 export type PaymentStatus = 'completed' | 'pending' | 'refunded';
 
 export interface Payment {
@@ -439,5 +439,7 @@ export interface Payment {
   notes?: string;
   paymentDate: string;   // ISO string
   createdAt: string;     // ISO string
+  stripeSessionId?: string;
+  stripePaymentIntentId?: string;
   status: PaymentStatus;
 }

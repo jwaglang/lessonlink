@@ -189,22 +189,22 @@ export default function MyTutorPage() {
               <div className="flex flex-wrap gap-6">
                 <div className="flex items-center gap-2">
                   <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                  <span className="font-bold">{tutor.stats.rating.toFixed(1)}</span>
+                  <span className="font-bold">{(tutor.stats?.rating ?? 0).toFixed(1)}</span>
                   <span className="text-muted-foreground text-sm">Rating</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
-                  <span className="font-bold">{tutor.stats.totalStudents}</span>
+                  <span className="font-bold">{tutor.stats?.totalStudents ?? 0}</span>
                   <span className="text-muted-foreground text-sm">Learners</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  <span className="font-bold">{tutor.stats.totalLessons.toLocaleString()}</span>
+                  <span className="font-bold">{(tutor.stats?.totalLessons ?? 0).toLocaleString()}</span>
                   <span className="text-muted-foreground text-sm">Lessons</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="font-bold">{tutor.stats.attendanceRate}%</span>
+                  <span className="font-bold">{tutor.stats?.attendanceRate ?? 0}%</span>
                   <span className="text-muted-foreground text-sm">Attendance</span>
                 </div>
               </div>

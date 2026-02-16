@@ -1,0 +1,87 @@
+---
+description: LessonLink current progress, roadmap, Phase 13 plan, and known issues. Loaded on every interaction.
+globs:
+alwaysApply: true
+---
+
+# LessonLink — Status & Roadmap
+
+## Current Phase
+Phase 13: Stripe Integration
+
+## Completed Phases (1–12)
+Phases 1-12 are DONE. Most recent: Phase 12 completed all 14 steps — type system overhaul, roster rebuild, learner profile page with 4 tabs (Profile & Progress, Sessions, Packages & Credits, Payments), S portal sidebar sub-items, S dashboard enrichments, My Package page, Cloud Function for expired packages, expiration warnings on both portals, My Tutor page.
+
+## Phase 13 — Stripe Integration Steps
+
+| Step | What | Status |
+|------|------|--------|
+| 1 | Create 6 Stripe products in dashboard (manual) | |
+| 2 | Add env vars (STRIPE_SECRET_KEY, WEBHOOK_SECRET, PUBLISHABLE_KEY) | |
+| 3 | Create `src/lib/stripe-config.ts` with price ID mapping | |
+| 4 | Install `stripe` + `@stripe/stripe-js` | |
+| 5 | Create `POST /api/stripe/checkout` route | |
+| 6 | Create `POST /api/stripe/webhook` route | |
+| 7 | Create `POST /api/stripe/send-link` route | |
+| 8 | Update Payment type — add `stripe` to PaymentMethod, add stripeSessionId/stripePaymentIntentId | |
+| 9 | Add Firestore helpers if needed (createStudentPackage) | |
+| 10 | Update T profile page (`/t/[username]`) — auth-aware course cards with purchase buttons | |
+| 11 | Update Payments tab — show Stripe payments + "Send Payment Link" button | |
+| 12 | S portal Tutors navigation links to `/t/[username]` | |
+| 13 | Test full purchase → webhook → Payment + StudentCredit + StudentPackage created | |
+| 14 | Test payment link email flow | |
+| 15 | Update .mdc rules | |
+
+## Phase 13 Architecture
+
+### Purchase Flow (two paths)
+- **Path A:** S clicks "Purchase" on T profile → redirects to Stripe Checkout → pays → webhook fires → records created → redirect to /s-portal/packages?payment=success
+- **Path B:** S or T clicks "Email payment link" → Stripe Checkout Session URL emailed to S → S opens in browser → pays → same webhook fires
+
+### Webhook creates 3 records on checkout.session.completed:
+1. `Payment` (method: 'stripe', with stripeSessionId)
+2. `StudentPackage` (totalHours, expiresAt based on package type)
+3. `StudentCredit` (create or update — adds uncommittedHours)
+
+### T Profile Page is Auth-Aware
+- `/t/[username]` is ONE page (not separate public vs S-portal versions)
+- Logged-in S sees purchase buttons + "Email me a payment link"
+- Visitor sees "Sign up to book"
+- S portal Tutors → My Tutor just links to `/t/[assigned-teacher-username]`
+
+### Pricing (EUR, Kiddoland rates)
+| Package | 30-min rate | 60-min rate | Hours | Discount |
+|---------|-----------|-----------|-------|----------|
+| Single | €15.84 | €31.68 | 0.5 or 1 | 0% |
+| 10-pack | €14.26/lesson (€142.60) | €28.51/lesson (€285.10) | 5 or 10 | 10% |
+| Full course | €12.67/lesson (€1,520.40) | €25.34/lesson (€1,520.40) | 60 | 20% |
+
+3% processing fee added on top, shown at checkout. Prices pre-created in Stripe Dashboard.
+
+### Package Expiration
+- Single: 3 months
+- 10-pack: 6 months
+- Full course: 12 months
+
+## Future Phases (not started)
+- **Phase 14:** Evaluations & Assessments
+- **Phase 15:** Homework System
+- **Phase 16:** AI-Powered Feedback (Claude API)
+- **Phase 17:** Enhanced Progress ("Check-up" page)
+- **Phase 18:** Advanced Features (multi-teacher, mobile app)
+
+## Key Files (Phase 13)
+| File | Purpose |
+|------|---------|
+| `src/lib/stripe-config.ts` | Price ID mapping, package config (TO CREATE) |
+| `src/app/api/stripe/checkout/route.ts` | Creates Stripe Checkout Session (TO CREATE) |
+| `src/app/api/stripe/webhook/route.ts` | Handles checkout.session.completed (TO CREATE) |
+| `src/app/api/stripe/send-link/route.ts` | Generates payment link for email (TO CREATE) |
+| `src/lib/types.ts` | Payment type needs stripe fields added |
+| `src/app/t-portal/students/[id]/components/payments-tab.tsx` | Needs Stripe display + send link button |
+| Public T profile page (`/t/[username]`) | Needs auth-aware purchase UI |
+
+## Known Issues (carried from Phase 12)
+- `suggest-student-status.ts` (AI flow) still uses old Student fields — not active, will be rebuilt later
+- `decrementPackageLessons` in `firestore.ts` uses old "lessons" terminology — needs rename to hours
+

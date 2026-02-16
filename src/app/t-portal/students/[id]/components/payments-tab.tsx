@@ -51,6 +51,7 @@ const METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: 'cash', label: 'Cash' },
   { value: 'paypal', label: 'PayPal' },
   { value: 'wechat_pay', label: 'WeChat Pay' },
+  { value: 'stripe', label: 'Stripe' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -203,10 +204,10 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Stripe banner */}
-      <div className="flex items-center gap-3 rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800 px-4 py-3">
-        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-        <p className="text-sm text-blue-800 dark:text-blue-300">
-          Stripe Integration coming soon. Record payments manually for now.
+      <div className="flex items-center gap-3 rounded-md border border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-800 px-4 py-3">
+        <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+        <p className="text-sm text-green-800 dark:text-green-300">
+          Stripe payments are active. Students can purchase packages from your profile page.
         </p>
       </div>
 
@@ -256,6 +257,9 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
                       </p>
                       {payment.notes && (
                         <p className="text-xs text-muted-foreground mt-0.5">{payment.notes}</p>
+                      )}
+                      {payment.stripeSessionId && (
+                        <p className="text-xs text-muted-foreground mt-0.5">Stripe: {payment.stripeSessionId.slice(0, 20)}...</p>
                       )}
                     </div>
                   </div>

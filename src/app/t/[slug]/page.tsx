@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,8 +6,8 @@ import {
   getTeacherProfileByUsername,
   getReviewsByTeacher,
   getCourses,
-  getAvailableSlots,
 } from '@/lib/firestore';
+import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,13 +22,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   GraduationCap,
   MapPin,
   Globe,
@@ -41,40 +33,62 @@ import {
   Play,
   CheckCircle,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   Award,
   Briefcase,
   Pin,
+  Mail,
+  Loader2,
 } from 'lucide-react';
-import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
-import type { TeacherProfile, Review, Course, Availability } from '@/lib/types';
+import { format, parseISO } from 'date-fns';
+import type { TeacherProfile, Review, Course } from '@/lib/types';
+import type { PackageType, Duration } from '@/lib/pricing';
 import Link from 'next/link';
+
+// Package display config
+const PACKAGES: { type: PackageType; label: string; icon: string; discount: string; description: string }[] = [
+  { type: 'single', label: 'Single Session', icon: '🎯', discount: '', description: 'Perfect for trying out a lesson' },
+  { type: '10-pack', label: '10-Pack', icon: '📦', discount: 'Save 10%', description: 'Great for short-term goals' },
+  { type: 'full-course', label: 'Full Course', icon: '🎓', discount: 'Save 20%', description: 'Complete one proficiency level (60 hours)' },
+];
+
+// Price display helper (duplicates pricing.ts logic for client display only)
+function getDisplayPrice(packageType: PackageType, duration: Duration): { perLesson: number; total: number; sessions: number } {
+  const baseRates = { 30: 15.84, 60: 31.68 };
+  const discounts = { single: 0, '10-pack': 0.10, 'full-course': 0.20 };
+  const sessionCounts = { single: { 30: 1, 60: 1 }, '10-pack': { 30: 10, 60: 10 }, 'full-course': { 30: 120, 60: 60 } };
+
+  const base = baseRates[duration];
+  const discount = discounts[packageType];
+  const sessions = sessionCounts[packageType][duration];
+  const perLesson = +(base * (1 - discount)).toFixed(2);
+  const total = +(perLesson * sessions).toFixed(2);
+
+  return { perLesson, total, sessions };
+}
 
 export default function PublicProfilePage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
+  const { user, loading: authLoading } = useAuth();
 
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<Availability[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Booking dialog state
+  // Purchase dialog state
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [bookingStep, setBookingStep] = useState<'type' | 'time'>('type');
-  const [selectedType, setSelectedType] = useState<'lesson' | 'package'>('lesson');
-  const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDuration, setSelectedDuration] = useState<Duration>(60);
+  const [purchaseLoading, setPurchaseLoading] = useState<PackageType | null>(null);
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       const teacherProfile = await getTeacherProfileByUsername(slug);
-      
+
       if (!teacherProfile || !teacherProfile.isPublished) {
         setNotFound(true);
         setLoading(false);
@@ -83,55 +97,105 @@ export default function PublicProfilePage() {
 
       setProfile(teacherProfile);
 
-      const [teacherReviews, courseList, slots] = await Promise.all([
+      const [teacherReviews, courseList] = await Promise.all([
         getReviewsByTeacher(teacherProfile.id),
         getCourses(),
-        getAvailableSlots(),
       ]);
 
       setReviews(teacherReviews);
       setCourses(courseList);
-      setAvailableSlots(slots);
       setLoading(false);
     }
 
     fetchData();
   }, [slug]);
 
-  function openBookingDialog(course: Course) {
+  // Safe stats with defaults
+  const stats = {
+    rating: profile?.stats?.rating ?? 0,
+    totalStudents: profile?.stats?.totalStudents ?? 0,
+    totalLessons: profile?.stats?.totalLessons ?? 0,
+    attendanceRate: profile?.stats?.attendanceRate ?? 0,
+  };
+
+  function openPurchaseDialog(course: Course) {
     setSelectedCourse(course);
-    setBookingStep('type');
-    setSelectedType('lesson');
-    setSelectedPackage(null);
-    setSelectedSlot(null);
+    setSelectedDuration(60);
+    setPurchaseLoading(null);
+    setLinkLoading(false);
+    setLinkSent(false);
   }
 
-  function closeBookingDialog() {
+  function closePurchaseDialog() {
     setSelectedCourse(null);
-    setBookingStep('type');
-    setSelectedType('lesson');
-    setSelectedPackage(null);
-    setSelectedSlot(null);
+    setPurchaseLoading(null);
+    setLinkLoading(false);
+    setLinkSent(false);
   }
 
-  function proceedToTimeSelection() {
-    setBookingStep('time');
+  async function handlePurchase(packageType: PackageType) {
+    if (!user || !user.email || !selectedCourse) return;
+    setPurchaseLoading(packageType);
+
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageType,
+          duration: selectedDuration,
+          studentId: user.uid,
+          studentEmail: user.email,
+          courseId: selectedCourse.id,
+          courseTitle: selectedCourse.title,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('No checkout URL returned:', data);
+        setPurchaseLoading(null);
+      }
+    } catch (err) {
+      console.error('Purchase error:', err);
+      setPurchaseLoading(null);
+    }
   }
 
-  function handleBookNow() {
-    // Redirect to login with booking info in query params
-    const bookingInfo = {
-      course: selectedCourse?.id,
-      type: selectedType,
-      package: selectedPackage,
-      slot: selectedSlot?.id,
-      date: selectedSlot?.date,
-      time: selectedSlot?.time,
-    };
-    router.push(`/?redirect=/s-portal/calendar&booking=${encodeURIComponent(JSON.stringify(bookingInfo))}`);
+  async function handleSendLink(packageType: PackageType) {
+    if (!user || !user.email || !selectedCourse) return;
+    setLinkLoading(true);
+
+    try {
+      const res = await fetch('/api/stripe/send-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageType,
+          duration: selectedDuration,
+          studentId: user.uid,
+          studentEmail: user.email,
+          courseId: selectedCourse.id,
+          courseTitle: selectedCourse.title,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        // For MVP: copy to clipboard
+        await navigator.clipboard.writeText(data.url);
+        setLinkSent(true);
+      }
+    } catch (err) {
+      console.error('Send link error:', err);
+    } finally {
+      setLinkLoading(false);
+    }
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Loading...</p>
@@ -144,7 +208,7 @@ export default function PublicProfilePage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <GraduationCap className="h-16 w-16 text-muted-foreground" />
         <h1 className="text-2xl font-bold">Tutor not found</h1>
-        <p className="text-muted-foreground">This profile doesn't exist or is not public.</p>
+        <p className="text-muted-foreground">This profile doesn&apos;t exist or is not public.</p>
         <Link href="/">
           <Button>Go Home</Button>
         </Link>
@@ -154,26 +218,9 @@ export default function PublicProfilePage() {
 
   if (!profile) return null;
 
+  const isLoggedIn = !!user;
   const pinnedReviews = reviews.filter(r => r.pinned);
   const regularReviews = reviews.filter(r => !r.pinned);
-
-  // Time slot selection
-  const weekStart = startOfWeek(currentDate);
-  const weekEnd = endOfWeek(currentDate);
-  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
-
-  const futureSlots = availableSlots.filter(slot => {
-    const slotDate = parseISO(slot.date);
-    return isFuture(slotDate) || startOfDay(slotDate).getTime() === startOfDay(new Date()).getTime();
-  });
-
-  const slotsByDay = days.map(day => {
-    const daySlots = futureSlots.filter(slot => {
-      const slotDate = startOfDay(parseISO(slot.date));
-      return slotDate.getTime() === startOfDay(day).getTime();
-    }).sort((a, b) => a.time.localeCompare(b.time));
-    return { date: day, slots: daySlots };
-  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -184,9 +231,15 @@ export default function PublicProfilePage() {
             <GraduationCap className="h-6 w-6 text-primary" />
             <span className="font-headline text-xl primary-gradient-text">LessonLink</span>
           </Link>
-          <Link href="/">
-            <Button>Sign In</Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/s-portal">
+              <Button variant="outline">My Portal</Button>
+            </Link>
+          ) : (
+            <Link href="/">
+              <Button>Sign In</Button>
+            </Link>
+          )}
         </div>
       </header>
 
@@ -223,7 +276,7 @@ export default function PublicProfilePage() {
               )}
             </div>
             <p className="text-lg text-muted-foreground mb-2">{profile.headline}</p>
-            
+
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
               <span className="flex items-center gap-1">
                 <Globe className="h-4 w-4" />
@@ -254,33 +307,37 @@ export default function PublicProfilePage() {
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                <span className="font-bold">{profile.stats.rating.toFixed(1)}</span>
+                <span className="font-bold">{stats.rating.toFixed(1)}</span>
                 <span className="text-muted-foreground">Rating</span>
               </div>
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                <span className="font-bold">{profile.stats.totalStudents}</span>
+                <span className="font-bold">{stats.totalStudents}</span>
                 <span className="text-muted-foreground">Learners</span>
               </div>
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                <span className="font-bold">{profile.stats.totalLessons.toLocaleString()}</span>
+                <span className="font-bold">{stats.totalLessons.toLocaleString()}</span>
                 <span className="text-muted-foreground">Lessons</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="font-bold">{profile.stats.attendanceRate}%</span>
+                <span className="font-bold">{stats.attendanceRate}%</span>
                 <span className="text-muted-foreground">Attendance</span>
               </div>
             </div>
           </div>
 
-          {/* Book Now Card (Desktop) */}
+          {/* Quick Book Card (Desktop) */}
           <div className="hidden lg:block">
             <Card className="w-72">
               <CardHeader>
-                <CardTitle className="text-lg">Book a Lesson</CardTitle>
-                <CardDescription>Start learning today</CardDescription>
+                <CardTitle className="text-lg">
+                  {isLoggedIn ? 'Purchase a Package' : 'Book a Lesson'}
+                </CardTitle>
+                <CardDescription>
+                  {isLoggedIn ? 'Select a course below' : 'Sign in to get started'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {courses.slice(0, 2).map(course => (
@@ -288,13 +345,16 @@ export default function PublicProfilePage() {
                     key={course.id}
                     variant="outline"
                     className="w-full justify-between"
-                    onClick={() => openBookingDialog(course)}
+                    onClick={() => isLoggedIn ? openPurchaseDialog(course) : router.push('/')}
                   >
                     <span className="truncate">{course.title}</span>
-                    <span className="text-primary font-bold">${course.hourlyRate}</span>
+                    <span className="text-primary font-bold">€{getDisplayPrice('single', 60).perLesson}</span>
                   </Button>
                 ))}
-                <Button className="w-full" onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Button
+                  className="w-full"
+                  onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })}
+                >
                   View All Courses
                 </Button>
               </CardContent>
@@ -342,7 +402,7 @@ export default function PublicProfilePage() {
                 <Card>
                   <CardContent className="pt-6 prose prose-sm max-w-none">
                     <p className="whitespace-pre-line">{profile.aboutMe}</p>
-                    
+
                     {profile.interests && profile.interests.length > 0 && (
                       <div className="mt-6">
                         <h4 className="font-semibold mb-2">Interests</h4>
@@ -372,7 +432,7 @@ export default function PublicProfilePage() {
                 {profile.lessonStyle && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">My Lessons & Teaching Style</CardTitle>
+                      <CardTitle className="text-lg">My Lessons &amp; Teaching Style</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="whitespace-pre-line">{profile.lessonStyle}</p>
@@ -482,7 +542,7 @@ export default function PublicProfilePage() {
                               <span className="font-semibold">{review.studentName}</span>
                               <Badge variant="secondary" className="text-xs">
                                 <Pin className="h-3 w-3 mr-1" />
-                                Tutor's Pick
+                                Tutor&apos;s Pick
                               </Badge>
                             </div>
                             <div className="flex items-center gap-1 my-1">
@@ -541,33 +601,54 @@ export default function PublicProfilePage() {
           {/* Right Column - Courses */}
           <div className="space-y-6" id="courses">
             <h2 className="text-2xl font-headline font-bold primary-gradient-text">Courses</h2>
-            
-            {courses.map(course => (
-              <Card key={course.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{course.title}</CardTitle>
-                  <CardDescription>{course.pitch}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {/* Using a static duration for now */}
-                      60 min
-                    </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-primary">${course.hourlyRate}</span>
-                        <p className="text-xs text-muted-foreground">
-                          / 60 min lesson
-                        </p>
-                    </div>
-                  </div>
-                  <Button className="w-full" onClick={() => openBookingDialog(course)}>
-                    Book Now
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+
+            {courses.map(course => {
+              const singlePrice = getDisplayPrice('single', 60);
+              const fullCoursePrice = getDisplayPrice('full-course', 60);
+
+              return (
+                <Card key={course.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{course.title}</CardTitle>
+                    <CardDescription>{course.pitch}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoggedIn ? (
+                      /* Logged-in S — show pricing tiers + purchase button */
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>From €{fullCoursePrice.perLesson}/lesson</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            30 or 60 min
+                          </span>
+                        </div>
+                        <Button className="w-full" onClick={() => openPurchaseDialog(course)}>
+                          View Packages &amp; Purchase
+                        </Button>
+                      </div>
+                    ) : (
+                      /* Visitor — show starting price + sign up CTA */
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            30 or 60 min
+                          </div>
+                          <div className="text-right">
+                            <span className="text-2xl font-bold text-primary">€{fullCoursePrice.perLesson}</span>
+                            <p className="text-xs text-muted-foreground">from / lesson</p>
+                          </div>
+                        </div>
+                        <Link href="/">
+                          <Button className="w-full">Sign Up to Book</Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {courses.length === 0 && (
               <Card>
@@ -582,102 +663,135 @@ export default function PublicProfilePage() {
 
       {/* Mobile Book Button */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
-        <Button className="w-full" size="lg" onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })}>
-          View Courses & Book
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })}
+        >
+          {isLoggedIn ? 'View Packages & Purchase' : 'View Courses & Book'}
         </Button>
       </div>
 
-      {/* Booking Dialog */}
-      <Dialog open={!!selectedCourse} onOpenChange={() => closeBookingDialog()}>
-        <DialogContent className="max-w-2xl">
+      {/* Purchase Dialog (logged-in S only) */}
+      <Dialog open={!!selectedCourse && isLoggedIn} onOpenChange={() => closePurchaseDialog()}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Book: {selectedCourse?.title}</DialogTitle>
-            <DialogDescription>
-              {bookingStep === 'type' ? 'Choose single lesson or package' : 'Select a time slot'}
-            </DialogDescription>
+            <DialogTitle>{selectedCourse?.title}</DialogTitle>
+            <DialogDescription>Choose your lesson duration and package</DialogDescription>
           </DialogHeader>
 
-          {bookingStep === 'type' && selectedCourse && (
-            <div className="py-4 space-y-4">
-              {/* Single Lesson */}
-              <div
-                className={`border rounded-lg p-4 cursor-pointer transition-colors ${selectedType === 'lesson' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'}`}
-                onClick={() => { setSelectedType('lesson'); setSelectedPackage(null); }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold">Single Lesson</h4>
-                    <p className="text-sm text-muted-foreground">60 minutes</p>
-                  </div>
-                  <span className="text-xl font-bold text-primary">${selectedCourse.hourlyRate}</span>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {bookingStep === 'time' && (
-            <div className="py-4">
-              {/* Week Navigation */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-medium">
-                  {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, -7))}>
-                    <ChevronLeft className="h-4 w-4" />
+          {selectedCourse && (
+            <div className="py-4 space-y-6">
+              {/* Duration Toggle */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Lesson Duration</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={selectedDuration === 30 ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() => setSelectedDuration(30)}
+                  >
+                    30 min
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-                    This Week
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, 7))}>
-                    <ChevronRight className="h-4 w-4" />
+                  <Button
+                    variant={selectedDuration === 60 ? 'default' : 'outline'}
+                    className="flex-1"
+                    onClick={() => setSelectedDuration(60)}
+                  >
+                    60 min
                   </Button>
                 </div>
               </div>
 
-              {/* Time Slots Grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {slotsByDay.map(({ date, slots }) => (
-                  <div key={date.toISOString()} className="text-center">
-                    <p className="text-xs font-medium mb-1">{format(date, 'EEE')}</p>
-                    <p className="text-sm font-bold mb-2">{format(date, 'd')}</p>
-                    <div className="space-y-1">
-                      {slots.slice(0, 4).map(slot => (
+              {/* Package Options */}
+              <div className="space-y-3">
+                {PACKAGES.map(pkg => {
+                  const price = getDisplayPrice(pkg.type, selectedDuration);
+                  const isLoading = purchaseLoading === pkg.type;
+
+                  return (
+                    <div key={pkg.type} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span>{pkg.icon}</span>
+                            <span className="font-semibold">{pkg.label}</span>
+                            {pkg.discount && (
+                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                {pkg.discount}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
+                        </div>
+                        <div className="text-right ml-4">
+                          <div className="font-bold text-primary">€{price.perLesson}</div>
+                          <div className="text-xs text-muted-foreground">/ lesson</div>
+                          {price.sessions > 1 && (
+                            <div className="text-xs text-muted-foreground">€{price.total.toLocaleString()} total</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
                         <Button
-                          key={slot.id}
-                          variant={selectedSlot?.id === slot.id ? 'default' : 'outline'}
+                          className="flex-1"
                           size="sm"
-                          className="w-full text-xs"
-                          onClick={() => setSelectedSlot(slot)}
+                          disabled={!!purchaseLoading}
+                          onClick={() => handlePurchase(pkg.type)}
                         >
-                          {slot.time}
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              Redirecting...
+                            </>
+                          ) : (
+                            'Purchase'
+                          )}
                         </Button>
-                      ))}
-                      {slots.length === 0 && (
-                        <p className="text-xs text-muted-foreground">-</p>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+
+              {/* Processing fee note */}
+              <p className="text-xs text-muted-foreground text-center">
+                + 3% processing fee · Prices shown before fee
+              </p>
+
+              {/* Email payment link option */}
+              <div className="border-t pt-4">
+                {linkSent ? (
+                  <p className="text-sm text-green-600 text-center flex items-center justify-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    Payment link copied to clipboard!
+                  </p>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="w-full text-sm"
+                    disabled={linkLoading}
+                    onClick={() => handleSendLink('single')}
+                  >
+                    {linkLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Generating link...
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-4 w-4 mr-1" />
+                        Can&apos;t pay now? Get a payment link
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           )}
 
           <DialogFooter>
-            {bookingStep === 'type' ? (
-              <>
-                <Button variant="outline" onClick={closeBookingDialog}>Cancel</Button>
-                <Button onClick={proceedToTimeSelection}>Next: Choose Time</Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setBookingStep('type')}>Back</Button>
-                <Button onClick={handleBookNow} disabled={!selectedSlot}>
-                  Continue to Login
-                </Button>
-              </>
-            )}
+            <Button variant="outline" onClick={closePurchaseDialog}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

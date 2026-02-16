@@ -30,7 +30,9 @@ import {
   CalendarDays,
   Pause,
   Loader2,
+  Plus,
 } from 'lucide-react';
+import Link from 'next/link';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
 export default function MyPackagesPage() {
@@ -99,7 +101,14 @@ export default function MyPackagesPage() {
   if (loading) {
     return (
       <div className="flex flex-col gap-8 p-4 md:p-8">
-        <PageHeader title="My Packages" description="View your purchased lesson packages" />
+        <PageHeader title="My Packages" description="View your purchased lesson packages">
+          <Link href="/s-portal/calendar">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Book a Session
+            </Button>
+          </Link>
+        </PageHeader>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading packages...</p>
         </div>
@@ -112,7 +121,14 @@ export default function MyPackagesPage() {
       <PageHeader
         title="My Packages"
         description="Your purchased lesson packages and credit balances"
-      />
+      >
+        <Link href="/s-portal/calendar">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Book a Session
+          </Button>
+        </Link>
+      </PageHeader>
 
       {/* Summary cards */}
       <div className="grid gap-4 md:grid-cols-3">

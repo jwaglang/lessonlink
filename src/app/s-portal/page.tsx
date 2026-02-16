@@ -363,71 +363,9 @@ export default function StudentPortalPage() {
         <PageHeader
           title="Learner Portal"
           description="Here's an overview of your sessions"
-        >
-            <Link href="/s-portal/calendar">
-                <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Book a Session
-                </Button>
-            </Link>
-        </PageHeader>
+        />
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 my-8">
-          {/* Purchase Plan Card - Full Width on Mobile, Spans 2 Columns on Desktop */}
-          <div className="md:col-span-2">
-            {studentCredit ? (
-              <PurchasePlanCard
-                totalHours={studentCredit.totalHours}
-                uncommittedHours={studentCredit.uncommittedHours}
-                committedHours={studentCredit.committedHours}
-                completedHours={studentCredit.completedHours}
-                currency={studentCredit.currency}
-              />
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Purchase Plan</CardTitle>
-                  <CardDescription>No package purchased yet</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Purchase a package to start learning!
-                  </p>
-                  <Link href="/s-portal/purchase">
-                    <Button className="w-full">
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Purchase Package
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Stats Cards */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{upcomingSessions.length}</div>
-              <p className="text-xs text-muted-foreground">sessions</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pastSessions.length}</div>
-              <p className="text-xs text-muted-foreground">sessions</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Star Trek Alert System */}
+        {/* Alerts at top */}
         {learnerAlerts.length > 0 ? (
           <Card className="my-6">
             <CardHeader className="pb-3">
@@ -498,7 +436,65 @@ export default function StudentPortalPage() {
           </Card>
         )}
 
-        {/* Progress + Rewards row */}
+        {/* Under Alerts: My Course Progress, Upcoming, Completed */}
+        <div className="grid gap-6 md:grid-cols-3 my-8">
+          {/* My Course Progress */}
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                My Course Progress
+              </CardTitle>
+              <CardDescription>Your learning journey so far</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {progressList.length > 0 ? (
+                progressList.map((prog) => (
+                  <div key={prog.id} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">
+                        {prog.unitsCompleted}/{prog.unitsTotal} units · {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
+                      </span>
+                      <span className="text-muted-foreground">{prog.percentComplete}%</span>
+                    </div>
+                    <Progress value={prog.percentComplete} className="h-2" />
+                    <p className="text-xs text-muted-foreground">
+                      {prog.totalHoursCompleted.toFixed(1)}h completed of {prog.targetHours}h target
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No course progress yet. Complete sessions to start tracking!</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{upcomingSessions.length}</div>
+              <p className="text-xs text-muted-foreground">sessions</p>
+            </CardContent>
+          </Card>
+
+          {/* Completed */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pastSessions.length}</div>
+              <p className="text-xs text-muted-foreground">sessions</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Rest below: My Course Progress, Petland Rewards, Upcoming Sessions, Past Sessions */}
         <div className="grid gap-6 md:grid-cols-2">
           {/* My Course Progress */}
           <Card>
