@@ -11,6 +11,42 @@
 
 export type StudentStatus = 'active' | 'trial' | 'paused' | 'completed' | 'churned';
 
+// ============================================
+// DRAGON LEVEL SYSTEM
+// ============================================
+
+export type DragonLevel = 'egg' | 'white' | 'yellow' | 'orange' | 'green' | 'blue' | 'purple' | 'red' | 'black';
+
+// ============================================
+// MESSAGING CONTACT (reusable for student + parent)
+// ============================================
+
+export interface MessagingContact {
+  app: string;    // 'whatsapp' | 'wechat' | 'kakaotalk' | 'line' | 'telegram' | other
+  handle: string;
+}
+
+// ============================================
+// PARENT / GUARDIAN CONTACT
+// ============================================
+
+export interface ParentContact {
+  name: string;
+  email: string;
+  phone: string;
+  relationship: 'mother' | 'father' | 'guardian' | 'other';
+  country?: string;
+  city?: string;
+  messaging?: MessagingContact[];
+  preferredContactMethod?: string; // e.g. 'email', 'whatsapp', 'wechat', 'phone'
+  profession?: string;
+  englishProficiency?: 'native' | 'fluent' | 'intermediate' | 'basic' | 'none';
+}
+
+// ============================================
+// STUDENT
+// ============================================
+
 export interface Student {
   id: string; // Firebase Auth UID (doc ID = Auth UID)
   name: string;
@@ -23,6 +59,19 @@ export interface Student {
   enrolledAt?: string; // ISO string
   createdAt?: string;
   updatedAt?: string;
+
+  // Demographics (added Phase 12 Step 4)
+  birthday?: string;  // ISO date string (YYYY-MM-DD)
+  gender?: string;    // 'boy' | 'girl' | custom write-in
+  school?: string;
+  dragonLevel?: DragonLevel; // assigned after intake assessment
+
+  // Messaging
+  messagingContacts?: MessagingContact[];
+
+  // Parent / Guardian info
+  primaryContact?: ParentContact;
+  secondaryContact?: ParentContact;
 }
 
 export interface SessionInstance {
@@ -169,6 +218,7 @@ export interface StudentPackage {
   pausedAt?: string; // ISO string
   pauseReason?: string;
   totalDaysPaused: number;
+  pauseCount: number;           // how many pauses have been used
   status: 'active' | 'expired' | 'completed' | 'paused';
 }
 
@@ -214,6 +264,18 @@ export interface StudentProgress {
   updatedAt?: string;
 }
 
+
+// ============================================
+// STUDENT REWARDS (Petland — read-only)
+// ============================================
+
+export interface StudentRewards {
+  id?: string;
+  studentId: string;    // Firebase Auth UID
+  xp: number;
+  hp: number;
+  lastSyncedAt?: string; // ISO string
+}
 
 // ============================================
 // TEACHER PROFILE
@@ -355,4 +417,27 @@ export interface Message {
   };
   actionLink?: string; // e.g., "/s-portal/units/abc123"
   createdAt: string; // ISO string
+}
+
+// ===================================
+// Payments (Pre-Stripe — manual entry)
+// ===================================
+
+export type PaymentType = 'one_off' | 'package' | 'course';
+export type PaymentMethod = 'bank_transfer' | 'cash' | 'paypal' | 'wechat_pay' | 'other';
+export type PaymentStatus = 'completed' | 'pending' | 'refunded';
+
+export interface Payment {
+  id: string;
+  studentId: string;
+  courseId?: string;
+  packageId?: string;
+  amount: number;
+  currency: string;
+  type: PaymentType;
+  method: PaymentMethod;
+  notes?: string;
+  paymentDate: string;   // ISO string
+  createdAt: string;     // ISO string
+  status: PaymentStatus;
 }

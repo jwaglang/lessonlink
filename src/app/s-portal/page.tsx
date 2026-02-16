@@ -14,6 +14,10 @@ import {
   getReviewedSessionInstanceIds,
   getTeacherProfileById,
   getStudentCredit,
+  getStudentProgressByStudentId,
+  getStudentRewardsByStudentId,
+  getStudentPackages,
+  getStudentCreditsByStudentId,
 } from '@/lib/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,13 +48,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart } from 'lucide-react';
+import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart, BookOpen, Trophy, ShieldAlert } from 'lucide-react';
 import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
-import type { SessionInstance, Student, Availability, StudentCredit } from '@/lib/types';
+import type { SessionInstance, Student, Availability, StudentCredit, StudentPackage, StudentProgress as SP, StudentRewards } from '@/lib/types';
+import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import TimezonePrompt from '@/components/timezone-prompt';
 import PageHeader from '@/components/page-header';
 import PurchasePlanCard from '@/components/purchase-plan-card';
+import { generateLearnerAlerts, getAlertConfig, type Alert } from '@/lib/alerts';
 
 function instanceDateIso(instance: SessionInstance): string {
   const anyInst = instance as any;
@@ -65,6 +71,8 @@ export default function StudentPortalPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [timezone, setTimezone] = useState<string>('');
   const [studentCredit, setStudentCredit] = useState<StudentCredit | null>(null);
+  const [progressList, setProgressList] = useState<SP[]>([]);
+  const [rewards, setRewards] = useState<StudentRewards | null>(null);
 
   // Reschedule state
   const [rescheduleSessionInstance_, setRescheduleSession] = useState<SessionInstance | null>(null);
@@ -90,6 +98,10 @@ export default function StudentPortalPage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewedSessionInstanceIds, setReviewedSessionInstanceIds] = useState<string[]>([]);
   const [teacherId, setTeacherId] = useState<string | null>(null);
+
+  // Star Trek Alert System
+  const [learnerAlerts, setLearnerAlerts] = useState<Alert[]>([]);
+  const [showAllAlerts, setShowAllAlerts] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -121,6 +133,25 @@ export default function StudentPortalPage() {
         const reviewedIds = await getReviewedSessionInstanceIds(studentRecord.id);
         setReviewedSessionInstanceIds(reviewedIds);
         
+        // Fetch progress, rewards, packages, and credits for alerts
+        const [progressData, rewardsData, packagesData, creditsData] = await Promise.all([
+          getStudentProgressByStudentId(studentRecord.id),
+          getStudentRewardsByStudentId(studentRecord.id),
+          getStudentPackages(studentRecord.id),
+          getStudentCreditsByStudentId(studentRecord.id),
+        ]);
+        setProgressList(progressData);
+        setRewards(rewardsData);
+
+        // Generate learner alerts
+        const generatedAlerts = generateLearnerAlerts(
+          packagesData,
+          creditsData,
+          progressData,
+          rewardsData
+        );
+        setLearnerAlerts(generatedAlerts);
+
         // Fetch teacher ID (from student assignment)
         if (studentRecord.assignedTeacherId) {
           const teacherProfile = await getTeacherProfileById(studentRecord.assignedTeacherId);
@@ -128,7 +159,7 @@ export default function StudentPortalPage() {
             setTeacherId(teacherProfile.id);
           }
         }
-setLoadingData(false);
+        setLoadingData(false);
       }
     }
     fetchStudentData();
@@ -392,6 +423,138 @@ setLoadingData(false);
             <CardContent>
               <div className="text-2xl font-bold">{pastSessions.length}</div>
               <p className="text-xs text-muted-foreground">sessions</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Star Trek Alert System */}
+        {learnerAlerts.length > 0 ? (
+          <Card className="my-6">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" />
+                  Alerts
+                  <Badge variant="secondary" className="ml-1">
+                    {learnerAlerts.length}
+                  </Badge>
+                </CardTitle>
+                {learnerAlerts.length > 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllAlerts(!showAllAlerts)}
+                  >
+                    {showAllAlerts ? 'Show less' : `View all (${learnerAlerts.length})`}
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {(showAllAlerts ? learnerAlerts : learnerAlerts.slice(0, 3)).map((alert) => {
+                const config = getAlertConfig(alert.level);
+                return (
+                  <div
+                    key={alert.id}
+                    className={`border-l-4 ${config.borderColor} ${config.bgColor} rounded-md p-3`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${config.badgeClass}`}>
+                            {config.label}
+                          </span>
+                          <span className={`text-sm font-semibold ${config.textColor}`}>
+                            {alert.title}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{alert.description}</p>
+                      </div>
+                      {alert.link && (
+                        <Link
+                          href={alert.link}
+                          className="text-xs text-primary hover:underline whitespace-nowrap"
+                        >
+                          View
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="my-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5" />
+                Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground text-center">All systems nominal.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Progress + Rewards row */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* My Course Progress */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                My Course Progress
+              </CardTitle>
+              <CardDescription>Your learning journey so far</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {progressList.length > 0 ? (
+                progressList.map((prog) => (
+                  <div key={prog.id} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">
+                        {prog.unitsCompleted}/{prog.unitsTotal} units · {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
+                      </span>
+                      <span className="text-muted-foreground">{prog.percentComplete}%</span>
+                    </div>
+                    <Progress value={prog.percentComplete} className="h-2" />
+                    <p className="text-xs text-muted-foreground">
+                      {prog.totalHoursCompleted.toFixed(1)}h completed of {prog.targetHours}h target
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No course progress yet. Complete sessions to start tracking!</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Petland Rewards */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Petland Rewards
+              </CardTitle>
+              <CardDescription>Your in-game progress</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {rewards ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-md border p-4 text-center">
+                    <p className="text-3xl font-bold">{rewards.xp}</p>
+                    <p className="text-sm text-muted-foreground">XP earned</p>
+                  </div>
+                  <div className="rounded-md border p-4 text-center">
+                    <p className="text-3xl font-bold">{rewards.hp}</p>
+                    <p className="text-sm text-muted-foreground">HP remaining</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No rewards data yet. Complete sessions to earn XP!</p>
+              )}
             </CardContent>
           </Card>
         </div>

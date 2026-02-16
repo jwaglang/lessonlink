@@ -1,0 +1,112 @@
+---
+description: LessonLink core project conventions, architecture, and development rules. Loaded on every interaction.
+globs:
+alwaysApply: true
+---
+
+# LessonLink — Project Rules
+
+## What Is LessonLink
+LessonLink is a full LMS for independent online teachers. Teachers create curriculum once, system handles delivery. Students see structured courses, progress, and rewards. Built for a single-teacher setup (multi-teacher is Phase 18).
+
+## Admin
+- Admin email: jwag.lang@gmail.com
+- Repository: https://github.com/jwaglang/lessonlink
+
+## Abbreviations (use in chat)
+- T = teacher, S = student, LL = LessonLink
+
+## Development Rules
+- Ask before writing code
+- When suggesting code replacements, show the line before so the user can CTRL+F
+- Never fetch from GitHub without permission — ask the user to paste code snippets instead
+- Ask before doing any activity that will be costly for usage limits
+- Trust user confirmations
+- If a file has no imports and is 100% not needed in future, delete it
+
+## Tech Stack
+- Next.js 15.5.9 (App Router), TypeScript 5.x
+- Tailwind CSS 3.4.1 + shadcn/ui
+- Firebase Firestore (NoSQL), Firebase Authentication (email/password), Firebase App Hosting
+- Icons: Lucide React
+- Fonts: Poppins (headlines, `font-headline`), Work Sans (body, `font-body`)
+
+## Four-Domain Architecture
+All UI decisions are organized by four domains:
+
+| Domain | Question | T Side | S Side |
+|--------|----------|--------|--------|
+| **Who** | Who are the parties? | Learner Roster, Profile | My Tutor |
+| **What** | What is the product? | Courses, units, sessions, progress, feedback, rewards | My Units, Browse, Feedback, Evaluations |
+| **When** | When does it happen? | Calendar, session lifecycle | Calendar, booking |
+| **How** | How is it paid for? | Packages, credits, payments | My Package |
+
+Chat is cross-cutting — carries signals between domains but owns no data.
+Key Principle: Actions live in one domain. Effects ripple to others.
+Example: Session completion (When) → progress update (What) + credit settlement (How).
+
+## Variant-1 Architecture (LOCKED — do not change)
+- Approval ≠ Booking (they are separate steps)
+- Payment creates `studentCredit`
+- Approval creates `studentProgress`
+- Booking creates `sessionInstance`
+- Completion settles credit + updates progress
+- Money is reserved and settled per `sessionInstance`, never per unit
+
+## Key Conventions
+- `studentId` = Firebase Auth UID everywhere (v7 convention)
+- `sessions` = curriculum templates ONLY
+- `sessionInstances` = booked/actual classes ONLY
+- No `lessons` collection anywhere — the term is "sessions"
+- Hours-based (not lessons-based) for packages
+
+## Billing Lifecycle (from authoritative doc)
+1. **Purchase:** Creates/updates `studentCredit` → `uncommittedHours += purchasedHours`
+2. **Booking:** `uncommittedHours -= duration`, `committedHours += duration`
+3. **Completion:** `committedHours -= duration`, `completedHours += duration`; `studentProgress.sessionsCompleted += 1`
+4. **Cancellation:** Reverses booking → `committedHours -= duration`, `uncommittedHours += duration`
+- Trial sessions: no credit created, `billingType = "trial"`
+- `studentProgress` must exist before completion
+
+## Curriculum Structure
+- Level (60-75 hrs total, e.g. A1, A2, B1)
+  - Units (modular, any order, 4-5 sessions each)
+    - Sessions (30 or 60 min, bookable)
+    - Homework (gamified worksheets)
+  - Final Project + Final Evaluation per unit
+- 10-pack = 10 hours = ~4 units
+- Full course = 60 hours = ~24 units
+
+## Style Guide (Quick Reference)
+- Primary Purple: #9C27B0 (`bg-primary`)
+- Indigo: #3F51B5 (gradient start)
+- Gradient text for page titles ONLY: `primary-gradient-text`
+- Background: #F8F4FA (`bg-background`)
+- Cards: white with `rounded-lg border p-6`
+- Use semantic color tokens, never hardcode hex
+- Use shadcn/ui components
+- No inline styles, no emojis in UI, no playful elements
+- Dark mode via `class` strategy — always test both modes
+
+## Route Structure
+- `/` — Landing page (dual login)
+- `/t-portal/` — Teacher portal
+- `/s-portal/` — Student portal
+- `/admin/` — Admin (jwag.lang@gmail.com only)
+- `/t/[username]` — Public teacher profiles
+
+## Firestore Collections
+| Collection | Purpose |
+|-----------|---------|
+| `students` | S profiles (status, email, assignedTeacherId, notes) |
+| `studentProgress` | Curriculum progress per unit |
+| `studentCredit` | Financial tracking (uncommitted/committed/completed hours) |
+| `studentRewards` | Petland XP/HP (read-only, synced from external app) |
+| `studentPackages` | Package details (hours, expiration, pause state) — NO DATA YET |
+| `sessionInstances` | Booked/actual classes |
+| `sessions` | Curriculum templates |
+| `units` | Unit definitions |
+| `courses` | Course definitions |
+| `messages` | Chat messages (Notifications + Communications) |
+| `teacherProfiles` | T profiles (UID as doc ID) |
+| `payments` | Payment records — FUTURE (Phase 13) |

@@ -1,0 +1,146 @@
+---
+description: LessonLink current progress, roadmap, 12-step implementation plan, and known issues. Loaded on every interaction.
+globs:
+alwaysApply: true
+---
+
+# LessonLink — Status & Roadmap
+
+## Current Phase
+Phase 12: Package Expiration & Learner Management (Phase 3D-Delta) — ✅ COMPLETE
+Phase 13: Payments (Stripe integration) — ⏳ NEXT
+
+## Completed Phases (1–11)
+Phases 1-11 are DONE. Includes: Foundation, Core Business Logic, Student Portal & Booking, Reschedule/Cancel, Public Profiles & Reviews, Landing Page & Routing, Credit System, Student Portal & Messaging, Communication (Chat), Backend Stabilization, Stale Cleanup & Session Completion.
+
+## Phase 12 — 14-Step Implementation Plan
+
+| Step | Portal | What | Domain | Status |
+|------|--------|------|--------|--------|
+| 1 | Both | Type updates (StudentPackage + Student status expansion) | How + Who | ✅ Done |
+| 2 | T | Roster page with status filter | Who | ✅ Done |
+| 3 | T | Learner profile page with tab shell | All | ✅ Done |
+| 4 | T | Tab 1: Profile & Progress | Who + What | ✅ Done |
+| 5 | T | Tab 2: Sessions | When | ✅ Done |
+| 6 | T | Tab 3: Packages & Credits (with pause/unpause) | How | ✅ Done |
+| 7 | T | Tab 4: Payments (placeholder/manual) | How | ✅ Done |
+| 8 | S | Add sub-items to sidebar (expandable pattern) | All | ✅ Done |
+| 9 | S | Enrich Dashboard cards (progress, package, rewards) | What + How | ✅ Done |
+| 10 | S | My Package page under Courses | How | ✅ Done |
+| 11 | Both | Cloud Function: checkExpiredPackages (daily midnight UTC) | How | ✅ Done |
+| 12 | Both | Star Trek Alert System (unified Alerts card on T+S dashboards) | How | ✅ Done |
+| 13 | Both | (Merged into Step 12 — learner dashboard alerts included) | How | ✅ Done |
+| 14 | S | My Tutor page under Tutors | Who | ✅ Done |
+
+## Future Phases (not started)
+- **Phase 13:** Payments (Stripe integration, Stripe Connect for T payouts)
+- **Phase 14:** Evaluations & Assessments (audio recording, AI analysis)
+- **Phase 15:** Homework System (auto-delivery, grading, gamified worksheets)
+- **Phase 16:** AI-Powered Feedback (Claude API, T voice settings)
+- **Phase 17:** Enhanced Progress ("Check-up" page, doctor theme)
+- **Phase 18:** Advanced Features (multi-teacher, mobile app, Google Calendar sync)
+
+## Key Files Modified (Session Feb 15)
+
+| File | What |
+|------|------|
+| `src/lib/types.ts` | DragonLevel, MessagingContact, ParentContact types; expanded Student with demographics, messaging, parent fields |
+| `src/lib/dragon-levels.ts` | NEW: 9 dragon tier definitions (Egg–Black) with GSE/CEFR/Cambridge metadata + helper constants |
+| `src/lib/profile-completeness.ts` | NEW: getIncompleteFields, isProfileComplete, getIncompleteStudents utilities |
+| `src/components/status-badge.tsx` | Color mappings for 5 statuses |
+| `src/lib/firestore.ts` | `getOrCreateStudentByEmail` passes new fields, added `getStudentRewardsByStudentId` |
+| `src/app/page.tsx` | Multi-step learner signup; optional fields send null instead of undefined; "teacher"→"tutor" text |
+| `src/app/t-portal/page.tsx` | Dashboard: Incomplete Profiles alert card, chat notification, "Student"→"Learner" text |
+| `src/app/t-portal/students/page.tsx` | "Student Roster"→"Learner Roster", "Add Student"→"Add Learner" |
+| `src/app/t-portal/students/components/student-list.tsx` | Full rebuild: cards, filters, search; "Student"→"Learner" in toast/dialog text |
+| `src/app/t-portal/students/components/add-student-form.tsx` | "Student"→"Learner" in toasts, labels, placeholders |
+| `src/app/t-portal/students/components/edit-student-form.tsx` | "Student"→"Learner" in toasts, placeholders |
+| `src/app/t-portal/students/[id]/page.tsx` | Learner profile page with header + 4-tab shell, wired ProfileProgressTab; "Student not found"→"Learner not found" |
+| `src/app/t-portal/students/[id]/components/profile-progress-tab.tsx` | Tab 1 orchestrator: Curriculum Progress, Petland Rewards, + 3 profile sections + notes |
+| `src/app/t-portal/students/[id]/components/learner-info-section.tsx` | Learner info card with admin-only edit; optional fields send null |
+| `src/app/t-portal/students/[id]/components/messaging-section.tsx` | Messaging contacts card with admin-only edit (multi-app support) |
+| `src/app/t-portal/students/[id]/components/parent-info-section.tsx` | Primary + Secondary parent cards with admin-only edit; optional fields send null |
+| `src/components/t-app-sidebar.tsx` | "Students"→"Learners", "Student Packages"→"Learner Packages" |
+| `src/app/t/[slug]/page.tsx` | "Teacher not found"→"Tutor not found", "Students"→"Learners", "Teacher"→"Tutor" in labels |
+| `src/app/t-portal/reports/page.tsx` | "student analytics"→"learner analytics" |
+| `src/app/t-portal/students/[id]/components/sessions-tab.tsx` | NEW: Sessions tab — stats, upcoming sessions with complete/cancel, session history |
+| `src/app/t-portal/students/[id]/components/packages-tab.tsx` | NEW: Packages & Credits tab — package cards, credit bars, pause request + unpause |
+| `src/lib/pause-rules.ts` | NEW: getMaxPauses (ceil(hours/20)), canPause, pausesRemaining |
+| `src/lib/firestore.ts` | Added requestPausePackage, executePause, unpauseStudentPackage, getStudentCreditsByStudentId |
+| `src/lib/types.ts` | Added pauseCount to StudentPackage |
+| `src/app/t-portal/packages/components/package-form.tsx` | Fixed prepaidPackage.currency bug (removed dead reference) |
+| `src/app/t-portal/students/[id]/components/payments-tab.tsx` | NEW: Payments tab — manual payment recording, payment history, refund, package→credit linking |
+| `src/lib/types.ts` | Added Payment, PaymentType, PaymentMethod, PaymentStatus types |
+| `src/lib/firestore.ts` | Added createPayment, getPaymentsByStudentId, updatePayment + payments collection |
+| `src/components/t-app-sidebar.tsx` | Refactored: hover-based expansion (500/300/300ms), Calendar & Chat submenus added, no chevrons |
+| `src/components/s-app-sidebar.tsx` | Refactored: hover-based expansion (500/300/300ms), Calendar & Chat submenus added, no chevrons |
+| `src/app/t-portal/calendar/page.tsx` | Reads `?tab=` param, tabs renamed Schedule / Availability |
+| `src/app/t-portal/chat/page.tsx` | Reads `?tab=` param for initial active tab |
+| `src/app/s-portal/chat/page.tsx` | Reads `?tab=` param for initial active tab |
+| `src/app/t-portal/page.tsx` | Enriched: Progress, Packages Overview, Rewards cards; real session fetch |
+| `src/app/s-portal/page.tsx` | Enriched: My Course Progress + Petland Rewards cards |
+| `src/lib/firestore.ts` | Added getAllStudentPackages, getAllStudentProgress |
+| `src/app/s-portal/packages/page.tsx` | NEW: My Packages page — package cards, credit bars, pause request, expiry warnings |
+| `src/components/s-app-sidebar.tsx` | Added "My Packages" sub-item under Courses |
+| `functions/src/index.ts` | NEW: checkExpiredPackages Cloud Function (daily midnight UTC) |
+| `functions/package.json` | NEW: Cloud Functions dependencies (firebase-admin, firebase-functions) |
+| `functions/tsconfig.json` | NEW: TypeScript config for Cloud Functions |
+| `firebase.json` | NEW: Firebase project config with functions source |
+| `.firebaserc` | NEW: Firebase project ID mapping |
+| `src/lib/alerts.ts` | NEW: Star Trek Alert System engine — AlertLevel, Alert, generateTutorAlerts, generateLearnerAlerts, getAlertConfig |
+| `src/app/t-portal/page.tsx` | Replaced Incomplete Profiles + At-Risk Learners cards with unified Alerts card; daily alert chat notification |
+| `src/app/s-portal/page.tsx` | Added Alerts card between stats and Progress/Rewards rows |
+| `src/app/s-portal/tutors/my-tutor/page.tsx` | NEW: My Tutor page — assigned tutor profile with about, teaching style, credentials, reviews tabs |
+
+## Known Issues
+- `suggest-student-status.ts` (AI flow) still uses old Student fields — not active, will be rebuilt later
+- `decrementPackageLessons` in `firestore.ts` uses old "lessons" terminology — needs rename to hours
+- `Billing_and_Progress_Lifecycle.md` still references `studentAuthUid` in invariants — needs doc update
+- Roster "Course" column shows courseId if `getCourseById` fails — cosmetic only
+
+## What's Working
+- Build passes clean ✅
+- Roster page: filter, search, cards, click navigates to profile ✅
+- Profile page: loads student by ID, shows header + status badge + 4 tabs ✅
+- Tab 1 (Profile & Progress): Curriculum Progress + Petland Rewards + Learner Info + Messaging + Parent Info + Notes ✅
+- Learner Info section: name, email, birthday/age, gender, school, dragon level (admin-editable) ✅
+- Messaging section: multi-app support with add/remove (admin-editable) ✅
+- Parent Info section: Primary + Secondary contacts with full details (admin-editable, mandatory if under 18) ✅
+- Private Notes: always editable by teacher ✅
+- Dragon Level system: 9 tiers (Egg–Black) with GSE/CEFR/Cambridge metadata ✅
+- Multi-step learner signup: 4 steps (account → learner info → messaging → parent info) ✅
+- Admin-only editing: sections locked for non-admin, edit button for jwag.lang@gmail.com ✅
+- Progress bar and aggregated stats from studentProgress ✅
+- Status badges render correctly for all 5 statuses ✅
+- T dashboard shows correct active count and at-risk filter ✅
+- Optional fields send null (not undefined) to Firestore — prevents updateDoc errors ✅
+- Profile completeness utility: getIncompleteFields, isProfileComplete, getIncompleteStudents ✅
+- Dashboard alert card: shows amber warning when learners have incomplete profiles with links ✅
+- Chat notification: one-time system message sent per session for incomplete profiles ✅
+- UI terminology: all user-facing "Student"→"Learner", "Teacher"→"Tutor" across 10 files ✅
+- Tab 2 (Sessions): Stats row + Upcoming sessions (mark complete, cancel with approval warning) + Session history ✅
+- Tab 3 (Packages & Credits): Package cards with credit breakdowns, two-party pause approval workflow, unpause with expiry extension ✅
+- Pause rules: ceil(totalHours / 20) pauses per package, learner-initiated, both T+L must agree, admin override ✅
+- Fixed: package-form.tsx prepaidPackage.currency bug resolved ✅
+- Tab 4 (Payments): Manual payment recording, payment history, package payments create/update StudentCredit, refund support ✅
+- Sidebars: Hover-based expansion (500ms open / 300ms cascade / 300ms close), no chevrons, all menus have submenus except Dashboard ✅
+- Calendar tabs renamed: "Session Calendar" → "Schedule", "Set Availability" → "Availability" ✅
+- Chat & Calendar pages read `?tab=` param from sidebar sub-links to pre-select the right tab ✅
+- Tutor Dashboard: Learner Progress card (avg completion, per-learner bars), Packages Overview (active/hours/paused + expiry warnings), Petland Rewards aggregate, real sessions via teacher UID ✅
+- Learner Dashboard: My Course Progress card (units/sessions/hours bars), Petland Rewards card (XP + HP) ✅
+- My Packages page: learner-facing package view with credit breakdown bars, expiry warnings, pause request ✅
+- Cloud Function: checkExpiredPackages runs daily at midnight UTC, expires packages + sends learner notifications ✅
+- Star Trek Alert System: unified Alerts card on both T+S dashboards (red/yellow/blue tiers, top-3 display, expand all, "All systems nominal" empty state) ✅
+- Alert engine: pure function module generating alerts from packages, students, credits, sessions, approvals ✅
+- Red alerts: package expired, learner churned ✅
+- Yellow alerts: package expiring in 14d, incomplete profile, learner paused, low hours (<2h) ✅
+- Blue alerts: recent cancellations, pending approvals, new learner (no sessions) ✅
+- Daily alert chat notification: red/yellow alerts sent once per day to Chat Notifications ✅
+- Tutor dashboard: removed old Incomplete Profiles + At-Risk Learners cards, replaced with unified Alerts ✅
+- Learner dashboard: Alerts card shows personal package/credit alerts ✅
+- My Tutor page: learner can view assigned tutor's full profile (about, teaching style, credentials, reviews), message tutor, book sessions ✅
+- Phase 12 complete: all 14 steps done ✅
+
+## External Work (separate from this codebase)
+- Course curriculum built in separate "kiddoland tools" sessions
+- Petland reward system is a separate Firebase app (sends data to LL via webhook)

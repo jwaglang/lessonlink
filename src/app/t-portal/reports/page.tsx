@@ -7,7 +7,7 @@ export default function ReportsPage() {
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader 
                 title="Reports" 
-                description="View your business performance and student analytics."
+                description="View your business performance and learner analytics."
             />
             <Card>
                 <CardHeader>

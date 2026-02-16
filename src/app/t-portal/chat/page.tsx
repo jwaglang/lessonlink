@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,10 @@ import { db } from '@/lib/firebase';
 
 export default function TeacherChatPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialTab: 'notifications' | 'communications' =
+    tabParam === 'notifications' ? 'notifications' : 'communications';
 
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -25,7 +30,7 @@ export default function TeacherChatPage() {
   const [communications, setCommunications] = useState<Message[]>([]);
 
   const [activeTab, setActiveTab] =
-    useState<'notifications' | 'communications'>('communications');
+    useState<'notifications' | 'communications'>(initialTab);
 
   const [newMessage, setNewMessage] = useState('');
   const [newSubject, setNewSubject] = useState('');

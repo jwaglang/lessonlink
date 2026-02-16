@@ -52,11 +52,13 @@ import type {
   TeacherProfile,
   Review,
   StudentCredit,
+  StudentRewards,
   Message,
   Unit,
   Session,
   SessionInstance,
   StudentProgress,
+  Payment,
 } from './types';
 
 // ===================================
@@ -74,11 +76,13 @@ export type {
   TeacherProfile,
   Review,
   StudentCredit,
+  StudentRewards,
   Message,
   Unit,
   Session,
   SessionInstance,
   StudentProgress,
+  Payment,
 };
 
 // ===================================
@@ -118,7 +122,9 @@ const teacherProfilesCollection = collection(db, 'teacherProfiles');
 const reviewsCollection = collection(db, 'reviews');
 const studentCreditCollection = collection(db, 'studentCredit');
 const studentProgressCollection = collection(db, 'studentProgress');
+const studentRewardsCollection = collection(db, 'studentRewards');
 export const messagesCollection = collection(db, 'messages');
+const paymentsCollection = collection(db, 'payments');
 
 /* =========================================================
    Helpers
@@ -364,17 +370,25 @@ export async function getOrCreateStudentByEmail(
   const existingByEmail = await getStudentByEmail(email);
   if (existingByEmail) return existingByEmail;
 
-// Create new student with Auth UID as document ID
-const toCreate: Omit<Student, 'id'> = {
-  name: defaults?.name ?? email.split('@')[0],
-  email,
-  avatarUrl: defaults?.avatarUrl ?? '',
-  status: defaults?.status ?? 'active',
-  isNewStudent: defaults?.isNewStudent ?? true,
-  assignedTeacherId: defaults?.assignedTeacherId,
-};
+  // Create new student with Auth UID as document ID
+  const toCreate: Omit<Student, 'id'> = {
+    name: defaults?.name ?? email.split('@')[0],
+    email,
+    avatarUrl: defaults?.avatarUrl ?? '',
+    status: defaults?.status ?? 'active',
+    isNewStudent: defaults?.isNewStudent ?? true,
+    assignedTeacherId: defaults?.assignedTeacherId,
+    // New demographic fields
+    birthday: defaults?.birthday,
+    gender: defaults?.gender,
+    school: defaults?.school,
+    dragonLevel: defaults?.dragonLevel,
+    messagingContacts: defaults?.messagingContacts,
+    primaryContact: defaults?.primaryContact,
+    secondaryContact: defaults?.secondaryContact,
+  };
 
-return createStudent(authUid, toCreate);
+  return createStudent(authUid, toCreate);
 }
 
 export async function deleteStudent(studentId: string): Promise<void> {
@@ -880,6 +894,11 @@ export async function updateStudentPackage(pkgId: string, updates: Partial<Stude
   await updateDoc(doc(db, 'studentPackages', pkgId), { ...updates, updatedAt: Timestamp.now() } as any);
 }
 
+export async function getAllStudentPackages(): Promise<StudentPackage[]> {
+  const snapshot = await getDocs(query(studentPackagesCollection, orderBy('purchaseDate', 'desc')));
+  return snapshot.docs.map(d => asId<StudentPackage>(d.id, d.data()));
+}
+
 export async function decrementPackageLessons(pkgId: string, decrementBy = 1): Promise<void> {
   await runTransaction(db, async (tx) => {
     const ref = doc(db, 'studentPackages', pkgId);
@@ -889,6 +908,124 @@ export async function decrementPackageLessons(pkgId: string, decrementBy = 1): P
     const current = typeof data.balance === 'number' ? data.balance : 0;
     tx.update(ref, { balance: Math.max(0, current - decrementBy), updatedAt: Timestamp.now() });
   });
+}
+
+/* ----- Pause / Unpause ----- */
+
+/**
+ * Request a pause for a student package.
+ * Creates an ApprovalRequest (type: 'pause_request') and sends notification
+ * messages to both tutor and learner. Does NOT actually pause the package —
+ * that happens when the approval is granted via executePause().
+ */
+export async function requestPausePackage(
+  pkg: StudentPackage,
+  studentName: string,
+  studentEmail: string,
+  teacherUid: string,
+  reason?: string
+): Promise<ApprovalRequest> {
+  const approval = await createApprovalRequest({
+    type: 'pause_request',
+    studentId: pkg.studentId,
+    studentName,
+    studentEmail,
+    packageId: pkg.id,
+    reason: reason || 'Learner requested a pause',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  });
+
+  // Notify tutor
+  await createMessage({
+    type: 'notification',
+    from: 'system',
+    fromType: 'system',
+    to: teacherUid,
+    toType: 'teacher',
+    content: `${studentName} has requested to pause their ${pkg.courseTitle} package (${pkg.totalHours}h). Reason: ${reason || 'No reason given'}. Please review and approve or deny.`,
+    timestamp: new Date().toISOString(),
+    read: false,
+    actionLink: '/t-portal/approvals',
+    createdAt: new Date().toISOString(),
+  });
+
+  // Notify learner
+  await createMessage({
+    type: 'notification',
+    from: 'system',
+    fromType: 'system',
+    to: pkg.studentId,
+    toType: 'student',
+    content: `Your pause request for the ${pkg.courseTitle} package has been submitted. Both you and your tutor must agree for the pause to take effect.`,
+    timestamp: new Date().toISOString(),
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+
+  return approval;
+}
+
+/**
+ * Execute a pause on a package (called when approval is granted).
+ * Sets isPaused, pausedAt, status, pauseReason, and increments pauseCount.
+ */
+export async function executePause(pkgId: string, reason?: string): Promise<void> {
+  const ref = doc(db, 'studentPackages', pkgId);
+  await updateDoc(ref, {
+    isPaused: true,
+    pausedAt: new Date().toISOString(),
+    pauseReason: reason || null,
+    status: 'paused',
+    pauseCount: increment(1),
+    updatedAt: Timestamp.now(),
+  } as any);
+}
+
+/**
+ * Unpause a student package.
+ * Calculates days paused, extends expiresAt by that duration,
+ * updates totalDaysPaused, and resets pause state.
+ */
+export async function unpauseStudentPackage(pkgId: string): Promise<{ daysExtended: number }> {
+  const ref = doc(db, 'studentPackages', pkgId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('StudentPackage not found');
+
+  const pkg = asId<StudentPackage>(snap.id, snap.data());
+  if (!pkg.isPaused || !pkg.pausedAt) throw new Error('Package is not paused');
+
+  const pausedAt = new Date(pkg.pausedAt);
+  const now = new Date();
+  const daysPaused = Math.max(1, Math.ceil((now.getTime() - pausedAt.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Extend expiration date
+  const currentExpiry = new Date(pkg.expiresAt);
+  currentExpiry.setDate(currentExpiry.getDate() + daysPaused);
+
+  await updateDoc(ref, {
+    isPaused: false,
+    pausedAt: null,
+    pauseReason: null,
+    status: 'active',
+    totalDaysPaused: (pkg.totalDaysPaused || 0) + daysPaused,
+    expiresAt: currentExpiry.toISOString(),
+    updatedAt: Timestamp.now(),
+  } as any);
+
+  return { daysExtended: daysPaused };
+}
+
+/* ----- Student Credits (by student) ----- */
+
+/** Get all StudentCredit records for a student (across all courses). */
+export async function getStudentCreditsByStudentId(studentId: string): Promise<StudentCredit[]> {
+  const snapshot = await getDocs(query(
+    studentCreditCollection,
+    where('studentId', '==', studentId),
+    orderBy('updatedAt', 'desc')
+  ));
+  return snapshot.docs.map(d => asId<StudentCredit>(d.id, d.data()));
 }
 
 /* =========================================================
@@ -1145,6 +1282,11 @@ export async function getStudentProgressByStudentId(studentId: string): Promise<
   return snapshot.docs.map(d => asId<StudentProgress>(d.id, d.data()));
 }
 
+export async function getAllStudentProgress(): Promise<StudentProgress[]> {
+  const snapshot = await getDocs(query(studentProgressCollection, orderBy('updatedAt', 'desc')));
+  return snapshot.docs.map(d => asId<StudentProgress>(d.id, d.data()));
+}
+
 export async function createStudentProgress(progress: Omit<StudentProgress, 'id'>): Promise<StudentProgress> {
   const ref = await addDoc(studentProgressCollection, { ...progress, createdAt: Timestamp.now(), updatedAt: Timestamp.now() } as any);
   const snap = await getDoc(ref);
@@ -1153,4 +1295,42 @@ export async function createStudentProgress(progress: Omit<StudentProgress, 'id'
 
 export async function updateStudentProgress(progressId: string, updates: Partial<StudentProgress>): Promise<void> {
   await updateDoc(doc(db, 'studentProgress', progressId), { ...updates, updatedAt: Timestamp.now() } as any);
+}
+
+/* =========================================================
+   Student Rewards (Petland — read-only)
+   ========================================================= */
+
+export async function getStudentRewardsByStudentId(studentId: string): Promise<StudentRewards | null> {
+  const snapshot = await getDocs(query(
+    studentRewardsCollection,
+    where('studentId', '==', studentId),
+    limit(1)
+  ));
+  if (snapshot.empty) return null;
+  const d = snapshot.docs[0];
+  return asId<StudentRewards>(d.id, d.data());
+}
+
+/* =========================================================
+   Payments (Pre-Stripe — manual entry)
+   ========================================================= */
+
+export async function createPayment(payment: Omit<Payment, 'id'>): Promise<Payment> {
+  const ref = await addDoc(paymentsCollection, { ...payment, createdAt: new Date().toISOString() });
+  const snap = await getDoc(ref);
+  return asId<Payment>(snap.id, snap.data());
+}
+
+export async function getPaymentsByStudentId(studentId: string): Promise<Payment[]> {
+  const snapshot = await getDocs(query(
+    paymentsCollection,
+    where('studentId', '==', studentId),
+    orderBy('paymentDate', 'desc')
+  ));
+  return snapshot.docs.map(d => asId<Payment>(d.id, d.data()));
+}
+
+export async function updatePayment(paymentId: string, updates: Partial<Payment>): Promise<void> {
+  await updateDoc(doc(db, 'payments', paymentId), updates as any);
 }

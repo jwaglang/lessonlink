@@ -10,6 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, MessageSquare, Pause, BookOpen } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import ProfileProgressTab from './components/profile-progress-tab';
+import SessionsTab from './components/sessions-tab';
+import PackagesTab from './components/packages-tab';
+import PaymentsTab from './components/payments-tab';
 
 export default function LearnerProfilePage() {
   const params = useParams();
@@ -40,7 +44,7 @@ export default function LearnerProfilePage() {
   if (!student) {
     return (
       <div className="flex flex-col items-center justify-center p-16 gap-4">
-        <p className="text-muted-foreground">Student not found.</p>
+        <p className="text-muted-foreground">Learner not found.</p>
         <Button variant="outline" onClick={() => router.push('/t-portal/students')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Roster
         </Button>
@@ -92,27 +96,23 @@ export default function LearnerProfilePage() {
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
-          <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
-            Profile & Progress — coming in Step 4
-          </div>
+          <ProfileProgressTab
+            studentId={studentId}
+            student={student}
+            onStudentUpdate={(updated) => setStudent(updated)}
+          />
         </TabsContent>
 
         <TabsContent value="sessions" className="mt-6">
-          <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
-            Sessions — coming in Step 5
-          </div>
+          <SessionsTab studentId={studentId} student={student} />
         </TabsContent>
 
         <TabsContent value="packages" className="mt-6">
-          <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
-            Packages & Credits — coming in Step 6
-          </div>
+          <PackagesTab studentId={studentId} student={student} />
         </TabsContent>
 
         <TabsContent value="payments" className="mt-6">
-          <div className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
-            Payments — coming in Step 7
-          </div>
+          <PaymentsTab studentId={studentId} student={student} />
         </TabsContent>
       </Tabs>
     </div>

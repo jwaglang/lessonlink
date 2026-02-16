@@ -58,13 +58,11 @@ export default function PackageForm({ students, courses, credit, onSuccess }: Pa
     }, [totalHours, credit, form]);
     
     React.useEffect(() => {
-        if (studentId) {
-            const student = students.find(s => s.id === studentId);
-            if (student && student.prepaidPackage.currency) {
-                form.setValue('currency', student.prepaidPackage.currency);
-            }
+        // Default currency — prepaidPackage was removed from Student type
+        if (studentId && !credit) {
+            form.setValue('currency', 'EUR');
         }
-    }, [studentId, students, form]);
+    }, [studentId, credit, form]);
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {

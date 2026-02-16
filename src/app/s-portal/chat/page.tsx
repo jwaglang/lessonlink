@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,10 @@ import { onSnapshot, orderBy, query, where } from 'firebase/firestore';
 
 export default function StudentChatPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialTab: 'notifications' | 'communications' =
+    tabParam === 'notifications' ? 'notifications' : 'communications';
 
   const [student, setStudent] = useState<Student | null>(null);
   const [teacherId, setTeacherId] = useState<string | null>(null);
@@ -26,7 +31,7 @@ export default function StudentChatPage() {
   const [notifications, setNotifications] = useState<Message[]>([]);
   const [communications, setCommunications] = useState<Message[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'notifications' | 'communications'>('communications');
+  const [activeTab, setActiveTab] = useState<'notifications' | 'communications'>(initialTab);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);

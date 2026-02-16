@@ -1,0 +1,191 @@
+---
+description: LessonLink type definitions, collection schemas, and data conventions. Loaded when working on TypeScript files.
+globs: "**/*.ts,**/*.tsx"
+alwaysApply: false
+---
+
+# LessonLink — Types & Data Model
+
+## StudentStatus (5 values)
+```typescript
+type StudentStatus = 'active' | 'trial' | 'paused' | 'completed' | 'churned';
+```
+- `active` — enrolled with valid package or sessions
+- `trial` — only done trial sessions, no package yet
+- `paused` — package paused by T
+- `completed` — finished course/package
+- `churned` — inactive, UI label is "Inactive"
+
+## Dragon Level System (9 tiers)
+```typescript
+type DragonLevel = 'egg' | 'white' | 'yellow' | 'orange' | 'green' | 'blue' | 'purple' | 'red' | 'black';
+```
+Full metadata (GSE, CEFR, Cambridge, stage) in `src/lib/dragon-levels.ts`.
+
+## MessagingContact
+```typescript
+interface MessagingContact {
+  app: string;    // 'whatsapp' | 'wechat' | 'kakaotalk' | 'line' | 'telegram' | other
+  handle: string;
+}
+```
+
+## ParentContact
+```typescript
+interface ParentContact {
+  name: string;
+  email: string;
+  phone: string;
+  relationship: 'mother' | 'father' | 'guardian' | 'other';
+  country?: string;
+  city?: string;
+  messaging?: MessagingContact[];
+  preferredContactMethod?: string;
+  profession?: string;
+  englishProficiency?: 'native' | 'fluent' | 'intermediate' | 'basic' | 'none';
+}
+```
+
+## Student Interface (current shape)
+```typescript
+interface Student {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl: string;
+  status: StudentStatus;
+  isNewStudent?: boolean;
+  assignedTeacherId?: string;
+  notes?: string;
+  enrolledAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Demographics (Phase 12 Step 4)
+  birthday?: string;          // ISO date (YYYY-MM-DD)
+  gender?: string;            // 'boy' | 'girl' | custom write-in
+  school?: string;
+  dragonLevel?: DragonLevel;  // assigned after intake assessment
+  messagingContacts?: MessagingContact[];
+  primaryContact?: ParentContact;
+  secondaryContact?: ParentContact;
+}
+```
+**Dropped fields (no longer exist):** `enrollmentStatus`, `paymentStatus`, `prepaidPackage`, `goalMet`
+
+## StudentPackage Interface (hours-based)
+```typescript
+interface StudentPackage {
+  id: string;
+  studentId: string;          // Auth UID
+  courseId: string;
+  packageName: string;
+  packageType: 'single' | '10-pack' | 'full-course' | 'conversation';
+  totalHours: number;
+  usedHours: number;
+  remainingHours: number;
+  purchasedAt: string;        // ISO date
+  expiresAt: string | null;   // ISO date, null = never expires
+  status: 'active' | 'paused' | 'expired' | 'completed';
+  // Pause system
+  isPaused: boolean;
+  pausedAt: string | null;
+  pauseReason: string | null;
+  totalDaysPaused: number;
+}
+```
+**Note:** No `studentPackages` data exists in Firestore yet. Collection is fresh to create.
+
+## StudentCredit Interface
+```typescript
+interface StudentCredit {
+  studentId: string;          // Auth UID
+  courseId: string;
+  totalHours: number;
+  uncommittedHours: number;   // available to book
+  committedHours: number;     // booked, not yet attended
+  completedHours: number;     // attended & settled
+}
+```
+
+## Payment Interface (Pre-Stripe — manual entry)
+```typescript
+type PaymentType = 'one_off' | 'package' | 'course';
+type PaymentMethod = 'bank_transfer' | 'cash' | 'paypal' | 'wechat_pay' | 'other';
+type PaymentStatus = 'completed' | 'pending' | 'refunded';
+
+interface Payment {
+  id: string;
+  studentId: string;          // Auth UID
+  courseId?: string;
+  packageId?: string;
+  amount: number;
+  currency: string;           // EUR, USD, GBP, CNY
+  type: PaymentType;
+  method: PaymentMethod;
+  notes?: string;
+  paymentDate: string;        // ISO date
+  createdAt: string;          // ISO date
+  status: PaymentStatus;
+}
+```
+**Collection:** `payments`. When type is "package", creating a payment also creates/updates the linked `StudentCredit`.
+
+## StudentProgress Interface
+```typescript
+interface StudentProgress {
+  studentId: string;          // Auth UID
+  courseId: string;
+  unitId: string;
+  sessionsTotal: number;
+  sessionsCompleted: number;
+  totalHoursCompleted?: number;
+  status: 'assigned' | 'in_progress' | 'completed';
+}
+```
+
+## StudentRewards (Petland — read-only)
+```typescript
+interface StudentRewards {
+  studentId: string;          // Auth UID
+  xp: number;
+  hp: number;
+  lastSyncedAt?: string;
+}
+```
+**Note:** Synced from external Petland app via webhook. LL only reads, never writes.
+
+## SessionInstance Interface
+```typescript
+interface SessionInstance {
+  id: string;
+  courseId: string;
+  unitId: string;
+  sessionId: string;
+  durationHours: number;
+  studentId: string;          // Auth UID
+  teacherUid: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+  billingType: 'trial' | 'one_off' | 'package' | 'course';
+  completedAt?: string;
+  feedback?: string | null;        // T's post-session feedback (future)
+  followUpNotes?: string | null;   // flagged for next session (future)
+  packageId?: string | null;       // links to studentPackages doc (future)
+  scheduledDate: string;
+  scheduledTime: string;
+}
+```
+
+## Collection → Tab Mapping (Learner Profile Page)
+| Tab | Collections |
+|-----|------------|
+| Tab 1: Profile & Progress | `students`, `studentProgress`, `studentRewards` |
+| Tab 2: Sessions | `sessionInstances`, `sessions`, `units` |
+| Tab 3: Packages & Credits | `studentPackages`, `studentCredit` |
+| Tab 4: Payments | `payments` |
+
+## Key Data Rules
+- `studentId` = Firebase Auth UID everywhere
+- Never use `studentAuthUid` — that's a stale field name
+- Hours, not lessons, for all package/credit tracking
+- `studentProgress` must exist before session completion
+- Credit moves per `sessionInstance`, never per unit

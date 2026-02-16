@@ -143,7 +143,7 @@ export default function PublicProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <GraduationCap className="h-16 w-16 text-muted-foreground" />
-        <h1 className="text-2xl font-bold">Teacher not found</h1>
+        <h1 className="text-2xl font-bold">Tutor not found</h1>
         <p className="text-muted-foreground">This profile doesn't exist or is not public.</p>
         <Link href="/">
           <Button>Go Home</Button>
@@ -260,7 +260,7 @@ export default function PublicProfilePage() {
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
                 <span className="font-bold">{profile.stats.totalStudents}</span>
-                <span className="text-muted-foreground">Students</span>
+                <span className="text-muted-foreground">Learners</span>
               </div>
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
@@ -361,7 +361,7 @@ export default function PublicProfilePage() {
                 {profile.teachingPhilosophy && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Me as a Teacher</CardTitle>
+                      <CardTitle className="text-lg">Me as a Tutor</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="whitespace-pre-line">{profile.teachingPhilosophy}</p>
@@ -482,7 +482,7 @@ export default function PublicProfilePage() {
                               <span className="font-semibold">{review.studentName}</span>
                               <Badge variant="secondary" className="text-xs">
                                 <Pin className="h-3 w-3 mr-1" />
-                                Teacher's Pick
+                                Tutor's Pick
                               </Badge>
                             </div>
                             <div className="flex items-center gap-1 my-1">

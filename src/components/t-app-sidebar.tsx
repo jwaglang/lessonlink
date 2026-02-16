@@ -8,6 +8,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarFooter,
   SidebarContent,
 } from '@/components/ui/sidebar';
@@ -25,31 +28,38 @@ import {
   BookOpen,
   MessageSquare,
   CreditCard,
+  Bell,
+  Clock,
+  CalendarClock,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 import { Badge } from '@/components/ui/badge';
-import { 
-  getApprovalRequests, 
-  onCoursesUpdate, 
-  getLevelsByCourseId, 
+import {
+  getApprovalRequests,
+  onCoursesUpdate,
+  getLevelsByCourseId,
   getUnitsByLevelId,
   Course,
   Level,
-  Unit
+  Unit,
 } from '@/lib/firestore';
 import { Button } from './ui/button';
 import { useAuth } from './auth-provider';
-import { cn } from '@/lib/utils';
 
 interface CourseWithDetails extends Course {
-  levels?: Level[];
+  levels?: LevelWithDetails[];
 }
 
 interface LevelWithDetails extends Level {
   units?: Unit[];
 }
+
+/* ── Delay constants (ms) ── */
+const OPEN_DELAY = 500;       // main menu hover → open
+const SUB_OPEN_DELAY = 300;   // submenu hover → cascade open
+const CLOSE_DELAY = 300;      // mouse-leave → close
 
 const AppSidebar = () => {
   const pathname = usePathname();
@@ -58,130 +68,75 @@ const AppSidebar = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [courses, setCourses] = useState<CourseWithDetails[]>([]);
-  
-  // State for hover-based expansion
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-  const [hoveredCourseId, setHoveredCourseId] = useState<string | null>(null);
-  const [hoveredLevelId, setHoveredLevelId] = useState<string | null>(null);
-  const [loadingStates, setLoadingStates] = useState<{
-    courses: Set<string>;
-    levels: Set<string>;
-  }>({
-    courses: new Set(),
-    levels: new Set()
-  });
 
-  // Refs for hover timeouts
-  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Hover state: which menu/submenu sections are open
+  const [openMenus, setOpenMenus] = useState<Set<string>>(new Set());
 
-  // Clean up timeouts on unmount
+  // Timers for delayed open/close
+  const openTimers = useRef<Record<string, NodeJS.Timeout>>({});
+  const closeTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
+  // Lazy-load state for courses
+  const [loadingCourses, setLoadingCourses] = useState<Set<string>>(new Set());
+  const [loadingLevels, setLoadingLevels] = useState<Set<string>>(new Set());
+
+  const adminEmail = useMemo(() => user?.email === 'jwag.lang@gmail.com', [user]);
+
+  useEffect(() => { setIsAdmin(adminEmail); }, [adminEmail]);
+
+  // Cleanup all timers on unmount
   useEffect(() => {
     return () => {
-      if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+      Object.values(openTimers.current).forEach(clearTimeout);
+      Object.values(closeTimers.current).forEach(clearTimeout);
     };
   }, []);
 
-  const handleMouseEnter = useCallback((itemId: string) => {
-    if (leaveTimeoutRef.current) {
-      clearTimeout(leaveTimeoutRef.current);
-      leaveTimeoutRef.current = null;
+  /* ── Hover helpers ── */
+
+  const scheduleOpen = useCallback((key: string, delay: number) => {
+    // Cancel any pending close for this key
+    if (closeTimers.current[key]) {
+      clearTimeout(closeTimers.current[key]);
+      delete closeTimers.current[key];
     }
-    setHoveredItem(itemId);
+    // If already open, nothing to do
+    if (openTimers.current[key]) return;
+
+    openTimers.current[key] = setTimeout(() => {
+      setOpenMenus((prev) => new Set(prev).add(key));
+      delete openTimers.current[key];
+    }, delay);
   }, []);
 
-  const handleMouseLeave = useCallback(() => {
-    leaveTimeoutRef.current = setTimeout(() => {
-      setHoveredItem(null);
-      setHoveredCourseId(null);
-      setHoveredLevelId(null);
-    }, 150);
+  const scheduleClose = useCallback((key: string) => {
+    // Cancel any pending open for this key
+    if (openTimers.current[key]) {
+      clearTimeout(openTimers.current[key]);
+      delete openTimers.current[key];
+    }
+    if (closeTimers.current[key]) return;
+
+    closeTimers.current[key] = setTimeout(() => {
+      setOpenMenus((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      delete closeTimers.current[key];
+    }, CLOSE_DELAY);
   }, []);
 
-  const handleCourseMouseEnter = useCallback(async (courseId: string) => {
-    if (leaveTimeoutRef.current) {
-      clearTimeout(leaveTimeoutRef.current);
-      leaveTimeoutRef.current = null;
+  const cancelClose = useCallback((key: string) => {
+    if (closeTimers.current[key]) {
+      clearTimeout(closeTimers.current[key]);
+      delete closeTimers.current[key];
     }
-    
-    setHoveredCourseId(courseId);
-    setHoveredLevelId(null);
-    
-    // Load levels if not already loaded
-    if (!courses.find(c => c.id === courseId)?.levels) {
-      setLoadingStates(prevState => ({
-        ...prevState,
-        courses: new Set(prevState.courses).add(courseId)
-      }));
-      
-      const levels = await getLevelsByCourseId(courseId);
-      setCourses(prevCourses => 
-        prevCourses.map(course => 
-          course.id === courseId 
-            ? { ...course, levels } 
-            : course
-        )
-      );
-      setLoadingStates(prevState => ({
-        ...prevState,
-        courses: new Set([...prevState.courses].filter(id => id !== courseId))
-      }));
-    }
-  }, [courses]);
+  }, []);
 
-  const handleLevelMouseEnter = useCallback(async (levelId: string, courseId: string) => {
-    if (leaveTimeoutRef.current) {
-      clearTimeout(leaveTimeoutRef.current);
-      leaveTimeoutRef.current = null;
-    }
-    
-    setHoveredLevelId(levelId);
-    
-    // Find the course and level to check if units are loaded
-    const course = courses.find(c => c.id === courseId);
-    const level = course?.levels?.find(l => l.id === levelId);
-    
-    if (course && level && !(level as LevelWithDetails).units) {
-      setLoadingStates(prevState => ({
-        ...prevState,
-        levels: new Set(prevState.levels).add(levelId)
-      }));
-      
-      const units = await getUnitsByLevelId(levelId);
-      setCourses(prevCourses => 
-        prevCourses.map(course => 
-          course.id === courseId 
-            ? { 
-                ...course, 
-                levels: course.levels?.map(l => 
-                  l.id === levelId 
-                    ? { ...l, units } 
-                    : l
-                ) 
-              } 
-            : course
-        )
-      );
-      setLoadingStates(prevState => ({
-        ...prevState,
-        levels: new Set([...prevState.levels].filter(id => id !== levelId))
-      }));
-    }
-  }, [courses]);
+  const isOpen = useCallback((key: string) => openMenus.has(key), [openMenus]);
 
-  const handleCourseClick = useCallback((courseId: string) => {
-    router.push(`/t-portal/courses/${courseId}/levels`);
-  }, [router]);
-
-  const handleLevelClick = useCallback((courseId: string, levelId: string) => {
-    router.push(`/t-portal/courses/${courseId}/levels/${levelId}/units`);
-  }, [router]);
-
-  const handleUnitClick = useCallback((courseId: string, levelId: string, unitId: string) => {
-    router.push(`/t-portal/courses/${courseId}/levels/${levelId}/units/${unitId}/sessions`);
-  }, [router]);
-
-  // Memoize isAdmin check
-  const adminEmail = useMemo(() => user?.email === 'jwag.lang@gmail.com', [user]);
+  /* ── Data fetching ── */
 
   useEffect(() => {
     async function fetchPendingCount() {
@@ -192,351 +147,390 @@ const AppSidebar = () => {
         console.error('Error fetching pending approvals:', error);
       }
     }
-    
     fetchPendingCount();
     const interval = setInterval(fetchPendingCount, 30000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    setIsAdmin(adminEmail);
-  }, [adminEmail]);
-
-  useEffect(() => {
-    console.log('🔵 SIDEBAR: Setting up courses listener');
     let isSubscribed = true;
-    
     const unsubscribe = onCoursesUpdate((templates) => {
       if (!isSubscribed) return;
-      
-      console.log('🟢 SIDEBAR: Courses updated:', templates.length, 'courses');
       setCourses(templates);
     });
-    
-    return () => {
-      console.log('🔴 SIDEBAR: Cleaning up courses listener');
-      isSubscribed = false;
-      unsubscribe();
-    };
+    return () => { isSubscribed = false; unsubscribe(); };
   }, []);
+
+  /* ── Lazy-load course hierarchy ── */
+
+  const ensureLevelsLoaded = useCallback(async (courseId: string) => {
+    if (courses.find((c) => c.id === courseId)?.levels) return;
+    setLoadingCourses((prev) => new Set(prev).add(courseId));
+    const levels = await getLevelsByCourseId(courseId);
+    setCourses((prev) =>
+      prev.map((c) => (c.id === courseId ? { ...c, levels } : c))
+    );
+    setLoadingCourses((prev) => {
+      const next = new Set(prev);
+      next.delete(courseId);
+      return next;
+    });
+  }, [courses]);
+
+  const ensureUnitsLoaded = useCallback(async (courseId: string, levelId: string) => {
+    const course = courses.find((c) => c.id === courseId);
+    const level = course?.levels?.find((l) => l.id === levelId);
+    if (level?.units) return;
+    setLoadingLevels((prev) => new Set(prev).add(levelId));
+    const units = await getUnitsByLevelId(levelId);
+    setCourses((prev) =>
+      prev.map((c) =>
+        c.id === courseId
+          ? { ...c, levels: c.levels?.map((l) => (l.id === levelId ? { ...l, units } : l)) }
+          : c
+      )
+    );
+    setLoadingLevels((prev) => {
+      const next = new Set(prev);
+      next.delete(levelId);
+      return next;
+    });
+  }, [courses]);
 
   const handleLogout = useCallback(async () => {
-    try {
-      await logOut();
-      router.push('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    try { await logOut(); router.push('/'); } catch (e) { console.error('Logout error:', e); }
   }, [router]);
-
-  // Keyboard event handlers for accessibility
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, callback: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      callback();
-    }
-  }, []);
 
   return (
     <>
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
-          <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8"/>
+          <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8" />
           <h1 className="text-xl font-headline font-bold primary-gradient-text">
             LessonLink
           </h1>
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarMenu>
-          {/* Top Level Items */}
+          {/* ── Dashboard (no subs) ── */}
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/t-portal'}
-              tooltip="Dashboard"
-            >
-              <a href="/t-portal" className="flex items-center gap-2">
+            <SidebarMenuButton asChild isActive={pathname === '/t-portal'} tooltip="Dashboard">
+              <Link href="/t-portal" className="flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" />
                 <span>Dashboard</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/t-portal/calendar'}
-              tooltip="Calendar"
-            >
-              <a href="/t-portal/calendar" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>Calendar</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/t-portal/chat'}
-              tooltip="Chat"
-            >
-              <Link href="/t-portal/chat" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                <span>Chat</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* Courses with hover-based expansion */}
-          <div 
-            className="relative"
-            onMouseEnter={() => handleMouseEnter('courses')}
-            onMouseLeave={handleMouseLeave}
+          {/* ── Calendar (hover → Schedule / Availability) ── */}
+          <div
+            onMouseEnter={() => scheduleOpen('calendar', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('calendar')}
           >
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith('/t-portal/courses') && !pathname.includes('/courses/')}
-                tooltip="Courses"
-                className="w-full"
+                isActive={pathname.startsWith('/t-portal/calendar')}
+                tooltip="Calendar"
               >
-                <a 
-                  href="/t-portal/courses" 
-                  className="flex items-center gap-2"
-                >
-                  <Library className="h-4 w-4" />
-                  <span>Courses</span>
-                </a>
+                <Link href="/t-portal/calendar" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>Calendar</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            
-            {/* Courses submenu */}
-            {hoveredItem === 'courses' && (
-              <div className="pl-4">
-                {courses.map(course => (
-                  <div 
-                    key={course.id} 
-                    className="relative"
-                    onMouseEnter={() => handleCourseMouseEnter(course.id)}
-                    onMouseLeave={handleMouseLeave}
+
+            {isOpen('calendar') && (
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton
+                    asChild
+                    isActive={pathname === '/t-portal/calendar' && !pathname.includes('tab=availability')}
                   >
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname.includes(`/courses/${course.id}/`)}
-                        className="w-full justify-start"
-                      >
-                        <div
-                          className="flex items-center justify-between w-full px-3 py-2 cursor-pointer"
-                          onClick={() => handleCourseClick(course.id)}
-                          onKeyDown={(e) => handleKeyDown(e, () => handleCourseClick(course.id))}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <span className="truncate">{course.title}</span>
-                          {loadingStates.courses.has(course.id) && (
-                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-2" />
-                          )}
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    
-                    {/* Levels submenu for this course */}
-                    {hoveredCourseId === course.id && course.levels && course.levels.length > 0 && (
-                      <div className="pl-4">
-                        {course.levels.map(level => (
-                          <div 
-                            key={level.id}
-                            className="relative"
-                            onMouseEnter={() => handleLevelMouseEnter(level.id, course.id)}
-                            onMouseLeave={handleMouseLeave}
-                          >
-                            <SidebarMenuItem>
-                              <SidebarMenuButton
-                                isActive={pathname.includes(`/levels/${level.id}/`)}
-                                className="w-full justify-start text-sm"
-                              >
-                                <div
-                                  className="flex items-center justify-between w-full px-3 py-2 cursor-pointer"
-                                  onClick={() => handleLevelClick(course.id, level.id)}
-                                  onKeyDown={(e) => handleKeyDown(e, () => handleLevelClick(course.id, level.id))}
-                                  role="button"
-                                  tabIndex={0}
-                                >
-                                  <span className="truncate">{level.title}</span>
-                                  {loadingStates.levels.has(level.id) && (
-                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-2" />
-                                  )}
-                                </div>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            
-                            {/* Units submenu for this level */}
-                            {hoveredLevelId === level.id && (level as LevelWithDetails).units && (
-                              <div className="pl-4">
-                                {(level as LevelWithDetails).units!.map(unit => (
-                                  <SidebarMenuItem key={unit.id}>
-                                    <SidebarMenuButton
-                                      isActive={pathname.includes(`/units/${unit.id}/`)}
-                                      className="w-full justify-start text-xs"
-                                    >
-                                      <div
-                                        className="w-full px-3 py-2 cursor-pointer"
-                                        onClick={() => handleUnitClick(course.id, level.id, unit.id)}
-                                        onKeyDown={(e) => handleKeyDown(e, () => handleUnitClick(course.id, level.id, unit.id))}
-                                        role="button"
-                                        tabIndex={0}
-                                      >
-                                        <span className="truncate">{unit.title}</span>
-                                      </div>
-                                    </SidebarMenuButton>
-                                  </SidebarMenuItem>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {courses.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground pl-4">
-                    No courses available
-                  </div>
-                )}
-              </div>
+                    <Link href="/t-portal/calendar?tab=schedule" className="flex items-center gap-2">
+                      <CalendarClock className="h-3.5 w-3.5" />
+                      Schedule
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link href="/t-portal/calendar?tab=availability" className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5" />
+                      Availability
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
             )}
           </div>
 
-          {/* Learners Section with hover-based expansion */}
-          <div 
-            className="relative"
-            onMouseEnter={() => handleMouseEnter('learners')}
-            onMouseLeave={handleMouseLeave}
+          {/* ── Chat (hover → Notifications / Communications) ── */}
+          <div
+            onMouseEnter={() => scheduleOpen('chat', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('chat')}
           >
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith('/t-portal/students')}
-                tooltip="Learners"
-                className="w-full"
+                isActive={pathname.startsWith('/t-portal/chat')}
+                tooltip="Chat"
               >
-                <a 
-                  href="/t-portal/students" 
-                  className="flex items-center gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Learners</span>
-                </a>
+                <Link href="/t-portal/chat" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Chat</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            
-            {/* Learners submenu */}
-            {hoveredItem === 'learners' && (
-              <div className="pl-4">
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/t-portal/students')}
-                    tooltip="Students"
-                    className="w-full justify-start"
+
+            {isOpen('chat') && (
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link href="/t-portal/chat?tab=notifications" className="flex items-center gap-2">
+                      <Bell className="h-3.5 w-3.5" />
+                      Notifications
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link href="/t-portal/chat?tab=communications" className="flex items-center gap-2">
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      Communications
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            )}
+          </div>
+
+          {/* ── Courses (hover → All Courses + individual courses cascade) ── */}
+          <div
+            onMouseEnter={() => scheduleOpen('courses', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('courses')}
+          >
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/t-portal/courses')}
+                tooltip="Courses"
+              >
+                <Link href="/t-portal/courses" className="flex items-center gap-2">
+                  <Library className="h-4 w-4" />
+                  <span>Courses</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {isOpen('courses') && (
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/courses'}>
+                    <Link href="/t-portal/courses">All Courses</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+
+                {courses.map((course) => (
+                  <div
+                    key={course.id}
+                    onMouseEnter={() => {
+                      cancelClose('courses');
+                      scheduleOpen(`course-${course.id}`, SUB_OPEN_DELAY);
+                      ensureLevelsLoaded(course.id);
+                    }}
+                    onMouseLeave={() => {
+                      scheduleClose(`course-${course.id}`);
+                    }}
                   >
-                    <a href="/t-portal/students" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>Students</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/t-portal/packages'}
-                    tooltip="Student Packages"
-                    className="w-full justify-start"
-                  >
-                    <a href="/t-portal/packages" className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      <span>Student Packages</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/t-portal/approvals'}
-                    tooltip="Approvals"
-                    className="w-full justify-start"
-                  >
-                    <a href="/t-portal/approvals" className="flex items-center justify-between w-full">
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={pathname.includes(`/courses/${course.id}/`)}
+                      >
+                        <Link
+                          href={`/t-portal/courses/${course.id}/levels`}
+                          className="flex items-center justify-between w-full"
+                        >
+                          <span className="truncate">{course.title}</span>
+                          {loadingCourses.has(course.id) && (
+                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-1 flex-shrink-0" />
+                          )}
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+
+                    {/* Cascade: levels */}
+                    {isOpen(`course-${course.id}`) && course.levels && course.levels.length > 0 && (
+                      <SidebarMenuSub>
+                        {course.levels.map((level) => (
+                          <div
+                            key={level.id}
+                            onMouseEnter={() => {
+                              cancelClose(`course-${course.id}`);
+                              cancelClose('courses');
+                              scheduleOpen(`level-${level.id}`, SUB_OPEN_DELAY);
+                              ensureUnitsLoaded(course.id, level.id);
+                            }}
+                            onMouseLeave={() => {
+                              scheduleClose(`level-${level.id}`);
+                            }}
+                          >
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={pathname.includes(`/levels/${level.id}/`)}
+                              >
+                                <Link
+                                  href={`/t-portal/courses/${course.id}/levels/${level.id}/units`}
+                                  className="flex items-center justify-between w-full text-xs"
+                                >
+                                  <span className="truncate">{level.title}</span>
+                                  {loadingLevels.has(level.id) && (
+                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-1 flex-shrink-0" />
+                                  )}
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+
+                            {/* Cascade: units */}
+                            {isOpen(`level-${level.id}`) && level.units && level.units.length > 0 && (
+                              <SidebarMenuSub>
+                                {level.units.map((unit) => (
+                                  <SidebarMenuSubItem key={unit.id}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={pathname.includes(`/units/${unit.id}/`)}
+                                    >
+                                      <Link
+                                        href={`/t-portal/courses/${course.id}/levels/${level.id}/units/${unit.id}/sessions`}
+                                        className="text-xs"
+                                      >
+                                        {unit.title}
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            )}
+                          </div>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
+                  </div>
+                ))}
+
+                {courses.length === 0 && (
+                  <div className="px-3 py-1.5 text-xs text-muted-foreground">
+                    No courses available
+                  </div>
+                )}
+              </SidebarMenuSub>
+            )}
+          </div>
+
+          {/* ── Learners (hover → Roster, Packages, Approvals, Reports) ── */}
+          <div
+            onMouseEnter={() => scheduleOpen('learners', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('learners')}
+          >
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={
+                  pathname.startsWith('/t-portal/students') ||
+                  pathname === '/t-portal/packages' ||
+                  pathname === '/t-portal/approvals' ||
+                  pathname === '/t-portal/reports'
+                }
+                tooltip="Learners"
+              >
+                <Link href="/t-portal/students" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span>Learners</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {isOpen('learners') && (
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname.startsWith('/t-portal/students')}>
+                    <Link href="/t-portal/students" className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5" />
+                      Learner Roster
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/packages'}>
+                    <Link href="/t-portal/packages" className="flex items-center gap-2">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Learner Packages
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/approvals'}>
+                    <Link href="/t-portal/approvals" className="flex items-center justify-between w-full">
                       <span className="flex items-center gap-2">
-                        <ClipboardCheck className="h-4 w-4" />
-                        <span>Approvals</span>
+                        <ClipboardCheck className="h-3.5 w-3.5" />
+                        Approvals
                       </span>
                       {pendingCount > 0 && (
-                        <Badge 
-                          variant="destructive" 
+                        <Badge
+                          variant="destructive"
                           className="h-5 w-5 p-0 flex items-center justify-center text-xs min-w-5"
                           aria-label={`${pendingCount} pending approvals`}
                         >
                           {pendingCount}
                         </Badge>
                       )}
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/t-portal/reports'}
-                    tooltip="Reports"
-                    className="w-full justify-start"
-                  >
-                    <a href="/t-portal/reports" className="flex items-center gap-2">
-                      <BarChart2 className="h-4 w-4" />
-                      <span>Reports</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </div>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/reports'}>
+                    <Link href="/t-portal/reports" className="flex items-center gap-2">
+                      <BarChart2 className="h-3.5 w-3.5" />
+                      Reports
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
             )}
           </div>
         </SidebarMenu>
       </SidebarContent>
 
-      {/* Footer with Tutor Section */}
+      {/* ── Footer ── */}
       <SidebarFooter className="p-0 gap-0">
         <div className="p-2">
           <ThemeToggle />
         </div>
         {user && !loading && (
-          <div 
-            className="border-t border-sidebar-border relative"
-            onMouseEnter={() => handleMouseEnter('tutor')}
-            onMouseLeave={handleMouseLeave}
+          <div
+            className="border-t border-sidebar-border"
+            onMouseEnter={() => scheduleOpen('tutor', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('tutor')}
           >
-            <div className="p-4 pb-2">
-              <div className="flex items-center gap-3 cursor-pointer">
+            <div className="p-4 pb-2 cursor-pointer">
+              <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
                   <BookOpen className="h-4 w-4 text-sidebar-accent-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">Tutor</p>
-                  <p className="text-xs text-muted-foreground truncate" title={user.email}>
+                  <p className="text-xs text-muted-foreground truncate" title={user.email ?? ''}>
                     {user.email}
                   </p>
                 </div>
               </div>
             </div>
-            
-            {/* Tutor submenu */}
-            {hoveredItem === 'tutor' && (
+
+            {isOpen('tutor') && (
               <div className="px-4 pb-2 space-y-1">
                 <Button
                   variant="ghost"

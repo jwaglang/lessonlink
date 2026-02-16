@@ -47,21 +47,21 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
         if (student) {
           await updateStudent(student.id, { assignedTeacherId: user!.uid });
           toast({
-            title: 'Student Found',
+            title: 'Learner Found',
             description: `${student.name} has been added to your roster.`,
           });
           onSuccess(student);
         } else {
           toast({
-            title: 'Student Not Found',
-            description: 'No account found for that email. Ask the student to sign in first.',
+            title: 'Learner Not Found',
+            description: 'No account found for that email. Ask the learner to sign in first.',
             variant: 'destructive',
           });
         }
       } catch (error) {
         toast({
           title: 'Error',
-          description: 'Failed to look up student. Please try again.',
+          description: 'Failed to look up learner. Please try again.',
           variant: 'destructive',
         });
       }
@@ -76,16 +76,16 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Student Email</FormLabel>
+              <FormLabel>Learner Email</FormLabel>
               <FormControl>
-                <Input placeholder="student@example.com" {...field} />
+                <Input placeholder="learner@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? <Loader2 className="animate-spin" /> : 'Find Student'}
+          {isPending ? <Loader2 className="animate-spin" /> : 'Find Learner'}
         </Button>
       </form>
     </Form>

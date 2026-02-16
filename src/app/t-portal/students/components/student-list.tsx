@@ -142,13 +142,13 @@ export default function StudentList({ students, setStudents }: { students: Stude
     try {
       await deleteStudent(id);
       setStudentToDelete(null);
-      toast({ title: 'Student Deleted', description: `${name} has been removed from your roster.` });
+      toast({ title: 'Learner Deleted', description: `${name} has been removed from your roster.` });
       setTimeout(() => {
         setStudents((prev) => prev.filter((s) => s.id !== id));
         setIsDeleting(false);
       }, 200);
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete student.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to delete learner.', variant: 'destructive' });
       setStudentToDelete(null);
       setIsDeleting(false);
     }
@@ -254,7 +254,7 @@ export default function StudentList({ students, setStudents }: { students: Stude
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Edit Student</SheetTitle>
+            <SheetTitle>Edit Learner</SheetTitle>
           </SheetHeader>
           {selectedStudent && <EditStudentForm student={selectedStudent} onSuccess={handleFormSuccess} />}
         </SheetContent>
@@ -264,7 +264,7 @@ export default function StudentList({ students, setStudents }: { students: Stude
       <AlertDialog open={!!studentToDelete} onOpenChange={() => setStudentToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this student?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure you want to delete this learner?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete {studentToDelete?.name} and all associated data. This action cannot be undone.
             </AlertDialogDescription>

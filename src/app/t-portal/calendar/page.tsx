@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from "@/components/page-header";
 import WeeklyCalendar from "./components/weekly-calendar";
 import { 
@@ -18,6 +19,11 @@ import { useAuth } from '@/components/auth-provider';
 
 export default function CalendarPage() {
     const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get('tab');
+    // Map sidebar param to tab value: schedule→sessions, availability→availability
+    const defaultTab = tabParam === 'availability' ? 'availability' : 'sessions';
+
     const [sessionInstances, setSessionInstances] = useState<SessionInstance[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [availability, setAvailability] = useState<Availability[]>([]);
@@ -82,10 +88,10 @@ export default function CalendarPage() {
                 title="Calendar"
                 description="Manage your sessions and set your availability."
             />
-            <Tabs defaultValue="sessions">
+            <Tabs defaultValue={defaultTab} key={defaultTab}>
                 <TabsList className='mb-4'>
-                    <TabsTrigger value="sessions">Session Calendar</TabsTrigger>
-                    <TabsTrigger value="availability">Set Availability</TabsTrigger>
+                    <TabsTrigger value="sessions">Schedule</TabsTrigger>
+                    <TabsTrigger value="availability">Availability</TabsTrigger>
                 </TabsList>
                 <TabsContent value="sessions">
                     <WeeklyCalendar 

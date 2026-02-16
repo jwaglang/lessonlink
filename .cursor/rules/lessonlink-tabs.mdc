@@ -1,0 +1,116 @@
+---
+description: LessonLink learner profile page tab specifications and layout. Loaded when working on student-related files.
+globs: "**/students/**"
+alwaysApply: false
+---
+
+# LessonLink — Learner Profile Tabs
+
+## Page Structure
+- Route: `/t-portal/students/[id]`
+- Shell exists at: `src/app/t-portal/students/[id]/page.tsx`
+- Tab components go in: `src/app/t-portal/students/[id]/components/`
+- Each tab is a separate component imported into the page
+
+## Header (always visible above tabs)
+- Avatar (initials from name, gradient background)
+- Learner name + StatusBadge
+- Email + "Enrolled since" date
+- Quick actions: Send Message | Pause Package | Assign Unit
+- Pause Package → only if active package exists
+- Unpause Package → only if paused
+
+## Tab Colors (from design spec)
+| Tab | Background | Border/Accent | Label |
+|-----|-----------|---------------|-------|
+| Profile & Progress | #d4edda | #16a34a (green) | Profile & Progress |
+| Sessions | #cce5ff | #2563eb (blue) | Sessions |
+| Packages & Credits | #fff3cd | #d97706 (amber) | Packages & Credits |
+| Payments | #e2e3e5 | #6b7280 (gray) | Payments |
+
+---
+
+## Tab 1: Profile & Progress [Who + What]
+
+### Layout: 2-column grid, 3 cards
+
+**Card 1 — Curriculum Progress (left column)**
+- Current Unit: name (Unit X of Y)
+- Sessions: X/Y completed
+- Total Hours: X / Y
+- Progress bar (visual, green)
+- Units Completed: N
+- Data: `studentProgress`
+
+**Card 2 — Petland Rewards (right column)**
+- 🏆 XP: number (+manual adjustments if any)
+- ❤️ HP: number
+- Last synced: date
+- Read-only — data comes from external Petland app
+- Data: `studentRewards`
+
+**Card 3 — Profile Info (full width, spans 2 columns)**
+- 3-column layout inside: Assigned Teacher | Enrollment Status | Notes
+- Notes field should be editable by T (private, S cannot see)
+- Data: `students`
+
+---
+
+## Tab 2: Sessions [When]
+
+### Sub-filters: Upcoming | Completed | Cancelled/Rescheduled
+
+**Upcoming session card:**
+- Date, time range, session title
+- Unit name, duration, billing type
+- Actions: Reschedule | Cancel | Mark Complete
+
+**Completed session card:**
+- Date, time range, session title + ✅
+- Unit name, duration, billing type
+- T Feedback (if any)
+- Follow-up notes
+- Linked Package reference
+- Data: `sessionInstances` + `sessions` (template name) + `units` (unit name)
+
+---
+
+## Tab 3: Packages & Credits [How]
+
+### Packages Section
+Per package card shows:
+- Package name/type, purchase date
+- Expiration date + days remaining (⚠️ warning if < 7 days)
+- Status badge: active | paused | expired | completed
+- Hours: total / used / remaining
+- Pause history (if any)
+- Actions: Pause | Unpause | Extend | Edit
+- Data: `studentPackages`
+
+### Credits Ledger Section
+- Course name
+- Total Hours / Uncommitted / Committed / Completed
+- Credit History table: Date | Event | Hours change
+- Data: `studentCredit` + derived from `sessionInstances`
+
+---
+
+## Tab 4: Payments [How]
+
+### Pre-Stripe (current — Phase 12)
+- Banner: "Phase 4 — Stripe Integration coming soon. Record payments manually."
+- "+ Record Payment" button
+- Manual entry fields: amount, date, type (one-off/package/course), method, notes
+- Creating a payment also creates/updates `studentCredit`
+
+### Payment History
+- List of payment records: date, description, amount, type, status
+- Data: `payments` collection (future — does not exist yet)
+
+---
+
+## Data Fetching Pattern
+- Parent page loads `students/{id}` and passes as prop
+- Each tab component receives `studentId` and fetches its own data
+- Use Firestore queries: `where('studentId', '==', id)`
+- Handle loading states and empty states gracefully

@@ -46,14 +46,14 @@ export default function EditStudentForm({ student, onSuccess }: EditStudentFormP
       try {
         const updatedStudent = await updateStudent(student.id, values);
         toast({
-          title: 'Student Updated',
+          title: 'Learner Updated',
           description: `${updatedStudent.name}'s information has been saved.`,
         });
         onSuccess(updatedStudent);
       } catch (error) {
         toast({
           title: 'Error',
-          description: 'Failed to update student. Please try again.',
+          description: 'Failed to update learner. Please try again.',
           variant: 'destructive',
         });
       }
@@ -70,7 +70,7 @@ export default function EditStudentForm({ student, onSuccess }: EditStudentFormP
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="Student's full name" {...field} />
+                <Input placeholder="Learner's full name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -83,7 +83,7 @@ export default function EditStudentForm({ student, onSuccess }: EditStudentFormP
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="student@example.com" {...field} />
+                <Input placeholder="learner@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

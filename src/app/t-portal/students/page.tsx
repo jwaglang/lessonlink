@@ -31,19 +31,19 @@ export default function StudentsPage() {
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader 
-                title="Student Roster" 
-                description="Manage your student profiles, track their progress, and update their status."
+                title="Learner Roster" 
+                description="Manage your learner profiles, track their progress, and update their status."
             >
                 <Button onClick={() => setIsSheetOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    <span>Add Student</span>
+                    <span>Add Learner</span>
                 </Button>
             </PageHeader>
             <StudentList students={students} setStudents={setStudents} />
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetContent>
                     <SheetHeader>
-                        <SheetTitle>Add a New Student</SheetTitle>
+                        <SheetTitle>Add a New Learner</SheetTitle>
                     </SheetHeader>
                     <AddStudentForm onSuccess={handleFormSuccess} />
                 </SheetContent>
