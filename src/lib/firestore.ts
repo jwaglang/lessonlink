@@ -59,6 +59,8 @@ import type {
   SessionInstance,
   StudentProgress,
   Payment,
+  AssessmentReport,
+  OutputCitation,
 } from './types';
 
 // ===================================
@@ -83,6 +85,8 @@ export type {
   SessionInstance,
   StudentProgress,
   Payment,
+  AssessmentReport,
+  OutputCitation,
 };
 
 // ===================================
@@ -125,6 +129,7 @@ const studentProgressCollection = collection(db, 'studentProgress');
 const studentRewardsCollection = collection(db, 'studentRewards');
 export const messagesCollection = collection(db, 'messages');
 const paymentsCollection = collection(db, 'payments');
+const assessmentReportsCollection = collection(db, 'assessmentReports');
 
 /* =========================================================
    Helpers
@@ -1322,4 +1327,130 @@ export async function getPaymentsByStudentId(studentId: string): Promise<Payment
 
 export async function updatePayment(paymentId: string, updates: Partial<Payment>): Promise<void> {
   await updateDoc(doc(db, 'payments', paymentId), updates as any);
+}
+
+/* =========================================================
+   Assessment Reports (Phase 14)
+   ========================================================= */
+
+export async function createAssessmentReport(report: Omit<AssessmentReport, 'id'>): Promise<AssessmentReport> {
+  const ref = await addDoc(assessmentReportsCollection, {
+    ...report,
+    status: 'draft',
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  } as any);
+  const snap = await getDoc(ref);
+  return asId<AssessmentReport>(snap.id, snap.data());
+}
+
+export async function getAssessmentReport(reportId: string): Promise<AssessmentReport | null> {
+  const snap = await getDoc(doc(db, 'assessmentReports', reportId));
+  return snap.exists() ? asId<AssessmentReport>(snap.id, snap.data()) : null;
+}
+
+export async function getAssessmentReportsByStudent(studentId: string): Promise<AssessmentReport[]> {
+  const snapshot = await getDocs(query(
+    assessmentReportsCollection,
+    where('studentId', '==', studentId),
+    orderBy('createdAt', 'desc')
+  ));
+  return snapshot.docs.map(d => asId<AssessmentReport>(d.id, d.data()));
+}
+
+export async function getAssessmentReportsByUnit(studentId: string, unitId: string): Promise<AssessmentReport[]> {
+  const snapshot = await getDocs(query(
+    assessmentReportsCollection,
+    where('studentId', '==', studentId),
+    where('unitId', '==', unitId),
+    orderBy('type', 'asc')
+  ));
+  return snapshot.docs.map(d => asId<AssessmentReport>(d.id, d.data()));
+}
+
+export async function updateAssessmentReport(reportId: string, updates: Partial<AssessmentReport>): Promise<void> {
+  await updateDoc(doc(db, 'assessmentReports', reportId), { ...updates, updatedAt: nowIso() } as any);
+}
+
+/**
+ * Finalize an assessment report and link it to studentProgress.
+ * - Sets status to 'finalized' and finalizedAt timestamp
+ * - Links the report ID to the student's progress record (initialAssessmentId or finalAssessmentId)
+ * - Updates assessmentScoreAvg on the progress record (average of the 3 numeric dimensions)
+ * - Updates gseBandAtStart or gseBandAtEnd if GSE band is set
+ */
+export async function finalizeAssessmentReport(reportId: string): Promise<void> {
+  const reportSnap = await getDoc(doc(db, 'assessmentReports', reportId));
+  if (!reportSnap.exists()) throw new Error('Assessment report not found');
+
+  const report = asId<AssessmentReport>(reportSnap.id, reportSnap.data()) as AssessmentReport;
+
+  // 1. Finalize the report
+  await updateDoc(doc(db, 'assessmentReports', reportId), {
+    status: 'finalized',
+    finalizedAt: nowIso(),
+    updatedAt: nowIso(),
+  } as any);
+
+  // 2. Find the matching studentProgress record
+  const progressQ = query(
+    studentProgressCollection,
+    where('studentId', '==', report.studentId),
+    where('courseId', '==', report.courseId),
+    where('unitId', '==', report.unitId),
+    limit(1)
+  );
+  const progressSnap = await getDocs(progressQ);
+  if (progressSnap.empty) {
+    console.warn('No studentProgress found for this assessment — skipping progress link.');
+    return;
+  }
+
+  const progressDoc = progressSnap.docs[0];
+  const progressRef = doc(db, 'studentProgress', progressDoc.id);
+
+  // 3. Calculate score average (3 numeric dimensions)
+  const scoreAvg = Number(
+    (
+      (report.communicativeEffectiveness +
+        report.emergentLanguageComplexity +
+        report.fluency) / 3
+    ).toFixed(2)
+  );
+
+  // 4. Build the progress update based on assessment type
+  const progressUpdate: Record<string, any> = {
+    updatedAt: nowIso(),
+  };
+
+  if (report.type === 'initial') {
+    progressUpdate.initialAssessmentId = reportId;
+    if (report.gseBand) {
+      progressUpdate.gseBandAtStart = {
+        min: report.gseBand.min,
+        max: report.gseBand.max,
+        cefr: report.gseBand.cefr,
+      };
+    }
+  } else if (report.type === 'final') {
+    progressUpdate.finalAssessmentId = reportId;
+    progressUpdate.assessmentScoreAvg = scoreAvg;
+    if (report.gseBand) {
+      progressUpdate.gseBandAtEnd = {
+        min: report.gseBand.min,
+        max: report.gseBand.max,
+        cefr: report.gseBand.cefr,
+      };
+    }
+  }
+
+  await updateDoc(progressRef, progressUpdate);
+}
+
+export async function deleteAssessmentReport(reportId: string): Promise<void> {
+  const snap = await getDoc(doc(db, 'assessmentReports', reportId));
+  if (!snap.exists()) throw new Error('Assessment report not found');
+  const data = snap.data() as any;
+  if (data.status === 'finalized') throw new Error('Cannot delete a finalized assessment report');
+  await deleteDoc(doc(db, 'assessmentReports', reportId));
 }

@@ -166,6 +166,35 @@ export default function ProfileProgressTab({ studentId, student, onStudentUpdate
                     </div>
                   </div>
                 </div>
+
+                {/* Assessment Actions */}
+                <div className="border-t pt-4 mt-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Assessments</p>
+                  {currentProgress ? (
+                    <div className="flex flex-wrap gap-2">
+                      <a href={`/t-portal/students/${studentId}/assessments/new?unitId=${currentProgress.unitId}&courseId=${currentProgress.courseId}&type=initial`}>
+                        <Button size="sm" variant="outline">
+                          <BookOpen className="mr-1 h-3 w-3" />
+                          New Initial Assessment
+                        </Button>
+                      </a>
+                      <a href={`/t-portal/students/${studentId}/assessments/new?unitId=${currentProgress.unitId}&courseId=${currentProgress.courseId}&type=final`}>
+                        <Button size="sm" variant="outline">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          New Final Assessment
+                        </Button>
+                      </a>
+                      <a href={`/t-portal/students/${studentId}/assessments/compare?unitId=${currentProgress.unitId}`}>
+                        <Button size="sm" variant="outline">
+                          <Clock className="mr-1 h-3 w-3" />
+                          View Comparison
+                        </Button>
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Assign a unit to create assessments.</p>
+                  )}
+                </div>
               </>
             )}
           </CardContent>

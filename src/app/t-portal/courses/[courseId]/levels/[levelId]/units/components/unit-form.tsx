@@ -37,10 +37,7 @@ export default function UnitForm({ levelId, unit, onSuccess }: UnitFormProps) {
                 order: Number(order),
                 estimatedHours: Number(estimatedHours),
                 thumbnailUrl,
-                initialAssessmentId: null,
-                finalEvaluationId: null,
-                finalProjectId: null,
-                finalProjectType: null,
+
             };
 
             if (unit?.id) {

@@ -146,10 +146,6 @@ export interface Unit {
   order: number;
   estimatedHours: number;
   thumbnailUrl: string;
-  initialAssessmentId?: string | null;
-  finalEvaluationId?: string | null;
-  finalProjectId?: string | null;
-  finalProjectType?: string | null;
 }
 
 export interface Session {
@@ -252,6 +248,10 @@ export interface StudentProgress {
   homeworkAccuracyAvg?: number | null;
   assessmentScoreAvg?: number | null;
   evaluationScoreAvg?: number | null;
+  initialAssessmentId?: string;
+  finalAssessmentId?: string;
+  gseBandAtStart?: GseBand;
+  gseBandAtEnd?: GseBand;
   overallAccuracy?: number | null;
   lastActivityAt: string;
   startedAt: string;
@@ -442,4 +442,109 @@ export interface Payment {
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
   status: PaymentStatus;
+}
+
+// ========================================
+// Phase 14: Evaluations & Assessments
+// ========================================
+
+export interface GseBand {
+  min: number;
+  max: number;
+  cefr: string;                // e.g. "A1"
+  cambridge: string;           // e.g. "A1 Movers"
+}
+
+export interface OutputCitation {
+  id: string;
+  dimension: 'task_completion' | 'communicative_effectiveness' | 'emergent_language' | 'fluency';
+  quote: string;               // Exact L output: "The cat is go to the house"
+  context?: string;            // What was happening: "When describing the picture story"
+  timestamp?: string;          // Approximate time in recording, if known
+}
+
+export interface AiAnalysis {
+  generatedAt: string;
+  provider: string;            // e.g. "claude", "deepseek", "minimax"
+  model: string;               // e.g. "claude-sonnet-4-5-20250929"
+  summary: string;
+  emergentLanguageObservations: string;
+  suggestedGseBand?: GseBand & { reasoning: string };
+  suggestedActions: {
+    forTeacher: string[];
+    forLearner: string[];
+  };
+  // Only for final assessments
+  growthSummary?: string;
+  deltaHighlights?: {
+    dimension: string;
+    initial: string;
+    final: string;
+    evidence: string;
+  }[];
+}
+
+export interface ParentReport {
+  language: 'en' | 'zh' | 'pt';
+  summary: string;
+  progressHighlights: string;
+  suggestedActivities: string;
+  generatedAt: string;
+  provider: string;            // AI provider used
+  model: string;               // AI model used
+  approvedByTeacher: boolean;
+  approvedAt?: string;
+}
+
+export interface AiProviderConfig {
+  provider: 'claude' | 'deepseek' | 'minimax' | 'kimi';
+  model: string;               // Model identifier string
+  endpoint: string;            // API endpoint URL
+  maxTokens?: number;
+}
+
+export interface AssessmentReport {
+  id: string;
+
+  // Links
+  studentId: string;
+  courseId: string;
+  unitId: string;
+  teacherId: string;
+
+  // Type
+  type: 'initial' | 'final';
+
+  // Recording
+  recordingUrl?: string;
+  recordingUploadedAt?: string;
+  recordingExpungedAt?: string;
+
+  // T Notes
+  teacherNotes: string;
+  transcript?: string;
+
+  // Scoring — TBLT Dimensions
+  taskCompletion: 'achieved' | 'partial' | 'not_achieved';
+  communicativeEffectiveness: number;   // 1-5
+  emergentLanguageComplexity: number;   // 1-5
+  fluency: number;                      // 1-5
+
+  // L Output Citations
+  outputCitations: OutputCitation[];
+
+  // GSE Band (mapped after scoring)
+  gseBand?: GseBand;
+
+  // AI Analysis
+  aiAnalysis?: AiAnalysis;
+
+  // L/Parent Report
+  parentReport?: ParentReport;
+
+  // Status
+  status: 'draft' | 'ai_reviewed' | 'finalized';
+  createdAt: string;
+  updatedAt: string;
+  finalizedAt?: string;
 }
