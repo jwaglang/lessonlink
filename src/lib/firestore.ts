@@ -899,17 +899,6 @@ export async function getAllStudentPackages(): Promise<StudentPackage[]> {
   return snapshot.docs.map(d => asId<StudentPackage>(d.id, d.data()));
 }
 
-export async function decrementPackageLessons(pkgId: string, decrementBy = 1): Promise<void> {
-  await runTransaction(db, async (tx) => {
-    const ref = doc(db, 'studentPackages', pkgId);
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error('StudentPackage not found');
-    const data: any = snap.data();
-    const current = typeof data.balance === 'number' ? data.balance : 0;
-    tx.update(ref, { balance: Math.max(0, current - decrementBy), updatedAt: Timestamp.now() });
-  });
-}
-
 /* ----- Pause / Unpause ----- */
 
 /**
