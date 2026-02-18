@@ -9,6 +9,7 @@ import {
   getCourseById,
   createAssessmentReport,
   getAssessmentReportsByUnit,
+  finalizeAssessmentReport,
 } from '@/lib/firestore';
 import type { Student, Unit, Course, AssessmentReport, OutputCitation } from '@/lib/types';
 
@@ -242,6 +243,11 @@ export default function NewAssessmentPage() {
   const [aiProvider, setAiProvider] = useState('');
   const [aiModel, setAiModel] = useState('');
 
+  // Finalize state
+  const [savedReportId, setSavedReportId] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const [finalized, setFinalized] = useState(false);
+
   // Load student, unit, course, existing reports
   useEffect(() => {
     async function loadData() {
@@ -297,15 +303,15 @@ export default function NewAssessmentPage() {
     setError('');
     setSaved(false);
     try {
-      await createAssessmentReport({
+      const savedReport = await createAssessmentReport({
         studentId,
         courseId,
         unitId,
         teacherId: user.uid,
         type: assessmentType,
-        recordingUrl: recordingUrl || undefined,
+        recordingUrl: recordingUrl || null,
         teacherNotes,
-        transcript: transcript || undefined,
+        transcript: transcript || null,
         taskCompletion,
         communicativeEffectiveness,
         emergentLanguageComplexity,
@@ -315,15 +321,33 @@ export default function NewAssessmentPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+      setSavedReportId(savedReport.id);
       setSaved(true);
-      setTimeout(() => {
-        router.push(`/t-portal/students/${studentId}`);
-      }, 1500);
     } catch (err: any) {
       console.error('Error saving assessment:', err);
       setError(err.message || 'Failed to save assessment.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Finalize handler
+  async function handleFinalize() {
+    if (!savedReportId) return;
+    const confirmed = window.confirm(
+      "Finalize this assessment? This will lock the report and update the learner's progress record. This cannot be undone."
+    );
+    if (!confirmed) return;
+    setFinalizing(true);
+    setError('');
+    try {
+      await finalizeAssessmentReport(savedReportId);
+      setFinalized(true);
+    } catch (err: any) {
+      console.error('Finalize error:', err);
+      setError(err.message || 'Failed to finalize assessment.');
+    } finally {
+      setFinalizing(false);
     }
   }
 
@@ -343,9 +367,9 @@ export default function NewAssessmentPage() {
         unitId,
         teacherId: user?.uid ?? '',
         type: assessmentType,
-        recordingUrl: recordingUrl || undefined,
+        recordingUrl: recordingUrl || null,
         teacherNotes,
-        transcript: transcript || undefined,
+        transcript: transcript || null,
         taskCompletion,
         communicativeEffectiveness,
         emergentLanguageComplexity,
@@ -719,11 +743,41 @@ export default function NewAssessmentPage() {
           Cancel
         </Button>
         <div className="flex items-center gap-3">
-          {saved && <span className="text-sm text-primary">✓ Saved! Redirecting...</span>}
-          <Button onClick={handleSaveDraft} disabled={!canSave || saving}>
-            <Save className="mr-1 h-4 w-4" />
-            {saving ? 'Saving...' : 'Save Draft'}
-          </Button>
+          {saved && !finalized && (
+            <span className="text-sm text-primary">✓ Draft saved!</span>
+          )}
+          {finalized && (
+            <span className="text-sm text-green-600 font-medium">✓ Finalized!</span>
+          )}
+
+          {/* Save Draft — hidden once finalized */}
+          {!finalized && (
+            <Button onClick={handleSaveDraft} disabled={!canSave || saving || finalizing}>
+              <Save className="mr-1 h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Draft'}
+            </Button>
+          )}
+
+          {/* Finalize — appears after draft is saved, hidden once finalized */}
+          {saved && !finalized && (
+            <Button
+              variant="default"
+              onClick={handleFinalize}
+              disabled={finalizing}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle className="mr-1 h-4 w-4" />
+              {finalizing ? 'Finalizing...' : 'Finalize'}
+            </Button>
+          )}
+
+          {/* Generate Parent Report — appears after finalized */}
+          {finalized && (
+            <Button variant="outline" onClick={() => {/* TODO: wire parent report generation */}}>
+              <Sparkles className="mr-1 h-4 w-4" />
+              Generate Parent Report
+            </Button>
+          )}
         </div>
       </div>
     </div>

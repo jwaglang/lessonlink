@@ -1,16 +1,9 @@
-// src/app/api/stripe/webhook/route.ts — Stripe Webhook Handler
+// src/app/api/stripe/webhook/route.ts — Stripe Webhook Handler (Admin SDK)
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PACKAGE_EXPIRY_MONTHS } from '@/lib/stripe-config';
 import { PackageType } from '@/lib/pricing';
-import {
-  createPayment,
-  createStudentPackage,
-  createStudentCredit,
-  getStudentCredit,
-  updateStudentCredit,
-} from '@/lib/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 
-// Disable Next.js body parsing — Stripe needs the raw body for signature verification
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     try {
       // 1. Create Payment record
-      await createPayment({
+      await adminDb.collection('payments').add({
         studentId: metadata.studentId,
         courseId: metadata.courseId,
         amount: amountTotal,
@@ -73,7 +66,7 @@ export async function POST(req: NextRequest) {
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + expiryMonths);
 
-      const newPackage = await createStudentPackage({
+      const packageRef = await adminDb.collection('studentPackages').add({
         studentId: metadata.studentId,
         courseId: metadata.courseId,
         courseTitle: metadata.courseTitle,
@@ -84,26 +77,31 @@ export async function POST(req: NextRequest) {
         purchaseDate: new Date().toISOString(),
         expiresAt: expiresAt.toISOString(),
         isPaused: false,
-        pausedAt: undefined,
-        pauseReason: undefined,
         totalDaysPaused: 0,
         pauseCount: 0,
         status: 'active',
       });
 
       // 3. Create or update StudentCredit
-      const existingCredit = await getStudentCredit(metadata.studentId, metadata.courseId);
-      if (existingCredit) {
-        await updateStudentCredit(existingCredit.id, {
-          totalHours: existingCredit.totalHours + hours,
-          uncommittedHours: existingCredit.uncommittedHours + hours,
+      const creditQuery = await adminDb.collection('studentCredit')
+        .where('studentId', '==', metadata.studentId)
+        .where('courseId', '==', metadata.courseId)
+        .limit(1)
+        .get();
+
+      if (!creditQuery.empty) {
+        const existingDoc = creditQuery.docs[0];
+        const existing = existingDoc.data();
+        await existingDoc.ref.update({
+          totalHours: (existing.totalHours ?? 0) + hours,
+          uncommittedHours: (existing.uncommittedHours ?? 0) + hours,
           updatedAt: new Date().toISOString(),
         });
       } else {
-        await createStudentCredit({
+        await adminDb.collection('studentCredit').add({
           studentId: metadata.studentId,
           courseId: metadata.courseId,
-          packageId: newPackage.id,
+          packageId: packageRef.id,
           totalHours: hours,
           uncommittedHours: hours,
           committedHours: 0,
