@@ -304,14 +304,7 @@ function BookingPageContent() {
         <PageHeader
             title="Calendar"
             description="Select an available time slot to book your next session."
-        >
-            <Link href="/s-portal/t-profiles">
-              <Button>
-                  <Users className="h-4 w-4 mr-2" />
-                  Browse Teachers
-              </Button>
-            </Link>
-        </PageHeader>
+        />
 
         {isNew && (
             <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
