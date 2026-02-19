@@ -1074,7 +1074,7 @@ export async function getAllTeacherProfiles(publishedOnly = false): Promise<Teac
    Reviews
    ========================================================= */
 
-export async function createReview(review: Omit<Review, 'id'>): Promise<Review> {
+export async function createReview(review: Omit<Review, 'id' | 'createdAt' | 'pinned' | 'visible'> & Partial<Pick<Review, 'createdAt' | 'pinned' | 'visible'>>): Promise<Review> {
   const ref = await addDoc(reviewsCollection, { ...review, createdAt: review.createdAt ?? nowIso(), pinned: !!review.pinned, visible: review.visible ?? true } as any);
   const snap = await getDoc(ref);
   return asId<Review>(snap.id, snap.data());

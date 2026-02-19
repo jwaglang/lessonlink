@@ -56,7 +56,7 @@ export default function MyUnitsPage() {
             unitsData.push({
               unit,
               progress: {
-                id: progress.id,
+                id: progress.id ?? '',
                 hoursReserved: progress.hoursReserved || 0,
                 sessionsTotal: progress.sessionsTotal || 0,
                 sessionsCompleted: progress.sessionsCompleted || 0,

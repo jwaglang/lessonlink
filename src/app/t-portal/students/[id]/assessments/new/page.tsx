@@ -773,7 +773,7 @@ export default function NewAssessmentPage() {
 
           {/* Generate Parent Report — appears after finalized */}
           {finalized && (
-            <Button variant="outline" onClick={() => {/* TODO: wire parent report generation */}}>
+            <Button variant="outline" onClick={handleGenerateParentReport} disabled={generatingParentReport}>
               <Sparkles className="mr-1 h-4 w-4" />
               Generate Parent Report
             </Button>

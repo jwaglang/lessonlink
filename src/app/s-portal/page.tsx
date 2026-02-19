@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -58,7 +58,7 @@ import PageHeader from '@/components/page-header';
 import PurchasePlanCard from '@/components/purchase-plan-card';
 import { generateLearnerAlerts, getAlertConfig, type Alert } from '@/lib/alerts';
 
-function instanceDateIso(instance: SessionInstance): string {
+function instanceDateIso(instance: SessionInstance | Availability): string {
   const anyInst = instance as any;
   return anyInst.lessonDate || anyInst.date || '';
 }
@@ -112,13 +112,13 @@ export default function StudentPortalPage() {
   useEffect(() => {
     async function fetchStudentData() {
       if (user?.email) {
-        console.log('🔍 Attempting to get/create student:', { email: user.email, uid: user.uid });
+        console.log('ðŸ” Attempting to get/create student:', { email: user.email, uid: user.uid });
         const studentRecord = await getStudentById(user.uid);
         if (!studentRecord) {
           setLoadingData(false);
           return;
         }
-        console.log('✅ Student record result:', studentRecord);
+        console.log('âœ… Student record result:', studentRecord);
         setStudent(studentRecord);
         
         const studentSessions = await getSessionInstancesByStudentId(studentRecord.id);
@@ -282,12 +282,16 @@ export default function StudentPortalPage() {
     
     try {
       await createReview({
+        sessionInstanceId: reviewSession.id,
         lessonId: reviewSession.id,
         studentId: student.id,
         studentName: student.name || user?.email || 'Student',
         teacherId: teacherId,
         rating: reviewRating,
         comment: reviewComment,
+        createdAt: new Date().toISOString(),
+        pinned: false,
+        visible: true,
       });
       
       // Add to reviewed list
@@ -453,7 +457,7 @@ export default function StudentPortalPage() {
                   <div key={prog.id} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">
-                        {prog.unitsCompleted}/{prog.unitsTotal} units · {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
+                        {prog.unitsCompleted}/{prog.unitsTotal} units Â· {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
                       </span>
                       <span className="text-muted-foreground">{prog.percentComplete}%</span>
                     </div>
@@ -511,7 +515,7 @@ export default function StudentPortalPage() {
                   <div key={prog.id} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">
-                        {prog.unitsCompleted}/{prog.unitsTotal} units · {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
+                        {prog.unitsCompleted}/{prog.unitsTotal} units Â· {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
                       </span>
                       <span className="text-muted-foreground">{prog.percentComplete}%</span>
                     </div>

@@ -126,7 +126,7 @@ export function buildAssessmentUserMessage(
 }
 
 // ========================================
-// Parent Report Prompt
+// Parent Report System Prompt
 // ========================================
 
 export function buildParentReportSystemPrompt(language: 'en' | 'zh' | 'pt'): string {
@@ -156,4 +156,56 @@ Response format:
   "progressHighlights": "Specific things your child can now do",
   "suggestedActivities": "What you can do at home to support learning"
 }`;
+}
+
+// ========================================
+// Build the user message for parent report generation
+// ========================================
+
+export function buildParentReportUserMessage(report: AssessmentReport): string {
+  const lines: string[] = [];
+
+  lines.push(`Assessment Type: ${report.type}`);
+  lines.push('');
+
+  // Scores
+  lines.push('=== Assessment Scores ===');
+  lines.push(`Task Completion: ${report.taskCompletion}`);
+  lines.push(`Communicative Effectiveness: ${report.communicativeEffectiveness}/5`);
+  lines.push(`Emergent Language Complexity: ${report.emergentLanguageComplexity}/5`);
+  lines.push(`Fluency: ${report.fluency}/5`);
+  lines.push('');
+
+  // Teacher notes
+  if (report.teacherNotes) {
+    lines.push('=== Teacher Observations ===');
+    lines.push(report.teacherNotes);
+    lines.push('');
+  }
+
+  // Citations — these are the specific examples to reference in the parent report
+  if (report.outputCitations.length > 0) {
+    lines.push('=== Examples of What the Child Said ===');
+    report.outputCitations.forEach((c, i) => {
+      lines.push(`${i + 1}. "${c.quote}"${c.context ? ` (${c.context})` : ''}`);
+    });
+    lines.push('');
+  }
+
+  // AI analysis summary (if available) — gives richer context
+  if (report.aiAnalysis?.summary) {
+    lines.push('=== Expert Assessment Summary ===');
+    lines.push(report.aiAnalysis.summary);
+    lines.push('');
+  }
+
+  if (report.aiAnalysis?.emergentLanguageObservations) {
+    lines.push('=== Language Development Observations ===');
+    lines.push(report.aiAnalysis.emergentLanguageObservations);
+    lines.push('');
+  }
+
+  lines.push('Please write a warm, parent-friendly progress report based on the above. Use the cited examples of what the child said to make it specific and concrete.');
+
+  return lines.join('\n');
 }

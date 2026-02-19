@@ -32,7 +32,7 @@ export default function StudentPortalLayout({
     // Check if the user is a student (NOT a teacher or admin)
     async function checkAuthorization() {
       try {
-        const isAdmin = user.email === ADMIN_EMAIL;
+        const isAdmin = user!.email === ADMIN_EMAIL;
         
         if (isAdmin) {
           // Admin should use teacher portal
@@ -43,7 +43,7 @@ export default function StudentPortalLayout({
         // Check if this email is the known teacher email
         const knownTeacherEmails = ['jwag.lang@gmail.com']; // Add more as needed
         
-        if (knownTeacherEmails.includes(user.email!)) {
+        if (knownTeacherEmails.includes(user!.email!)) {
           // This is a teacher, redirect them
           router.push('/t-portal');
           return;

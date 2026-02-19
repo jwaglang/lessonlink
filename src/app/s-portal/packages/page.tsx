@@ -192,7 +192,7 @@ export default function MyPackagesPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Package className="h-5 w-5" />
-                      {pkg.packageName}
+                      {pkg.courseTitle}
                     </CardTitle>
                     <PackageStatusBadge status={pkg.status} isPaused={pkg.isPaused} />
                   </div>
@@ -268,7 +268,7 @@ export default function MyPackagesPage() {
           <DialogHeader>
             <DialogTitle>Request Pause</DialogTitle>
             <DialogDescription>
-              Request a pause for {pausePkg?.packageName}. Both you and your tutor must agree to the pause.
+              Request a pause for {pausePkg?.courseTitle}. Both you and your tutor must agree to the pause.
               {pausePkg && (
                 <span className="block mt-1">
                   {pausesRemaining(pausePkg)} pause{pausesRemaining(pausePkg) !== 1 ? 's' : ''} remaining for this package.

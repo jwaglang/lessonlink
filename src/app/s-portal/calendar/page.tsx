@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -212,6 +212,8 @@ function BookingPageContent() {
           lessonDate: selectedSlot.date,
           lessonTime: selectedSlot.time,
           reason: 'First-time booking requires teacher approval.',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
         
           // NEW: required linkage for creating a valid lesson on approval
           courseId: selectedCourse,
@@ -230,10 +232,11 @@ function BookingPageContent() {
         await bookLesson({
           studentId: student.id,
           title: course.title,
-          date: selectedSlot.date,
+          lessonDate: selectedSlot.date,
           startTime: selectedSlot.time,
           endTime: endTime,
           rate: lessonPrice,
+          billingType: 'credit',
 
           courseId: selectedCourse,
           unitId,
@@ -443,7 +446,7 @@ function BookingPageContent() {
                           ${price.toFixed(2)}
                           {hasDiscount && (
                             <span className="text-xs ml-1">
-                              ({course.discount60min}% off! 🥳)
+                              ({course.discount60min}% off! ðŸ¥³)
                             </span>
                           )}
                         </span>
