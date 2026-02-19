@@ -95,7 +95,7 @@ export default function MyPackagesPage() {
 
   // Summary stats
   const activePackages = packages.filter((p) => p.status === 'active');
-  const totalHoursRemaining = activePackages.reduce((sum, p) => sum + p.remainingHours, 0);
+  const totalHoursRemaining = activePackages.reduce((sum, p) => sum + p.hoursRemaining, 0);
   const totalHours = packages.reduce((sum, p) => sum + p.totalHours, 0);
 
   if (loading) {
@@ -183,7 +183,7 @@ export default function MyPackagesPage() {
               ? differenceInDays(parseISO(pkg.expiresAt), new Date())
               : null;
             const usedPercent = pkg.totalHours > 0
-              ? ((pkg.totalHours - pkg.remainingHours) / pkg.totalHours) * 100
+              ? ((pkg.totalHours - pkg.hoursRemaining) / pkg.totalHours) * 100
               : 0;
 
             return (
@@ -219,7 +219,7 @@ export default function MyPackagesPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>
-                        {pkg.remainingHours.toFixed(1)}h remaining of {pkg.totalHours}h
+                        {pkg.hoursRemaining.toFixed(1)}h remaining of {pkg.totalHours}h
                       </span>
                       <span className="text-muted-foreground">{usedPercent.toFixed(0)}% used</span>
                     </div>

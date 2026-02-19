@@ -251,8 +251,8 @@ export default function StudentChatPage() {
         <TabsContent value="communications" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Teacher Communications</CardTitle>
-              <CardDescription>Chat with your teacher</CardDescription>
+              <CardTitle>My Messages</CardTitle>
+              <CardDescription>Chat with your tutor</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <ScrollArea className="h-[360px] pr-4">

@@ -301,18 +301,9 @@ function BookingPageContent() {
   return (
     <div className="min-h-screen bg-background">
       <main className="p-4 md:p-8">
-        <div className="mb-6">
-          <Link href="/s-portal">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-
         <PageHeader
-            title="Book a Lesson"
-            description="Select an available time slot to book your lesson"
+            title="Calendar"
+            description="Select an available time slot to book your next session."
         >
             <Link href="/s-portal/t-profiles">
               <Button>

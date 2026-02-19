@@ -123,7 +123,7 @@ export default function MyTutorPage() {
     <div className="flex flex-col gap-8 p-4 md:p-8">
       <PageHeader
         title="My Tutor"
-        description="Your assigned tutor's profile and information"
+        description="Your current tutor's profile and information"
       />
 
       {/* Tutor Header Card */}
@@ -213,15 +213,21 @@ export default function MyTutorPage() {
             {/* Actions */}
             <div className="flex flex-col gap-2 md:items-end flex-shrink-0">
               <Link href="/s-portal/chat">
-                <Button>
+                <Button className="w-full">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Message Tutor
                 </Button>
               </Link>
               <Link href="/s-portal/calendar">
-                <Button variant="outline">
+                <Button variant="outline" className="w-full">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Book a Session
+                  Book Now
+                </Button>
+              </Link>
+              <Link href="/s-portal/packages">
+                <Button variant="outline" className="w-full">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  My Packages
                 </Button>
               </Link>
               {tutor.username && (
@@ -237,265 +243,6 @@ export default function MyTutorPage() {
         </CardContent>
       </Card>
 
-      {/* Tabbed Content */}
-      <Tabs defaultValue="about">
-        <TabsList>
-          <TabsTrigger value="about">About</TabsTrigger>
-          <TabsTrigger value="teaching">Teaching Style</TabsTrigger>
-          <TabsTrigger value="credentials">Credentials</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
-        </TabsList>
-
-        {/* About Tab */}
-        <TabsContent value="about" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>About {tutor.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="whitespace-pre-line text-sm leading-relaxed">{tutor.aboutMe}</p>
-
-              {tutor.interests && tutor.interests.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">Interests</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {tutor.interests.map((interest) => (
-                      <Badge key={interest} variant="secondary">
-                        {interest}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Teaching Style Tab */}
-        <TabsContent value="teaching" className="mt-6 space-y-4">
-          {tutor.teachingPhilosophy && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Me as a Tutor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-line text-sm leading-relaxed">
-                  {tutor.teachingPhilosophy}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {tutor.lessonStyle && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">My Lessons & Teaching Style</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-line text-sm leading-relaxed">
-                  {tutor.lessonStyle}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {tutor.teachingMaterials && tutor.teachingMaterials.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Teaching Materials</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {tutor.teachingMaterials.map((material) => (
-                    <div key={material} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                      {material}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {!tutor.teachingPhilosophy && !tutor.lessonStyle && (!tutor.teachingMaterials || tutor.teachingMaterials.length === 0) && (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Your tutor hasn't added teaching style details yet.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* Credentials Tab */}
-        <TabsContent value="credentials" className="mt-6 space-y-4">
-          {tutor.certificates && tutor.certificates.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Certificates
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {tutor.certificates.map((cert, i) => (
-                  <div key={i} className="border-b last:border-0 pb-4 last:pb-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold">{cert.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {cert.issuer} — {cert.year}
-                        </p>
-                        {cert.description && (
-                          <p className="text-sm mt-1">{cert.description}</p>
-                        )}
-                      </div>
-                      {cert.verified && (
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {tutor.experience && tutor.experience.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Experience
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {tutor.experience.map((exp, i) => (
-                  <div key={i} className="border-b last:border-0 pb-4 last:pb-0">
-                    <h4 className="font-semibold">{exp.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {exp.organization}
-                      {exp.location && ` — ${exp.location}`}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {exp.startYear} – {exp.endYear || 'Present'}
-                    </p>
-                    {exp.description && (
-                      <p className="text-sm mt-1">{exp.description}</p>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {(!tutor.certificates || tutor.certificates.length === 0) &&
-            (!tutor.experience || tutor.experience.length === 0) && (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Your tutor hasn't added credentials yet.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-        </TabsContent>
-
-        {/* Reviews Tab */}
-        <TabsContent value="reviews" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                {reviews.length} Review{reviews.length !== 1 ? 's' : ''}
-              </CardTitle>
-              {reviews.length > 0 && (
-                <CardDescription>
-                  Average rating: {(reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)} / 5
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Pinned Reviews */}
-              {pinnedReviews.map((review) => (
-                <div key={review.id} className="border rounded-lg p-4 bg-primary/5">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={review.studentAvatarUrl} />
-                      <AvatarFallback>{review.studentName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{review.studentName}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          <Pin className="h-3 w-3 mr-1" />
-                          Tutor's Pick
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 my-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
-                                ? 'text-yellow-500 fill-yellow-500'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-sm">{review.comment}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {format(parseISO(review.createdAt), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Regular Reviews */}
-              {regularReviews.map((review) => (
-                <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={review.studentAvatarUrl} />
-                      <AvatarFallback>{review.studentName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <span className="font-semibold">{review.studentName}</span>
-                      <div className="flex items-center gap-1 my-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < review.rating
-                                ? 'text-yellow-500 fill-yellow-500'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-sm">{review.comment}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {format(parseISO(review.createdAt), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {reviews.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">
-                  No reviews yet. Be the first to leave one after a session!
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }

@@ -38,11 +38,13 @@ import {
   Pin,
   Mail,
   Loader2,
+  BookOpenCheck,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { TeacherProfile, Review, Course } from '@/lib/types';
 import type { PackageType, Duration } from '@/lib/pricing';
 import Link from 'next/link';
+import { GradientIcon } from '@/components/gradient-icon';
 
 // Package display config
 const PACKAGES: { type: PackageType; label: string; icon: string; discount: string; description: string }[] = [
@@ -227,13 +229,15 @@ export default function PublicProfilePage() {
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="font-headline text-xl primary-gradient-text">LessonLink</span>
+          <Link href="/" className="flex items-center gap-2 p-2">
+            <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8" />
+            <h1 className="text-xl font-headline font-bold primary-gradient-text">
+              LessonLink
+            </h1>
           </Link>
           {isLoggedIn ? (
             <Link href="/s-portal">
-              <Button variant="outline">My Portal</Button>
+              <Button className="w-full">My Dashboard</Button>
             </Link>
           ) : (
             <Link href="/">
@@ -365,9 +369,9 @@ export default function PublicProfilePage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - About */}
-          <div className="lg:col-span-2 space-y-8">
+        <div>
+          {/* About */}
+          <div className="space-y-8">
             {/* Video */}
             {profile.videoUrl && (
               <Card>
@@ -597,67 +601,67 @@ export default function PublicProfilePage() {
               </TabsContent>
             </Tabs>
           </div>
+        </div>
 
-          {/* Right Column - Courses */}
-          <div className="space-y-6" id="courses">
-            <h2 className="text-2xl font-headline font-bold primary-gradient-text">Courses</h2>
+        {/* Courses Section */}
+        <div className="space-y-6 mt-8" id="courses">
+          <h2 className="text-2xl font-headline font-bold primary-gradient-text">Courses</h2>
 
-            {courses.map(course => {
-              const singlePrice = getDisplayPrice('single', 60);
-              const fullCoursePrice = getDisplayPrice('full-course', 60);
+          {courses.map(course => {
+            const singlePrice = getDisplayPrice('single', 60);
+            const fullCoursePrice = getDisplayPrice('full-course', 60);
 
-              return (
-                <Card key={course.id}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
-                    <CardDescription>{course.pitch}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {isLoggedIn ? (
-                      /* Logged-in S — show pricing tiers + purchase button */
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          <span>From €{fullCoursePrice.perLesson}/lesson</span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            30 or 60 min
-                          </span>
-                        </div>
-                        <Button className="w-full" onClick={() => openPurchaseDialog(course)}>
-                          View Packages &amp; Purchase
-                        </Button>
+            return (
+              <Card key={course.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{course.title}</CardTitle>
+                  <CardDescription>{course.pitch}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoggedIn ? (
+                    /* Logged-in S — show pricing tiers + purchase button */
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>From €{fullCoursePrice.perLesson}/lesson</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          30 or 60 min
+                        </span>
                       </div>
-                    ) : (
-                      /* Visitor — show starting price + sign up CTA */
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Clock className="h-4 w-4" />
-                            30 or 60 min
-                          </div>
-                          <div className="text-right">
-                            <span className="text-2xl font-bold text-primary">€{fullCoursePrice.perLesson}</span>
-                            <p className="text-xs text-muted-foreground">from / lesson</p>
-                          </div>
+                      <Button className="w-full" onClick={() => openPurchaseDialog(course)}>
+                        View Packages &amp; Purchase
+                      </Button>
+                    </div>
+                  ) : (
+                    /* Visitor — show starting price + sign up CTA */
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          30 or 60 min
                         </div>
-                        <Link href="/">
-                          <Button className="w-full">Sign Up to Book</Button>
-                        </Link>
+                        <div className="text-right">
+                          <span className="text-2xl font-bold text-primary">€{fullCoursePrice.perLesson}</span>
+                          <p className="text-xs text-muted-foreground">from / lesson</p>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-
-            {courses.length === 0 && (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground">No courses available yet.</p>
+                      <Link href="/">
+                        <Button className="w-full">Sign Up to Book</Button>
+                      </Link>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
-          </div>
+            );
+          })}
+
+          {courses.length === 0 && (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">No courses available yet.</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

@@ -416,7 +416,7 @@ export default function LandingPage() {
         <p className="text-xl md:text-2xl text-foreground font-body">
           Sit back and learn.
           <br />
-          We took care of the rest.
+          We'll take care of the rest.
         </p>
       </div>
 

@@ -361,7 +361,7 @@ export default function StudentPortalPage() {
       {/* Main Content */}
       <main className="p-4 md:p-8">
         <PageHeader
-          title="Learner Portal"
+          title={`${student?.name || 'Learner'}'s Dashboard`}
           description="Here's an overview of your sessions"
         />
 

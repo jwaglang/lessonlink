@@ -33,8 +33,8 @@ export default function TProfilesPage() {
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8">
       <PageHeader
-        title="Browse Teachers"
-        description="Find the perfect teacher for your learning goals."
+        title="Browse Tutors"
+        description="Find the perfect tutor for your personal goals."
       />
 
       {profiles.length > 0 ? (
