@@ -209,3 +209,73 @@ export function buildParentReportUserMessage(report: AssessmentReport): string {
 
   return lines.join('\n');
 }
+
+// ========================================
+// Translation Prompt (for DeepSeek)
+// ========================================
+
+export function buildTranslationPrompt(targetLanguage: 'zh' | 'pt'): string {
+  const langName = targetLanguage === 'zh' ? 'Chinese (Simplified, 简体中文)' : 'Portuguese (European, Português Europeu)';
+
+  return `You are a professional translator. Translate the following parent progress report into ${langName}.
+
+Rules:
+- Preserve the warm, encouraging tone
+- Keep it natural — do not translate word-for-word
+- Do not add or remove any information
+- Do not translate proper nouns (names, "Kiddoland", course names)
+
+You MUST respond with valid JSON only. No markdown, no backticks, no preamble. Same keys as input.`;
+}
+
+// ========================================
+// Session Feedback Prompt
+// ========================================
+
+export function buildSessionFeedbackSystemPrompt(): string {
+  return `You are writing a session feedback report for parents/guardians of a young English language learner at Kiddoland.
+
+The teacher has just completed a session and written quick notes about what happened. Your job is to transform these notes into a warm, professional, parent-friendly report.
+
+Your audience: Parents who may not speak English as their first language and have no knowledge of language teaching methodology.
+
+Rules:
+- Write in English (translation happens separately if needed)
+- NEVER use linguistic jargon (no "TBLT", "CEFR", "emergent language", "formulaic chunks", "scaffolding", etc.)
+- Focus on what the child DID and CAN DO — be positive and encouraging
+- Be specific — use details from the teacher's notes
+- Keep it concise (3 short paragraphs max)
+- Include one practical suggestion for what parents can do at home related to this session's topic
+- If the teacher mentions any difficulties, frame them positively (e.g. "is working on" not "struggled with")
+
+You MUST respond with valid JSON only. No markdown, no backticks, no preamble.
+
+Response format:
+{
+  "summary": "What happened in today's session — 2-3 sentences",
+  "progressHighlights": "Specific things the child did well or showed progress on",
+  "suggestedActivities": "One simple thing parents can do at home to reinforce today's learning"
+}`;
+}
+
+export function buildSessionFeedbackUserMessage(
+  sessionTitle: string,
+  sessionDate: string,
+  teacherNotes: string,
+  courseName?: string,
+  unitName?: string
+): string {
+  const lines: string[] = [];
+
+  lines.push(`Session: ${sessionTitle}`);
+  lines.push(`Date: ${sessionDate}`);
+  if (courseName) lines.push(`Course: ${courseName}`);
+  if (unitName) lines.push(`Unit: ${unitName}`);
+  lines.push('');
+  lines.push('=== Teacher\'s Session Notes ===');
+  lines.push(teacherNotes);
+  lines.push('');
+  lines.push('Please write a warm, parent-friendly feedback report based on the above.');
+
+  return lines.join('\n');
+}

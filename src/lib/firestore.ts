@@ -43,6 +43,7 @@ import { db } from './firebase';
 import type {
   Student,
   Availability,
+  LearnerAvailability,
   Course,
   Level,
   ApprovalRequest,
@@ -61,6 +62,7 @@ import type {
   Payment,
   AssessmentReport,
   OutputCitation,
+  SessionFeedback,
 } from './types';
 
 // ===================================
@@ -69,6 +71,7 @@ import type {
 export type {
   Student,
   Availability,
+  LearnerAvailability,
   Course,
   Level,
   ApprovalRequest,
@@ -115,6 +118,7 @@ export {
 const studentsCollection = collection(db, 'students');
 const sessionInstancesCollection = collection(db, 'sessionInstances');
 const availabilityCollection = collection(db, 'availability');
+const learnerAvailabilityCollection = collection(db, 'learnerAvailability');
 const coursesCollection = collection(db, 'courses');
 const levelsCollection = collection(db, 'levels');
 const unitsCollection = collection(db, 'units');
@@ -130,6 +134,7 @@ const studentRewardsCollection = collection(db, 'studentRewards');
 export const messagesCollection = collection(db, 'messages');
 const paymentsCollection = collection(db, 'payments');
 const assessmentReportsCollection = collection(db, 'assessmentReports');
+const sessionFeedbackCollection = collection(db, 'sessionFeedback');
 
 /* =========================================================
    Helpers
@@ -741,6 +746,59 @@ export async function toggleAvailability(date: Date, time: string): Promise<Avai
 
   const newSnap = await getDoc(newRef);
   return asId<Availability>(newSnap.id, newSnap.data());
+}
+
+/** Get all LearnerAvailability slots for a student. */
+export async function getLearnerAvailability(studentId: string): Promise<LearnerAvailability[]> {
+  const snapshot = await getDocs(
+    query(learnerAvailabilityCollection, where('studentId', '==', studentId))
+  );
+  return snapshot.docs.map(d => asId<LearnerAvailability>(d.id, d.data()));
+}
+
+/** Toggle a learner's availability slot (create if missing, flip isAvailable if exists). */
+export async function toggleLearnerAvailability(
+  studentId: string,
+  date: Date,
+  time: string
+): Promise<LearnerAvailability> {
+  const { formatISO, startOfDay } = await import('date-fns');
+  const dateISO = formatISO(startOfDay(date));
+
+  const q = query(
+    learnerAvailabilityCollection,
+    where('studentId', '==', studentId),
+    where('date', '==', dateISO),
+    where('time', '==', time),
+    limit(1)
+  );
+  const snapshot = await getDocs(q);
+
+  if (!snapshot.empty) {
+    const existingDoc = snapshot.docs[0];
+    const existingData = existingDoc.data();
+    const newAvailability = !existingData.isAvailable;
+    await updateDoc(doc(db, 'learnerAvailability', existingDoc.id), {
+      isAvailable: newAvailability,
+      updatedAt: Timestamp.now(),
+    });
+    return {
+      id: existingDoc.id,
+      ...existingData,
+      isAvailable: newAvailability,
+    } as LearnerAvailability;
+  }
+
+  const newRef = await addDoc(learnerAvailabilityCollection, {
+    studentId,
+    date: dateISO,
+    time,
+    isAvailable: true,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+  const newSnap = await getDoc(newRef);
+  return asId<LearnerAvailability>(newSnap.id, newSnap.data());
 }
 
 /* =========================================================
@@ -1453,4 +1511,51 @@ export async function deleteAssessmentReport(reportId: string): Promise<void> {
   const data = snap.data() as any;
   if (data.status === 'finalized') throw new Error('Cannot delete a finalized assessment report');
   await deleteDoc(doc(db, 'assessmentReports', reportId));
+}
+
+// ========================================
+// Session Feedback CRUD (Phase 15/16)
+// ========================================
+
+export async function createSessionFeedback(data: Omit<SessionFeedback, 'id'>): Promise<string> {
+  const docRef = await addDoc(sessionFeedbackCollection, {
+    ...data,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  });
+  return docRef.id;
+}
+
+export async function getSessionFeedback(id: string): Promise<SessionFeedback | null> {
+  const snap = await getDoc(doc(db, 'sessionFeedback', id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as SessionFeedback;
+}
+
+export async function getSessionFeedbackByInstance(sessionInstanceId: string): Promise<SessionFeedback | null> {
+  const q = query(
+    sessionFeedbackCollection,
+    where('sessionInstanceId', '==', sessionInstanceId),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...snap.docs[0].data() } as SessionFeedback;
+}
+
+export async function getSessionFeedbackByStudent(studentId: string): Promise<SessionFeedback[]> {
+  const q = query(
+    sessionFeedbackCollection,
+    where('studentId', '==', studentId),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as SessionFeedback));
+}
+
+export async function updateSessionFeedback(id: string, data: Partial<SessionFeedback>): Promise<void> {
+  await updateDoc(doc(db, 'sessionFeedback', id), {
+    ...data,
+    updatedAt: nowIso(),
+  } as any);
 }

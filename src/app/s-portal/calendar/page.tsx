@@ -14,7 +14,12 @@ import {
   getSessionsByUnitId,
   getLevelsByCourseId,
   getUnitsByLevelId,
+  getLearnerAvailability,
+  getSessionInstancesByStudentId,
 } from '@/lib/firestore';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LearnerAvailabilityCalendar from './components/learner-availability-calendar';
+import type { LearnerAvailability, SessionInstance } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -61,6 +66,8 @@ function BookingPageContent() {
   const [loadingData, setLoadingData] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isNew, setIsNew] = useState(false);
+  const [learnerAvailability, setLearnerAvailability] = useState<LearnerAvailability[]>([]);
+  const [sessionInstances, setSessionInstances] = useState<SessionInstance[]>([]);
   
   // Booking dialog state
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
@@ -152,11 +159,16 @@ function BookingPageContent() {
         const newStudent = await isNewStudent(studentRecord.id);
         setIsNew(newStudent);
         
-        const slots = await getAvailableSlots();
+        const [slots, courseList, availData, instanceData] = await Promise.all([
+          getAvailableSlots(),
+          getCourses(),
+          getLearnerAvailability(studentRecord.id),
+          getSessionInstancesByStudentId(studentRecord.id),
+        ]);
         setAvailableSlots(slots);
-        
-        const courseList = await getCourses();
         setCourses(courseList);
+        setLearnerAvailability(availData);
+        setSessionInstances(instanceData);
         
         setLoadingData(false);
       }
@@ -301,14 +313,34 @@ function BookingPageContent() {
     };
   });
 
+  const tabParam = searchParams.get('tab');
+  const defaultTab = tabParam === 'availability' ? 'availability' : 'schedule';
+
   return (
     <div className="min-h-screen bg-background">
       <main className="p-4 md:p-8">
         <PageHeader
             title="Calendar"
-            description="Select an available time slot to book your next session."
+            description="Book sessions and set your availability."
         />
 
+        <Tabs defaultValue={defaultTab} key={defaultTab} className="mt-6">
+          <TabsList className="mb-6">
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            <TabsTrigger value="availability">My Availability</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="availability">
+            {student && (
+              <LearnerAvailabilityCalendar
+                studentId={student.id}
+                initialAvailability={learnerAvailability}
+                sessionInstances={sessionInstances}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="schedule">
         {isNew && (
             <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
             <AlertCircle className="h-4 w-4" />
@@ -387,6 +419,8 @@ function BookingPageContent() {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       <Dialog open={!!selectedSlot && !bookingResult} onOpenChange={() => closeDialog()}>

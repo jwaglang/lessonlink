@@ -48,7 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart, BookOpen, Trophy, ShieldAlert } from 'lucide-react';
+import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart, BookOpen, Trophy, ShieldAlert, Wallet } from 'lucide-react';
 import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
 import type { SessionInstance, Student, Availability, StudentCredit, StudentPackage, StudentProgress as SP, StudentRewards } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
@@ -71,6 +71,7 @@ export default function StudentPortalPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [timezone, setTimezone] = useState<string>('');
   const [studentCredit, setStudentCredit] = useState<StudentCredit | null>(null);
+  const [credits, setCredits] = useState<StudentCredit[]>([]);
   const [progressList, setProgressList] = useState<SP[]>([]);
   const [rewards, setRewards] = useState<StudentRewards | null>(null);
 
@@ -142,6 +143,7 @@ export default function StudentPortalPage() {
         ]);
         setProgressList(progressData);
         setRewards(rewardsData);
+        setCredits(creditsData);
 
         // Generate learner alerts
         const generatedAlerts = generateLearnerAlerts(
@@ -440,66 +442,63 @@ export default function StudentPortalPage() {
           </Card>
         )}
 
-        {/* Under Alerts: My Course Progress, Upcoming, Completed */}
+        {/* Under Alerts: My Credit, My Course Progress, Petland Rewards */}
         <div className="grid gap-6 md:grid-cols-3 my-8">
-          {/* My Course Progress */}
+          {/* My Credit */}
           <Card className="md:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                My Course Progress
+                <Wallet className="h-5 w-5" />
+                My Credit
               </CardTitle>
-              <CardDescription>Your learning journey so far</CardDescription>
+              <CardDescription>Your current hour balance</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {progressList.length > 0 ? (
-                progressList.map((prog) => (
-                  <div key={prog.id} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">
-                        {prog.unitsCompleted}/{prog.unitsTotal} units Â· {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
-                      </span>
-                      <span className="text-muted-foreground">{prog.percentComplete}%</span>
+              {(() => {
+                const totalAvailable = credits.reduce((s, c) => s + (c.uncommittedHours ?? 0), 0);
+                const totalCommitted = credits.reduce((s, c) => s + (c.committedHours ?? 0), 0);
+                const totalCompleted = credits.reduce((s, c) => s + (c.completedHours ?? 0), 0);
+                const totalPurchased = credits.reduce((s, c) => s + (c.totalHours ?? 0), 0);
+                const hoursRemaining = totalAvailable + totalCommitted;
+                const FULL_TANK = 10;
+                const pct = Math.min(Math.round((hoursRemaining / FULL_TANK) * 100), 100);
+                const barColor = hoursRemaining < 3 ? 'bg-red-500' : hoursRemaining < 6 ? 'bg-amber-500' : 'bg-green-500';
+                const statusLabel = hoursRemaining < 3 ? 'Top-up zone' : hoursRemaining < 6 ? 'Getting low' : 'Healthy';
+                const statusColor = hoursRemaining < 3 ? 'text-red-600' : hoursRemaining < 6 ? 'text-amber-600' : 'text-green-600';
+
+                return credits.length > 0 ? (
+                  <div className="space-y-3">
+                    {/* Gauge bar */}
+                    <div className="relative h-4 w-full rounded-full bg-muted overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${pct}%` }} />
                     </div>
-                    <Progress value={prog.percentComplete} className="h-2" />
-                    <p className="text-xs text-muted-foreground">
-                      {prog.totalHoursCompleted.toFixed(1)}h completed of {prog.targetHours}h target
-                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={`font-semibold ${statusColor}`}>{statusLabel}</span>
+                      <span className="text-muted-foreground">{hoursRemaining.toFixed(1)}h remaining</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                      <div>
+                        <p className="font-semibold">{totalAvailable.toFixed(1)}h</p>
+                        <p className="text-muted-foreground">Available</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{totalCommitted.toFixed(1)}h</p>
+                        <p className="text-muted-foreground">Committed</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold">{totalCompleted.toFixed(1)}h</p>
+                        <p className="text-muted-foreground">Used</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{totalCompleted.toFixed(1)}h used of {totalPurchased.toFixed(1)}h purchased</p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No course progress yet. Complete sessions to start tracking!</p>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground">No credit yet. Purchase a package to get started!</p>
+                );
+              })()}
             </CardContent>
           </Card>
 
-          {/* Upcoming */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{upcomingSessions.length}</div>
-              <p className="text-xs text-muted-foreground">sessions</p>
-            </CardContent>
-          </Card>
-
-          {/* Completed */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pastSessions.length}</div>
-              <p className="text-xs text-muted-foreground">sessions</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Rest below: My Course Progress, Petland Rewards, Upcoming Sessions, Past Sessions */}
-        <div className="grid gap-6 md:grid-cols-2">
           {/* My Course Progress */}
           <Card>
             <CardHeader>
@@ -515,7 +514,7 @@ export default function StudentPortalPage() {
                   <div key={prog.id} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">
-                        {prog.unitsCompleted}/{prog.unitsTotal} units Â· {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
+                        {prog.unitsCompleted}/{prog.unitsTotal} units · {prog.sessionsCompleted}/{prog.sessionsTotal} sessions
                       </span>
                       <span className="text-muted-foreground">{prog.percentComplete}%</span>
                     </div>
@@ -558,6 +557,7 @@ export default function StudentPortalPage() {
             </CardContent>
           </Card>
         </div>
+
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Upcoming Sessions */}

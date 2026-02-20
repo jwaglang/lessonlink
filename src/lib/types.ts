@@ -55,6 +55,8 @@ export interface Student {
   status: StudentStatus;
   isNewStudent?: boolean; // true if never had a completed booking
   assignedTeacherId?: string; // teacherUid of assigned teacher
+  starredTutorIds?: string[]; // teacherUids the student has starred/saved
+  starredCourseIds?: string[]; // courseIds the student has starred/saved
   notes?: string; // T private notes on learner
   enrolledAt?: string; // ISO string
   createdAt?: string;
@@ -106,6 +108,14 @@ export interface Availability {
   id: string;
   date: string; // ISO string for the date
   time: string; // "HH:00" format
+  isAvailable: boolean;
+}
+
+export interface LearnerAvailability {
+  id: string;
+  studentId: string; // Firebase Auth UID
+  date: string;      // ISO string for the date
+  time: string;      // "HH:00" format
   isAvailable: boolean;
 }
 
@@ -547,4 +557,42 @@ export interface AssessmentReport {
   createdAt: string;
   updatedAt: string;
   finalizedAt?: string;
+}
+
+// === Session Feedback (Phase 15/16) ===
+
+export interface SessionFeedback {
+  id: string;
+  sessionInstanceId: string;
+  studentId: string;
+  teacherId: string;
+  courseId: string;
+  unitId: string;
+  sessionTitle: string;
+  sessionDate: string;
+
+  // Teacher's raw notes
+  teacherNotes: string;
+
+  // AI-generated feedback
+  parentReport: {
+    summary: string;
+    progressHighlights: string;
+    suggestedActivities: string;
+    language: 'en' | 'zh' | 'pt';
+    generatedAt: string;
+  } | null;
+
+  // AI provider info
+  aiProvider?: string;
+  aiModel?: string;
+
+  // Status
+  status: 'draft' | 'generated' | 'approved' | 'sent';
+  sentAt?: string;
+  sentTo?: string; // email address
+
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
 }

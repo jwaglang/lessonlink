@@ -248,6 +248,14 @@ export default function NewAssessmentPage() {
   const [finalizing, setFinalizing] = useState(false);
   const [finalized, setFinalized] = useState(false);
 
+// Parent report state
+const [generatingParentReport, setGeneratingParentReport] = useState(false);
+const [parentReport, setParentReport] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
+const [editedParentReport, setEditedParentReport] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
+const [parentReportLanguage, setParentReportLanguage] = useState<'en' | 'zh' | 'pt'>('en');
+const [translating, setTranslating] = useState(false);
+const [parentReportSaved, setParentReportSaved] = useState(false);
+
   // Load student, unit, course, existing reports
   useEffect(() => {
     async function loadData() {
@@ -332,7 +340,112 @@ export default function NewAssessmentPage() {
   }
 
   // Finalize handler
-  async function handleFinalize() {
+  // Generate parent report (English first, always)
+async function handleGenerateParentReport() {
+  if (!savedReportId) return;
+  setGeneratingParentReport(true);
+  setError('');
+  try {
+    const reportData = {
+      type: assessmentType,
+      taskCompletion,
+      communicativeEffectiveness,
+      emergentLanguageComplexity,
+      fluency,
+      teacherNotes,
+      transcript,
+      outputCitations: citations,
+      aiAnalysis: aiAnalysis,
+    };
+    const res = await fetch('/api/ai/generate-parent-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report: reportData, language: 'en' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to generate parent report');
+    setParentReport(data.parentReport);
+    setEditedParentReport(data.parentReport);
+  } catch (err: any) {
+    console.error('Parent report error:', err);
+    setError(err.message || 'Failed to generate parent report.');
+  } finally {
+    setGeneratingParentReport(false);
+  }
+}
+
+// Translate the edited report
+async function handleTranslate(lang: 'zh' | 'pt') {
+  if (!editedParentReport) return;
+  setTranslating(true);
+  setError('');
+  try {
+    const res = await fetch('/api/ai/translate-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentReport: editedParentReport, targetLanguage: lang }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Translation failed');
+    setEditedParentReport(data.parentReport);
+    setParentReportLanguage(lang);
+  } catch (err: any) {
+    console.error('Translation error:', err);
+    setError(err.message || 'Translation failed.');
+  } finally {
+    setTranslating(false);
+  }
+}
+
+// Save parent report to assessment record (and send email later)
+async function handleSaveAndSendParentReport() {
+  if (!savedReportId || !editedParentReport) return;
+  setError('');
+  try {
+    const { updateDoc, doc } = await import('firebase/firestore');
+    const { db } = await import('@/lib/firebase');
+    await updateDoc(doc(db, 'assessmentReports', savedReportId), {
+      parentReport: {
+        ...editedParentReport,
+        language: parentReportLanguage,
+        generatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date().toISOString(),
+    });
+    setParentReportSaved(true);
+    
+    // Send email to parent
+    try {
+      // We need the student email - fetch from the URL params
+      const studentId = window.location.pathname.split('/students/')[1]?.split('/')[0];
+      if (studentId) {
+        const { getStudentById } = await import('@/lib/firestore');
+        const student = await getStudentById(studentId);
+        if (student?.email) {
+          await fetch('/api/email/send-parent-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: student.email,
+              learnerName: student.name || 'Learner',
+              reportType: assessmentType,
+              summary: editedParentReport.summary,
+              progressHighlights: editedParentReport.progressHighlights,
+              suggestedActivities: editedParentReport.suggestedActivities,
+            }),
+          });
+        }
+      }
+    } catch (emailErr) {
+      console.error('Email send failed (non-blocking):', emailErr);
+    }
+  } catch (err: any) {
+    console.error('Save parent report error:', err);
+    setError(err.message || 'Failed to save parent report.');
+  }
+}
+
+async function handleFinalize() {
     if (!savedReportId) return;
     const confirmed = window.confirm(
       "Finalize this assessment? This will lock the report and update the learner's progress record. This cannot be undone."
@@ -772,11 +885,72 @@ export default function NewAssessmentPage() {
           )}
 
           {/* Generate Parent Report — appears after finalized */}
-          {finalized && (
+          {finalized && !parentReport && (
             <Button variant="outline" onClick={handleGenerateParentReport} disabled={generatingParentReport}>
               <Sparkles className="mr-1 h-4 w-4" />
-              Generate Parent Report
+              {generatingParentReport ? 'Generating...' : 'Generate Parent Report'}
             </Button>
+          )}
+
+          {/* Parent Report Editor — appears after generation */}
+          {editedParentReport && !parentReportSaved && (
+            <div className="mt-6 space-y-4 border rounded-lg p-4 bg-muted/30">
+              <h3 className="font-semibold text-lg">Parent Report Preview</h3>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Summary</label>
+                  <textarea
+                    className="w-full mt-1 p-2 border rounded-md text-sm min-h-[80px]"
+                    value={editedParentReport.summary}
+                    onChange={(e) => setEditedParentReport({ ...editedParentReport, summary: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Progress Highlights</label>
+                  <textarea
+                    className="w-full mt-1 p-2 border rounded-md text-sm min-h-[80px]"
+                    value={editedParentReport.progressHighlights}
+                    onChange={(e) => setEditedParentReport({ ...editedParentReport, progressHighlights: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Suggested Activities</label>
+                  <textarea
+                    className="w-full mt-1 p-2 border rounded-md text-sm min-h-[80px]"
+                    value={editedParentReport.suggestedActivities}
+                    onChange={(e) => setEditedParentReport({ ...editedParentReport, suggestedActivities: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <span className="text-sm font-medium">Translate:</span>
+                <Button variant="outline" size="sm" onClick={() => handleTranslate('zh')} disabled={translating || parentReportLanguage === 'zh'}>
+                  {translating ? '...' : '中文'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleTranslate('pt')} disabled={translating || parentReportLanguage === 'pt'}>
+                  {translating ? '...' : 'Português'}
+                </Button>
+                {parentReportLanguage !== 'en' && (
+                  <Button variant="ghost" size="sm" onClick={() => { setEditedParentReport(parentReport); setParentReportLanguage('en'); }}>
+                    Back to English
+                  </Button>
+                )}
+              </div>
+
+              <Button onClick={handleSaveAndSendParentReport} className="w-full">
+                <CheckCircle className="mr-1 h-4 w-4" />
+                Save & Send Report
+              </Button>
+            </div>
+          )}
+
+          {/* Confirmation after save */}
+          {parentReportSaved && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
+              ✅ Parent report saved to learner record. Email delivery coming soon.
+            </div>
           )}
         </div>
       </div>

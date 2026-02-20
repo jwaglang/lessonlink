@@ -75,6 +75,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 export const TASK_PROVIDERS: Record<string, string> = {
   assessment_analysis: 'minimax',
   parent_report: 'minimax',
+  translation: 'deepseek',
   session_feedback: 'minimax',  // Phase 16
 };
 

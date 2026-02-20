@@ -1,0 +1,14 @@
+DO NOT MAKE ANY CHANGES BEYOND WHAT IS SPECIFIED BELOW.
+
+File: `firestore.rules`
+
+Find the sessionFeedback rule block (the one we just added). Add this rule IMMEDIATELY AFTER it:
+
+    // Imported Payments — admin-only write, teachers read
+    match /importedPayments/{paymentId} {
+      allow read: if request.auth != null && isTeacher();
+      allow create, update: if request.auth != null && request.auth.token.email == 'jwag.lang@gmail.com';
+      allow delete: if false;
+    }
+
+DO NOT MODIFY ANY OTHER LINES OR FILES.

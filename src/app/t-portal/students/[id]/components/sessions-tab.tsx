@@ -257,6 +257,16 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
                   <div className="flex items-center gap-2">
                     <BillingBadge type={session.billingType} />
                     <StatusBadge status={session.status} />
+                    {session.status === 'completed' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs"
+                        onClick={() => window.location.href = '/t-portal/calendar'}
+                      >
+                        Write Feedback
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}

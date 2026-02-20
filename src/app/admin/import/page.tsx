@@ -1,0 +1,454 @@
+'use client';
+
+import { useState } from 'react';
+import { useAuth } from '@/components/auth-provider';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Upload, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+
+const ADMIN_EMAIL = 'jwag.lang@gmail.com';
+
+interface ImportSession {
+  packageSessionCode: string;
+  sessionCode: string;
+  unitName: string;
+  sessionTitle: string;
+  sessionNumber: number;
+  sessionDate: string | null;
+  teacherNotes: string | null;
+  parentReport: string | null;
+  status: string;
+}
+
+interface ImportPayment {
+  package: string;
+  type: string;
+  details: string;
+  amount: string;
+  currency: string;
+  invoiceNumber: string;
+}
+
+interface ImportData {
+  learner: {
+    name: string;
+    city?: string;
+    age?: string;
+    birthday?: string;
+    favoriteColor?: string;
+    favoriteAnimal?: string;
+    favoriteSubject?: string;
+    favoriteGame?: string;
+  };
+  parent: {
+    name?: string;
+    email?: string;
+  };
+  course: {
+    name: string;
+    currentPackage?: string;
+    currentUnit?: string;
+  };
+  sessions: ImportSession[];
+  payments: ImportPayment[];
+}
+
+export default function AdminImportPage() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'learner' | 'unit'>('learner');
+  const [jsonInput, setJsonInput] = useState('');
+  const [parsed, setParsed] = useState<ImportData | null>(null);
+  const [parseError, setParseError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Admin gate
+  if (!user || user.email !== ADMIN_EMAIL) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Admin access required.
+      </div>
+    );
+  }
+
+  function handleParse() {
+    setParseError('');
+    setParsed(null);
+    setImportResult(null);
+    try {
+      const cleaned = jsonInput
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      const data = JSON.parse(cleaned) as ImportData;
+
+      // Basic validation
+      if (!data.learner?.name) throw new Error('Missing learner.name');
+      if (!data.sessions || !Array.isArray(data.sessions)) throw new Error('Missing or invalid sessions array');
+
+      setParsed(data);
+    } catch (err: any) {
+      setParseError(err.message || 'Invalid JSON');
+    }
+  }
+
+  function handleParseUnit() {
+    setParseError('');
+    setParsed(null);
+    setImportResult(null);
+    try {
+      const cleaned = jsonInput
+        .replace(/```json\s*/g, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      const data = JSON.parse(cleaned);
+
+      if (!data.unit?.title) throw new Error('Missing unit.title');
+      if (!data.sessions || !Array.isArray(data.sessions)) throw new Error('Missing or invalid sessions array');
+
+      // Store as a special parsed format
+      (window as any).__unitImportData = data;
+      setParsed({ learner: { name: `Unit: ${data.unit.title}` }, parent: {}, course: { name: data.unit.level || 'unknown' }, sessions: data.sessions.map((s: any) => ({
+        packageSessionCode: `S${s.sessionNumber}`,
+        sessionCode: `S${s.sessionNumber}`,
+        unitName: data.unit.title,
+        sessionTitle: s.title,
+        sessionNumber: s.sessionNumber,
+        sessionDate: null,
+        teacherNotes: null,
+        parentReport: null,
+        status: 'template',
+      })), payments: [] } as any);
+    } catch (err: any) {
+      setParseError(err.message || 'Invalid JSON');
+    }
+  }
+
+  async function handleImport() {
+    if (!parsed) return;
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const { collection, addDoc, doc, setDoc, query, where, getDocs, limit } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+
+      let importedSessions = 0;
+      let importedPayments = 0;
+      let importedFeedback = 0;
+
+      // 1. Check if student exists by parent email, or create placeholder
+      let studentId: string | null = null;
+      if (parsed.parent?.email) {
+        const studentQ = query(
+          collection(db, 'students'),
+          where('email', '==', parsed.parent.email),
+          limit(1)
+        );
+        const studentSnap = await getDocs(studentQ);
+        if (!studentSnap.empty) {
+          studentId = studentSnap.docs[0].id;
+        }
+      }
+
+      // 2. Import session feedback records
+      for (const session of parsed.sessions) {
+        if (session.parentReport || session.teacherNotes) {
+          await addDoc(collection(db, 'sessionFeedback'), {
+            sessionInstanceId: `import_${session.sessionCode}`,
+            studentId: studentId || `import_${parsed.learner.name.toLowerCase().replace(/\s+/g, '_')}`,
+            teacherId: user.uid,
+            courseId: parsed.course?.name || 'unknown',
+            unitId: session.unitName || 'unknown',
+            sessionTitle: session.sessionTitle || 'Imported Session',
+            sessionDate: session.sessionDate || '',
+            teacherNotes: session.teacherNotes || session.parentReport || '',
+            parentReport: session.parentReport ? {
+              summary: session.parentReport,
+              progressHighlights: '',
+              suggestedActivities: '',
+              language: 'en',
+              generatedAt: new Date().toISOString(),
+            } : null,
+            status: session.parentReport ? 'sent' : 'draft',
+            source: 'obsidian_import',
+            importedAt: new Date().toISOString(),
+            createdAt: session.sessionDate ? new Date(session.sessionDate).toISOString() : new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          importedFeedback++;
+        }
+        importedSessions++;
+      }
+
+      // 3. Import payment records (as notes — actual Stripe records come from webhooks)
+      for (const payment of parsed.payments) {
+        await addDoc(collection(db, 'importedPayments'), {
+          studentId: studentId || `import_${parsed.learner.name.toLowerCase().replace(/\s+/g, '_')}`,
+          teacherId: user.uid,
+          package: payment.package,
+          type: payment.type,
+          details: payment.details,
+          amount: payment.amount,
+          currency: payment.currency,
+          invoiceNumber: payment.invoiceNumber,
+          source: 'obsidian_import',
+          importedAt: new Date().toISOString(),
+        });
+        importedPayments++;
+      }
+
+      setImportResult({
+        success: true,
+        message: `Imported ${importedSessions} sessions (${importedFeedback} with feedback), ${importedPayments} payment records for ${parsed.learner.name}.`,
+      });
+    } catch (err: any) {
+      console.error('Import error:', err);
+      setImportResult({
+        success: false,
+        message: err.message || 'Import failed',
+      });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function handleImportUnit() {
+    const data = (window as any).__unitImportData;
+    if (!data) return;
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const { collection, addDoc } = await import('firebase/firestore');
+      const { db } = await import('@/lib/firebase');
+
+      // 1. Create the unit document
+      const unitDoc = await addDoc(collection(db, 'units'), {
+        title: data.unit.title,
+        level: data.unit.level,
+        gse: data.unit.gse,
+        track: data.unit.track,
+        bigQuestion: data.unit.bigQuestion,
+        creativeVision: data.unit.creativeVision,
+        linguisticGoals: data.unit.linguisticGoals || [],
+        cognitiveGoals: data.unit.cognitiveGoals || [],
+        robinson: data.unit.robinson || {},
+        constraints: data.unit.constraints || {},
+        masterText: data.unit.masterText || '',
+        sessionCount: data.unit.sessionCount || data.sessions.length,
+        vocabulary: data.vocabulary || [],
+        assets: data.assets || [],
+        teacherGuidance: data.teacherGuidance || {},
+        source: 'upt_import',
+        importedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      // 2. Create session documents linked to the unit
+      let sessionCount = 0;
+      for (const session of data.sessions) {
+        await addDoc(collection(db, 'sessions'), {
+          unitId: unitDoc.id,
+          sessionNumber: session.sessionNumber,
+          title: session.title,
+          littleQuestion: session.littleQuestion || '',
+          linguisticAim: session.linguisticAim || '',
+          cognitiveAim: session.cognitiveAim || '',
+          warmUp: session.warmUp || {},
+          input: session.input || {},
+          output: session.output || {},
+          activation: session.activation || {},
+          emergentLanguage: session.emergentLanguage || [],
+          source: 'upt_import',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        sessionCount++;
+      }
+
+      setImportResult({
+        success: true,
+        message: `Imported unit "${data.unit.title}" with ${sessionCount} sessions and ${(data.vocabulary || []).length} vocabulary items.`,
+      });
+    } catch (err: any) {
+      console.error('Unit import error:', err);
+      setImportResult({
+        success: false,
+        message: err.message || 'Unit import failed',
+      });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="container mx-auto p-6 max-w-4xl space-y-6">
+      <h1 className="text-3xl font-bold">Admin Import</h1>
+      <div className="flex gap-2">
+        <Button
+          variant={activeTab === 'learner' ? 'default' : 'outline'}
+          onClick={() => { setActiveTab('learner'); setParsed(null); setImportResult(null); setParseError(''); setJsonInput(''); }}
+        >
+          Learner History
+        </Button>
+        <Button
+          variant={activeTab === 'unit' ? 'default' : 'outline'}
+          onClick={() => { setActiveTab('unit'); setParsed(null); setImportResult(null); setParseError(''); setJsonInput(''); }}
+        >
+          Unit Plan (UPT)
+        </Button>
+      </div>
+      <p className="text-muted-foreground">
+        Paste JSON generated from your Obsidian notes using the Claude prompt template.
+      </p>
+
+      {/* JSON Input */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Step 1: Paste JSON</CardTitle>
+          <CardDescription>
+            {activeTab === 'learner'
+              ? 'Use the Claude prompt template to convert your Obsidian note, then paste the JSON output here.'
+              : 'Use the Claude prompt template to convert your UPT unit plan, then paste the JSON output here.'
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            placeholder='{"learner": {"name": "..."}, "sessions": [...], ...}'
+            value={jsonInput}
+            onChange={(e) => setJsonInput(e.target.value)}
+            className="min-h-[200px] font-mono text-sm"
+          />
+          <Button onClick={activeTab === 'learner' ? handleParse : handleParseUnit} disabled={!jsonInput.trim()}>
+            <Upload className="mr-2 h-4 w-4" />
+            Parse JSON
+          </Button>
+          {parseError && (
+            <div className="flex items-center gap-2 text-red-600 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              {parseError}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Preview */}
+      {parsed && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 2: Review Import</CardTitle>
+            <CardDescription>Verify the data before importing to Firestore.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Learner Info */}
+            <div>
+              <h3 className="font-semibold mb-2">Learner</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-muted-foreground">Name:</span>
+                <span className="font-medium">{parsed.learner.name}</span>
+                {parsed.learner.age && (
+                  <>
+                    <span className="text-muted-foreground">Age:</span>
+                    <span>{parsed.learner.age}</span>
+                  </>
+                )}
+                {parsed.learner.city && (
+                  <>
+                    <span className="text-muted-foreground">City:</span>
+                    <span>{parsed.learner.city}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Parent Info */}
+            {parsed.parent?.email && (
+              <div>
+                <h3 className="font-semibold mb-2">Parent</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {parsed.parent.name && (
+                    <>
+                      <span className="text-muted-foreground">Name:</span>
+                      <span>{parsed.parent.name}</span>
+                    </>
+                  )}
+                  <span className="text-muted-foreground">Email:</span>
+                  <span>{parsed.parent.email}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Course */}
+            <div>
+              <h3 className="font-semibold mb-2">Course</h3>
+              <div className="text-sm">
+                <Badge variant="outline">{parsed.course.name}</Badge>
+                {parsed.course.currentUnit && (
+                  <span className="ml-2 text-muted-foreground">Current unit: {parsed.course.currentUnit}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Sessions Summary */}
+            <div>
+              <h3 className="font-semibold mb-2">Sessions ({parsed.sessions.length})</h3>
+              <div className="max-h-[300px] overflow-y-auto space-y-1">
+                {parsed.sessions.map((s, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm py-1 border-b last:border-0">
+                    <Badge variant={s.parentReport ? 'default' : 'secondary'} className="text-xs">
+                      {s.packageSessionCode}
+                    </Badge>
+                    <span className="font-medium">{s.sessionTitle}</span>
+                    {s.sessionDate && <span className="text-muted-foreground text-xs">{s.sessionDate}</span>}
+                    {s.parentReport && <Badge variant="outline" className="text-xs ml-auto">Has feedback</Badge>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Payments */}
+            {parsed.payments.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Payments ({parsed.payments.length})</h3>
+                {parsed.payments.map((p, i) => (
+                  <div key={i} className="text-sm py-1">
+                    <span className="font-medium">{p.package}</span> — {p.type} ({p.details}) — {p.amount} {p.currency}
+                    {p.invoiceNumber && <span className="text-muted-foreground ml-2">#{p.invoiceNumber}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Import Button */}
+            <Button onClick={activeTab === 'learner' ? handleImport : handleImportUnit} disabled={importing} className="w-full" size="lg">
+              {importing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Import to LessonLink
+                </>
+              )}
+            </Button>
+
+            {/* Result */}
+            {importResult && (
+              <div className={`p-3 rounded-md text-sm ${importResult.success ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
+                {importResult.success ? '✅' : '❌'} {importResult.message}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

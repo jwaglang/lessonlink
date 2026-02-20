@@ -27,11 +27,11 @@ import {
   BookOpen,
   Shield,
   Users,
-  Search,
   Bell,
   Clock,
   CalendarClock,
   CreditCard,
+  Wallet,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { ThemeToggle } from './theme-toggle';
@@ -208,7 +208,7 @@ const StudentAppSidebar = () => {
             )}
           </div>
 
-          {/* ── Courses (hover → My Units, Browse, Feedback, Evaluations) ── */}
+          {/* ── Courses (hover → My Units, My Packages, My Balance) ── */}
           <div
             onMouseEnter={() => scheduleOpen('courses', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('courses')}
@@ -219,14 +219,12 @@ const StudentAppSidebar = () => {
                 isActive={
                   pathname.startsWith('/s-portal/courses') ||
                   pathname.startsWith('/s-portal/units') ||
-                  pathname.startsWith('/s-portal/browse') ||
-                  pathname.startsWith('/s-portal/feedback') ||
-                  pathname.startsWith('/s-portal/evaluations') ||
-                  pathname.startsWith('/s-portal/packages')
+                  pathname.startsWith('/s-portal/packages') ||
+                  pathname.startsWith('/s-portal/balance')
                 }
                 tooltip="Courses"
               >
-                <Link href="/s-portal/units" className="flex items-center gap-2">
+                <Link href="/s-portal/courses" className="flex items-center gap-2">
                   <Library className="h-4 w-4" />
                   <span>Courses</span>
                 </Link>
@@ -244,30 +242,6 @@ const StudentAppSidebar = () => {
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
                 <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/browse'}>
-                    <Link href="/s-portal/browse" className="flex items-center gap-2">
-                      <Search className="h-3.5 w-3.5" />
-                      Browse Units
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/feedback'}>
-                    <Link href="/s-portal/feedback" className="flex items-center gap-2">
-                      <Library className="h-3.5 w-3.5" />
-                      Feedback
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/evaluations'}>
-                    <Link href="/s-portal/evaluations" className="flex items-center gap-2">
-                      <ClipboardCheck className="h-3.5 w-3.5" />
-                      Evaluations
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
                   <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/packages'}>
                     <Link href="/s-portal/packages" className="flex items-center gap-2">
                       <CreditCard className="h-3.5 w-3.5" />
@@ -275,11 +249,19 @@ const StudentAppSidebar = () => {
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/balance'}>
+                    <Link href="/s-portal/balance" className="flex items-center gap-2">
+                      <Wallet className="h-3.5 w-3.5" />
+                      My Balance
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
               </SidebarMenuSub>
             )}
           </div>
 
-          {/* ── Tutors (hover → My Tutor, Find a Tutor) ── */}
+          {/* ── Tutors (hover → My Tutor, Feedback, Evaluations) ── */}
           <div
             onMouseEnter={() => scheduleOpen('tutors', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('tutors')}
@@ -287,7 +269,12 @@ const StudentAppSidebar = () => {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith('/s-portal/tutors') || pathname.startsWith('/s-portal/t-profiles')}
+                isActive={
+                  pathname.startsWith('/s-portal/tutors') ||
+                  pathname.startsWith('/s-portal/t-profiles') ||
+                  pathname.startsWith('/s-portal/feedback') ||
+                  pathname.startsWith('/s-portal/evaluations')
+                }
                 tooltip="Tutors"
               >
                 <Link href="/s-portal/t-profiles" className="flex items-center gap-2">
@@ -308,13 +295,18 @@ const StudentAppSidebar = () => {
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
                 <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={pathname.startsWith('/s-portal/t-profiles')}
-                  >
-                    <Link href="/s-portal/t-profiles" className="flex items-center gap-2">
-                      <Search className="h-3.5 w-3.5" />
-                      Find a Tutor
+                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/feedback'}>
+                    <Link href="/s-portal/feedback" className="flex items-center gap-2">
+                      <Library className="h-3.5 w-3.5" />
+                      Feedback
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/evaluations'}>
+                    <Link href="/s-portal/evaluations" className="flex items-center gap-2">
+                      <ClipboardCheck className="h-3.5 w-3.5" />
+                      Evaluations
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>

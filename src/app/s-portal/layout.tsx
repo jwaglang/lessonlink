@@ -2,6 +2,7 @@
 
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import StudentAppSidebar from '@/components/s-app-sidebar';
+import SPortalTopBar from '@/components/s-portal-top-bar';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
@@ -87,6 +88,7 @@ export default function StudentPortalLayout({
         <StudentAppSidebar />
       </Sidebar>
       <SidebarInset>
+        <SPortalTopBar />
         <main>{children}</main>
       </SidebarInset>
     </SidebarProvider>
