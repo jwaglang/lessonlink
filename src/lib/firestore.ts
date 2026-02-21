@@ -407,12 +407,7 @@ export async function deleteStudent(studentId: string): Promise<void> {
 
 /** Check if student is new (no completed bookings) */
 export async function isNewStudent(studentId: string): Promise<boolean> {
-  const student = await getStudentById(studentId);
-  if (!student) return true;
-  if (student.isNewStudent === true) return true;
-  if (student.isNewStudent === false) return false;
-  
-  // Fallback: check if they have any completed sessions
+  // First, check if they have any completed sessions
   const q = query(
     sessionInstancesCollection,
     where('studentId', '==', studentId),
@@ -420,7 +415,23 @@ export async function isNewStudent(studentId: string): Promise<boolean> {
     limit(1)
   );
   const snapshot = await getDocs(q);
-  return snapshot.empty;
+  if (!snapshot.empty) return false;
+
+  // Also check if they have purchased any packages
+  const pkgQuery = query(
+    studentPackagesCollection,
+    where('studentId', '==', studentId),
+    limit(1)
+  );
+  const pkgSnapshot = await getDocs(pkgQuery);
+  if (!pkgSnapshot.empty) return false;
+
+  // Fallback: check explicit isNewStudent field on student doc
+  const student = await getStudentById(studentId);
+  if (!student) return true;
+  if (student.isNewStudent === false) return false;
+  
+  return true;
 }
 
 /* =========================================================
@@ -799,6 +810,109 @@ export async function toggleLearnerAvailability(
   });
   const newSnap = await getDoc(newRef);
   return asId<LearnerAvailability>(newSnap.id, newSnap.data());
+}
+
+/** Bulk toggle tutor availability for multiple slots */
+export async function toggleAvailabilityBulk(
+  slots: { date: Date; time: string }[]
+): Promise<Availability[]> {
+  const { formatISO, startOfDay } = await import('date-fns');
+  const results: Availability[] = [];
+
+  for (const slot of slots) {
+    const dateISO = formatISO(startOfDay(slot.date));
+    
+    const q = query(
+      availabilityCollection,
+      where('date', '==', dateISO),
+      where('time', '==', slot.time),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const existingDoc = snapshot.docs[0];
+      const existingData = existingDoc.data();
+      const newAvailability = !existingData.isAvailable;
+
+      await updateDoc(doc(db, 'availability', existingDoc.id), {
+        isAvailable: newAvailability,
+        updatedAt: Timestamp.now(),
+      });
+
+      results.push({
+        id: existingDoc.id,
+        ...existingData,
+        isAvailable: newAvailability,
+      } as Availability);
+    } else {
+      const newRef = await addDoc(availabilityCollection, {
+        date: dateISO,
+        time: slot.time,
+        isAvailable: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+
+      const newSnap = await getDoc(newRef);
+      results.push(asId<Availability>(newSnap.id, newSnap.data()));
+    }
+  }
+
+  return results;
+}
+
+/** Bulk toggle learner availability for multiple slots */
+export async function toggleLearnerAvailabilityBulk(
+  studentId: string,
+  slots: { date: Date; time: string }[]
+): Promise<LearnerAvailability[]> {
+  const { formatISO, startOfDay } = await import('date-fns');
+  const results: LearnerAvailability[] = [];
+
+  for (const slot of slots) {
+    const dateISO = formatISO(startOfDay(slot.date));
+    
+    const q = query(
+      learnerAvailabilityCollection,
+      where('studentId', '==', studentId),
+      where('date', '==', dateISO),
+      where('time', '==', slot.time),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const existingDoc = snapshot.docs[0];
+      const existingData = existingDoc.data();
+      const newAvailability = !existingData.isAvailable;
+
+      await updateDoc(doc(db, 'learnerAvailability', existingDoc.id), {
+        isAvailable: newAvailability,
+        updatedAt: Timestamp.now(),
+      });
+
+      results.push({
+        id: existingDoc.id,
+        ...existingData,
+        isAvailable: newAvailability,
+      } as LearnerAvailability);
+    } else {
+      const newRef = await addDoc(learnerAvailabilityCollection, {
+        studentId,
+        date: dateISO,
+        time: slot.time,
+        isAvailable: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+
+      const newSnap = await getDoc(newRef);
+      results.push(asId<LearnerAvailability>(newSnap.id, newSnap.data()));
+    }
+  }
+
+  return results;
 }
 
 /* =========================================================

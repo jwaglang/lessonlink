@@ -7,11 +7,26 @@ interface TimeSlotProps {
   time: string;
   isAvailable: boolean;
   isBooked: boolean;
+  isHighlighted?: boolean;
   onClick: (date: Date, time: string) => void;
   onDoubleClick: (date: Date, time: string) => void;
+  onMouseDown?: (date: Date, time: string) => void;
+  onMouseEnter?: (date: Date, time: string) => void;
+  onMouseUp?: () => void;
 }
 
-export default function TimeSlot({ date, time, isAvailable, isBooked, onClick, onDoubleClick }: TimeSlotProps) {
+export default function TimeSlot({ 
+  date, 
+  time, 
+  isAvailable, 
+  isBooked, 
+  isHighlighted = false,
+  onClick, 
+  onDoubleClick,
+  onMouseDown,
+  onMouseEnter,
+  onMouseUp
+}: TimeSlotProps) {
   
   const handleDoubleClick = () => {
     if (isBooked) return;
@@ -27,13 +42,18 @@ export default function TimeSlot({ date, time, isAvailable, isBooked, onClick, o
     <div
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onMouseDown={() => onMouseDown?.(date, time)}
+      onMouseEnter={() => onMouseEnter?.(date, time)}
+      onMouseUp={() => onMouseUp?.()}
       className={cn(
         "border-b border-r h-10 cursor-pointer transition-colors",
-        isBooked 
-          ? "bg-purple-200/50 dark:bg-purple-800/30 cursor-not-allowed"
-          : isAvailable 
-            ? "bg-green-200/50 hover:bg-green-300/50 dark:bg-green-800/30 dark:hover:bg-green-700/30"
-            : "bg-card hover:bg-muted"
+        isHighlighted
+          ? "bg-amber-200/50 dark:bg-amber-600/50"
+          : isBooked 
+            ? "bg-purple-200/50 dark:bg-purple-800/30 cursor-not-allowed"
+            : isAvailable 
+              ? "bg-green-200/50 hover:bg-green-300/50 dark:bg-green-800/30 dark:hover:bg-green-700/30"
+              : "bg-card hover:bg-muted"
       )}
     >
       {/* Content for the slot can be added here if needed */}

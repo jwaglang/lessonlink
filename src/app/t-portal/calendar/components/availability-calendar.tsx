@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   addDays,
   eachDayOfInterval,
@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Availability, SessionInstance } from '@/lib/types';
 import TimeSlot from './time-slot';
-import { toggleAvailability } from '@/lib/firestore';
+import { toggleAvailability, toggleAvailabilityBulk } from '@/lib/firestore';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
@@ -45,6 +45,22 @@ export default function AvailabilityCalendar({
 }: AvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartSlot, setDragStartSlot] = useState<{ date: Date; time: string } | null>(null);
+  const [highlightedSlots, setHighlightedSlots] = useState<Set<string>>(new Set());
+  const [dragTargetAvailable, setDragTargetAvailable] = useState<boolean | null>(null);
+
+  // Handle global mouse up to end dragging
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleMouseUp();
+      }
+    };
+    
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDragging, highlightedSlots, dragStartSlot]);
 
   const weekStart = startOfWeek(currentDate);
   const weekEnd = endOfWeek(currentDate);
@@ -65,6 +81,75 @@ export default function AvailabilityCalendar({
       }
       return [...prev, updatedSlot];
     });
+  };
+
+  // Drag handlers for bulk toggle
+  const handleMouseDown = (date: Date, time: string) => {
+    // Find current availability status of the starting slot
+    const slotKey = `${date.getTime()}-${time}`;
+    const availableSlot = availability.find(
+      a => isSameDay(startOfDay(parseISO(a.date)), date) && a.time === time
+    );
+    const isCurrentlyAvailable = availableSlot?.isAvailable ?? false;
+    
+    setIsDragging(true);
+    setDragStartSlot({ date, time });
+    setDragTargetAvailable(!isCurrentlyAvailable);
+    setHighlightedSlots(new Set([slotKey]));
+  };
+
+  const handleMouseEnter = (date: Date, time: string) => {
+    if (!isDragging) return;
+    
+    const slotKey = `${date.getTime()}-${time}`;
+    setHighlightedSlots(prev => {
+      const newSet = new Set(prev);
+      newSet.add(slotKey);
+      return newSet;
+    });
+  };
+
+  const handleMouseUp = async () => {
+    if (!isDragging || !dragStartSlot) {
+      setIsDragging(false);
+      setHighlightedSlots(new Set());
+      return;
+    }
+
+    // Convert highlighted slots to array of { date, time }
+    const slotsToToggle = Array.from(highlightedSlots).map(key => {
+      const [timestamp, time] = key.split('-');
+      const date = new Date(parseInt(timestamp));
+      return { date, time };
+    });
+
+    if (slotsToToggle.length > 0) {
+      // Toggle all slots to the target availability
+      const updatedSlots = await toggleAvailabilityBulk(slotsToToggle);
+      
+      // Update local state
+      setAvailability(prev => {
+        let newAvail = [...prev];
+        // Remove existing slots that were updated
+        updatedSlots.forEach(updated => {
+          const updatedDate = startOfDay(new Date(updated.date));
+          const existingIndex = newAvail.findIndex(
+            a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updated.time
+          );
+          if (existingIndex > -1) {
+            newAvail[existingIndex] = updated;
+          } else {
+            newAvail.push(updated);
+          }
+        });
+        return newAvail;
+      });
+    }
+
+    setIsDragging(false);
+    setDragStartSlot(null);
+    setHighlightedSlots(new Set());
+    setDragTargetAvailable(null);
   };
 
   return (
@@ -133,8 +218,12 @@ export default function AvailabilityCalendar({
                     time={hour}
                     isAvailable={availableSlot?.isAvailable ?? false}
                     isBooked={!!bookedSession}
+                    isHighlighted={highlightedSlots.has(`${day.getTime()}-${hour}`)}
                     onClick={handleSlotClick}
                     onDoubleClick={onSlotDoubleClick}
+                    onMouseDown={handleMouseDown}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseUp={handleMouseUp}
                   />
                 );
               })}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   addDays,
   eachDayOfInterval,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LearnerAvailability, SessionInstance } from '@/lib/types';
-import { toggleLearnerAvailability } from '@/lib/firestore';
+import { toggleLearnerAvailability, toggleLearnerAvailabilityBulk } from '@/lib/firestore';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
@@ -44,6 +44,10 @@ export default function LearnerAvailabilityCalendar({
 }: LearnerAvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartSlot, setDragStartSlot] = useState<{ date: Date; time: string } | null>(null);
+  const [highlightedSlots, setHighlightedSlots] = useState<Set<string>>(new Set());
+  const [dragTargetAvailable, setDragTargetAvailable] = useState<boolean | null>(null);
 
   const weekStart = startOfWeek(currentDate);
   const weekEnd = endOfWeek(currentDate);
@@ -66,6 +70,84 @@ export default function LearnerAvailabilityCalendar({
       return [...prev, updatedSlot];
     });
   };
+
+  // Drag handlers for bulk toggle
+  const handleMouseDown = (date: Date, time: string) => {
+    const slotKey = `${date.getTime()}-${time}`; // Use timestamp to avoid hyphen issues
+    const availableSlot = availability.find(
+      (a) => isSameDay(startOfDay(parseISO(a.date)), date) && a.time === time
+    );
+    const isCurrentlyAvailable = availableSlot?.isAvailable ?? false;
+
+    setIsDragging(true);
+    setDragStartSlot({ date, time });
+    setDragTargetAvailable(!isCurrentlyAvailable);
+    setHighlightedSlots(new Set([slotKey]));
+  };
+
+  const handleMouseEnter = (date: Date, time: string) => {
+    if (!isDragging) return;
+
+    const slotKey = `${date.getTime()}-${time}`;
+    setHighlightedSlots((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(slotKey);
+      return newSet;
+    });
+  };
+
+  const handleMouseUp = async () => {
+    if (!isDragging || !dragStartSlot) {
+      setIsDragging(false);
+      setHighlightedSlots(new Set());
+      return;
+    }
+
+    const slotsToToggle = Array.from(highlightedSlots).map((key) => {
+      const [timestamp, time] = key.split('-');
+      const date = new Date(parseInt(timestamp));
+      return { date, time };
+    });
+
+    if (slotsToToggle.length > 0) {
+      const updatedSlots = await toggleLearnerAvailabilityBulk(studentId, slotsToToggle);
+
+      setAvailability((prev) => {
+        let next = [...prev];
+        updatedSlots.forEach((updated) => {
+          const updatedDate = startOfDay(new Date(updated.date));
+          const existingIndex = next.findIndex(
+            (a) =>
+              startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() &&
+              a.time === updated.time
+          );
+          if (existingIndex > -1) {
+            next[existingIndex] = updated;
+          } else {
+            next.push(updated);
+          }
+        });
+        return next;
+      });
+    }
+
+    setIsDragging(false);
+    setDragStartSlot(null);
+    setHighlightedSlots(new Set());
+    setDragTargetAvailable(null);
+  };
+
+  // Handle global mouse up to end dragging
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleMouseUp();
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDragging, highlightedSlots, dragStartSlot, studentId]);
 
   return (
     <Card>
@@ -139,12 +221,15 @@ export default function LearnerAvailabilityCalendar({
 
                 const isAvailable = availableSlot?.isAvailable ?? false;
                 const isBooked = !!bookedSession;
+                const isHighlighted = highlightedSlots.has(`${day.getTime()}-${hour}`);
 
                 return (
                   <div
                     key={`${day.toString()}-${hour}`}
                     className={`border-b border-r p-1 cursor-pointer transition-colors min-h-[2rem] ${
-                      isBooked
+                      isHighlighted
+                        ? 'bg-amber-200 dark:bg-amber-600'
+                        : isBooked
                         ? 'bg-blue-100 dark:bg-blue-900 cursor-not-allowed'
                         : isAvailable
                         ? 'bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800'
@@ -152,6 +237,15 @@ export default function LearnerAvailabilityCalendar({
                     }`}
                     onClick={() => {
                       if (!isBooked) handleSlotClick(day, hour);
+                    }}
+                    onMouseDown={() => {
+                      if (!isBooked) handleMouseDown(day, hour);
+                    }}
+                    onMouseEnter={() => {
+                      if (!isBooked) handleMouseEnter(day, hour);
+                    }}
+                    onMouseUp={() => {
+                      handleMouseUp();
                     }}
                     title={
                       isBooked

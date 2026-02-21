@@ -12,10 +12,12 @@ import {
 } from "@/lib/firestore";
 import type { SessionInstance, Student, Availability, Course } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import BookSessionForm from './components/book-session-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AvailabilityCalendar from './components/availability-calendar';
 import { useAuth } from '@/components/auth-provider';
+import { Calendar, Copy, Check } from 'lucide-react';
 
 export default function CalendarPage() {
     const { user } = useAuth();
@@ -31,6 +33,7 @@ export default function CalendarPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,6 +71,14 @@ export default function CalendarPage() {
         setIsDialogOpen(true);
     };
 
+    const handleCopyICalLink = async () => {
+        if (!user?.uid) return;
+        const icalUrl = `${window.location.origin}/api/calendar/ical/tutor?teacherUid=${user.uid}`;
+        await navigator.clipboard.writeText(icalUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 500);
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col gap-8 p-4 md:p-8">
@@ -89,10 +100,21 @@ export default function CalendarPage() {
                 description="Manage your sessions and set your availability."
             />
             <Tabs defaultValue={defaultTab} key={defaultTab}>
-                <TabsList className='mb-4'>
-                    <TabsTrigger value="sessions">Schedule</TabsTrigger>
-                    <TabsTrigger value="availability">Availability</TabsTrigger>
-                </TabsList>
+                <div className="flex items-center justify-between mb-4">
+                    <TabsList>
+                        <TabsTrigger value="sessions">Schedule</TabsTrigger>
+                        <TabsTrigger value="availability">Availability</TabsTrigger>
+                    </TabsList>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyICalLink}
+                        className="gap-2"
+                    >
+                        {copied ? <Check className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+                        {copied ? 'Copied' : 'Calendar Sync'}
+                    </Button>
+                </div>
                 <TabsContent value="sessions">
                     <WeeklyCalendar 
                         sessionInstances={sessionInstances} 

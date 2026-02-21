@@ -37,7 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { GraduationCap, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Users } from 'lucide-react';
+import { GraduationCap, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Users, Calendar, Check } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
 import type { Availability, Course, Student } from '@/lib/types';
 import { calculateLessonPrice } from '@/lib/types';
@@ -68,6 +68,7 @@ function BookingPageContent() {
   const [isNew, setIsNew] = useState(false);
   const [learnerAvailability, setLearnerAvailability] = useState<LearnerAvailability[]>([]);
   const [sessionInstances, setSessionInstances] = useState<SessionInstance[]>([]);
+  const [copied, setCopied] = useState(false);
   
   // Booking dialog state
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
@@ -280,6 +281,14 @@ function BookingPageContent() {
     setBookingResult(null);
   }
 
+  async function handleCopyICalLink() {
+    if (!student?.id) return;
+    const icalUrl = `${window.location.origin}/api/calendar/ical/learner?studentId=${student.id}`;
+    await navigator.clipboard.writeText(icalUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 500);
+  }
+
   if (loading || loadingData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -325,10 +334,21 @@ function BookingPageContent() {
         />
 
         <Tabs defaultValue={defaultTab} key={defaultTab} className="mt-6">
-          <TabsList className="mb-6">
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="availability">My Availability</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-6">
+            <TabsList>
+              <TabsTrigger value="schedule">Schedule</TabsTrigger>
+              <TabsTrigger value="availability">My Availability</TabsTrigger>
+            </TabsList>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyICalLink}
+              className="gap-2"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+              {copied ? 'Copied' : 'Calendar Sync'}
+            </Button>
+          </div>
 
           <TabsContent value="availability">
             {student && (
