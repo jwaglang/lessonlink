@@ -58,6 +58,9 @@ interface ImportData {
 
 export default function AdminImportPage() {
   const { user } = useAuth();
+  if (!user) return null;
+  const currentUser = user;
+
   const [activeTab, setActiveTab] = useState<'learner' | 'unit'>('learner');
   const [jsonInput, setJsonInput] = useState('');
   const [parsed, setParsed] = useState<ImportData | null>(null);
@@ -160,7 +163,7 @@ export default function AdminImportPage() {
           await addDoc(collection(db, 'sessionFeedback'), {
             sessionInstanceId: `import_${session.sessionCode}`,
             studentId: studentId || `import_${parsed.learner.name.toLowerCase().replace(/\s+/g, '_')}`,
-            teacherId: user!.uid,
+            teacherId: currentUser.uid,
             courseId: parsed.course?.name || 'unknown',
             unitId: session.unitName || 'unknown',
             sessionTitle: session.sessionTitle || 'Imported Session',

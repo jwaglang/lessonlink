@@ -17,6 +17,8 @@ export default function TeacherPortalLayout({
   children: React.ReactNode;
 }) {
   const { user, loading: authLoading } = useAuth();
+  if (!user) return null;
+  const currentUser = user;
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -34,8 +36,8 @@ export default function TeacherPortalLayout({
     // Check if the user is a teacher or admin
     async function checkAuthorization() {
       try {
-        const teacherProfile = await getTeacherProfileByEmail(user!.email!);
-        const isAdmin = user!.email === ADMIN_EMAIL;
+        const teacherProfile = await getTeacherProfileByEmail(currentUser.email!);
+        const isAdmin = currentUser.email === ADMIN_EMAIL;
 
         if (teacherProfile || isAdmin) {
           setIsAuthorized(true);

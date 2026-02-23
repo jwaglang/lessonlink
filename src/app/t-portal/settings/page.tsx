@@ -80,6 +80,9 @@ const emptyProfile: Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt' | 'ema
 
 export default function ProfileEditorPage() {
   const { user, loading: authLoading } = useAuth();
+  if (!user) return null;
+  const currentUser = user;
+
   const [profile, setProfile] = useState<Omit<TeacherProfile, 'id' | 'createdAt' | 'updatedAt'>>({ ...emptyProfile, email: '' });
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,10 +108,10 @@ export default function ProfileEditorPage() {
     }
 
     async function loadProfile() {
-      let existingProfile = await getTeacherProfileByEmail(user!.email!);
+      let existingProfile = await getTeacherProfileByEmail(currentUser.email!);
 
       // Fallback for admin user to load the main teacher profile by username
-      if (!existingProfile && user!.email === ADMIN_EMAIL) {
+      if (!existingProfile && currentUser.email === ADMIN_EMAIL) {
         console.log('Admin user detected, attempting to load profile by username "teacherjon"');
         existingProfile = await getTeacherProfileByUsername('teacherjon');
       }
@@ -124,7 +127,7 @@ export default function ProfileEditorPage() {
         setSpecialtiesInput(profileData.specialties?.join(', ') || '');
         setInterestsInput(profileData.interests?.join(', ') || '');
       } else {
-        setProfile({ ...emptyProfile, email: user!.email! });
+        setProfile({ ...emptyProfile, email: currentUser.email! });
       }
       
       setLoading(false);
