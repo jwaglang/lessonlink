@@ -48,11 +48,11 @@ export default function TimeSlot({
       className={cn(
         "border-b border-r h-10 cursor-pointer transition-colors",
         isHighlighted
-          ? "bg-amber-200/50 dark:bg-amber-600/50"
+          ? "bg-amber-200 dark:bg-amber-600"
           : isBooked 
             ? "bg-purple-200/50 dark:bg-purple-800/30 cursor-not-allowed"
             : isAvailable 
-              ? "bg-green-200/50 hover:bg-green-300/50 dark:bg-green-800/30 dark:hover:bg-green-700/30"
+              ? "bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800"
               : "bg-card hover:bg-muted"
       )}
     >

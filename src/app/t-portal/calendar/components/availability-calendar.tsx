@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   addDays,
   eachDayOfInterval,
@@ -16,20 +16,59 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Availability, SessionInstance } from '@/lib/types';
 import TimeSlot from './time-slot';
-import { toggleAvailability, toggleAvailabilityBulk } from '@/lib/firestore';
+import { setAvailabilityBulk } from '@/lib/firestore';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
-// Helper functions to handle dates without timezones messing things up
 function isSameDay(d1: Date, d2: Date) {
   return d1.getFullYear() === d2.getFullYear() &&
          d1.getMonth() === d2.getMonth() &&
          d1.getDate() === d2.getDate();
 }
 
-// Helper to get date from SessionInstance (handles legacy `date` field)
 function getSessionDate(instance: SessionInstance): string {
   return (instance as any).lessonDate || (instance as any).date || '';
+}
+
+/** Get the hour index (0-23) from a time string like "09:00" */
+function hourIndex(time: string): number {
+  return parseInt(time.split(':')[0], 10);
+}
+
+/** Get the day index (0-6) within the given days array */
+function dayIndex(date: Date, days: Date[]): number {
+  return days.findIndex(d => isSameDay(d, date));
+}
+
+/**
+ * Compute column-fill rectangle selection.
+ * Every column between startCol and endCol is filled from startRow to endRow.
+ */
+function computeColumnFillSlots(
+  startDate: Date,
+  startTime: string,
+  currentDate: Date,
+  currentTime: string,
+  days: Date[]
+): Set<string> {
+  const startCol = dayIndex(startDate, days);
+  const endCol = dayIndex(currentDate, days);
+  const startRow = hourIndex(startTime);
+  const endRow = hourIndex(currentTime);
+
+  const minCol = Math.min(startCol, endCol);
+  const maxCol = Math.max(startCol, endCol);
+  const minRow = Math.min(startRow, endRow);
+  const maxRow = Math.max(startRow, endRow);
+
+  const slots = new Set<string>();
+  for (let col = minCol; col <= maxCol; col++) {
+    if (col < 0 || col >= days.length) continue;
+    for (let row = minRow; row <= maxRow; row++) {
+      slots.add(`${days[col].getTime()}-${hours[row]}`);
+    }
+  }
+  return slots;
 }
 
 interface AvailabilityCalendarProps {
@@ -46,92 +85,120 @@ export default function AvailabilityCalendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStartSlot, setDragStartSlot] = useState<{ date: Date; time: string } | null>(null);
   const [highlightedSlots, setHighlightedSlots] = useState<Set<string>>(new Set());
-  const [dragTargetAvailable, setDragTargetAvailable] = useState<boolean | null>(null);
-
-  // Handle global mouse up to end dragging
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragging) {
-        handleMouseUp();
-      }
-    };
-    
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [isDragging, highlightedSlots, dragStartSlot]);
+  
+  // Use refs for drag state to avoid stale closures in the global mouseup handler
+  const dragStartRef = useRef<{ date: Date; time: string } | null>(null);
+  const dragTargetRef = useRef<boolean>(true);
+  const highlightedRef = useRef<Set<string>>(new Set());
+  const isDraggingRef = useRef(false);
 
   const weekStart = startOfWeek(currentDate);
   const weekEnd = endOfWeek(currentDate);
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const handleSlotClick = async (date: Date, time: string) => {
-    const updatedSlot = await toggleAvailability(date, time);
-    setAvailability(prev => {
-      // use startOfDay to prevent timezone issues
-      const updatedDate = startOfDay(new Date(updatedSlot.date));
-      const existingIndex = prev.findIndex(
-        a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updatedSlot.time
-      );
-      if (existingIndex > -1) {
-        const newAvail = [...prev];
-        newAvail[existingIndex] = updatedSlot;
-        return newAvail;
-      }
-      return [...prev, updatedSlot];
-    });
-  };
+  // Keep ref in sync with state
+  useEffect(() => {
+    highlightedRef.current = highlightedSlots;
+  }, [highlightedSlots]);
 
-  // Drag handlers for bulk toggle
-  const handleMouseDown = (date: Date, time: string) => {
-    // Find current availability status of the starting slot
-    const slotKey = `${date.getTime()}-${time}`;
+  // Global mouseup handler
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingRef.current) {
+        commitDrag();
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [availability]);
+
+  // --- Drag handlers ---
+
+  const handleMouseDown = useCallback((date: Date, time: string) => {
     const availableSlot = availability.find(
       a => isSameDay(startOfDay(parseISO(a.date)), date) && a.time === time
     );
     const isCurrentlyAvailable = availableSlot?.isAvailable ?? false;
-    
+    const targetValue = !isCurrentlyAvailable;
+
+    isDraggingRef.current = true;
     setIsDragging(true);
-    setDragStartSlot({ date, time });
-    setDragTargetAvailable(!isCurrentlyAvailable);
-    setHighlightedSlots(new Set([slotKey]));
-  };
+    dragStartRef.current = { date, time };
+    dragTargetRef.current = targetValue;
 
-  const handleMouseEnter = (date: Date, time: string) => {
-    if (!isDragging) return;
-    
     const slotKey = `${date.getTime()}-${time}`;
-    setHighlightedSlots(prev => {
-      const newSet = new Set(prev);
-      newSet.add(slotKey);
-      return newSet;
+    const newSet = new Set([slotKey]);
+    setHighlightedSlots(newSet);
+    highlightedRef.current = newSet;
+  }, [availability]);
+
+  const handleMouseEnter = useCallback((date: Date, time: string) => {
+    if (!isDraggingRef.current || !dragStartRef.current) return;
+
+    // Column-fill: recompute entire rectangle from start to current
+    const newSlots = computeColumnFillSlots(
+      dragStartRef.current.date,
+      dragStartRef.current.time,
+      date,
+      time,
+      days
+    );
+    setHighlightedSlots(newSlots);
+    highlightedRef.current = newSlots;
+  }, [days]);
+
+  const commitDrag = useCallback(async () => {
+    const highlighted = highlightedRef.current;
+    const targetValue = dragTargetRef.current;
+
+    // Reset drag state immediately (responsive UI)
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    dragStartRef.current = null;
+    setHighlightedSlots(new Set());
+    highlightedRef.current = new Set();
+
+    if (highlighted.size === 0) return;
+
+    // Convert highlighted slot keys to { date, time } array
+    const slotsToSet = Array.from(highlighted).map(key => {
+      const dashIdx = key.indexOf('-');
+      const timestamp = key.substring(0, dashIdx);
+      const time = key.substring(dashIdx + 1);
+      return { date: new Date(parseInt(timestamp)), time };
     });
-  };
 
-  const handleMouseUp = async () => {
-    if (!isDragging || !dragStartSlot) {
-      setIsDragging(false);
-      setHighlightedSlots(new Set());
-      return;
-    }
-
-    // Convert highlighted slots to array of { date, time }
-    const slotsToToggle = Array.from(highlightedSlots).map(key => {
-      const [timestamp, time] = key.split('-');
-      const date = new Date(parseInt(timestamp));
-      return { date, time };
+    // OPTIMISTIC UI: update local state immediately
+    setAvailability(prev => {
+      const newAvail = [...prev];
+      for (const slot of slotsToSet) {
+        const slotDate = startOfDay(slot.date);
+        const existingIndex = newAvail.findIndex(
+          a => startOfDay(parseISO(a.date)).getTime() === slotDate.getTime() && a.time === slot.time
+        );
+        if (existingIndex > -1) {
+          newAvail[existingIndex] = { ...newAvail[existingIndex], isAvailable: targetValue };
+        } else {
+          newAvail.push({
+            id: `temp-${slot.date.getTime()}-${slot.time}`,
+            date: slotDate.toISOString(),
+            time: slot.time,
+            isAvailable: targetValue,
+          } as Availability);
+        }
+      }
+      return newAvail;
     });
 
-    if (slotsToToggle.length > 0) {
-      // Toggle all slots to the target availability
-      const updatedSlots = await toggleAvailabilityBulk(slotsToToggle);
+    // BACKGROUND: write to Firestore (single batch call)
+    try {
+      const updatedSlots = await setAvailabilityBulk(slotsToSet, targetValue);
       
-      // Update local state
+      // Replace optimistic entries with real Firestore data
       setAvailability(prev => {
         let newAvail = [...prev];
-        // Remove existing slots that were updated
-        updatedSlots.forEach(updated => {
+        for (const updated of updatedSlots) {
           const updatedDate = startOfDay(new Date(updated.date));
           const existingIndex = newAvail.findIndex(
             a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updated.time
@@ -141,16 +208,18 @@ export default function AvailabilityCalendar({
           } else {
             newAvail.push(updated);
           }
-        });
+        }
         return newAvail;
       });
+    } catch (err) {
+      console.error('Failed to save availability:', err);
     }
+  }, []);
 
-    setIsDragging(false);
-    setDragStartSlot(null);
-    setHighlightedSlots(new Set());
-    setDragTargetAvailable(null);
-  };
+  // Single click is handled by mouseDown → mouseUp with 1 slot highlighted
+  const handleSlotClick = useCallback(async (_date: Date, _time: string) => {
+    // No-op: drag handlers cover single clicks too
+  }, []);
 
   return (
     <Card>
@@ -183,7 +252,9 @@ export default function AvailabilityCalendar({
           </div>
         </div>
 
-        <div className="grid grid-cols-8 border-t text-sm">
+        <div 
+          className="grid grid-cols-8 border-t text-sm select-none"
+        >
           <div className="border-b border-r p-2 font-semibold text-center text-muted-foreground">Time</div>
           {days.map((day) => (
             <div key={day.toString()} className="border-b border-r p-2 font-semibold text-center">
@@ -194,7 +265,7 @@ export default function AvailabilityCalendar({
           
           {hours.map(hour => (
             <React.Fragment key={hour}>
-              <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs" key={`${hour}-label`}>
+              <div className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs">
                 {hour}
               </div>
               {days.map(day => {
@@ -223,7 +294,7 @@ export default function AvailabilityCalendar({
                     onDoubleClick={onSlotDoubleClick}
                     onMouseDown={handleMouseDown}
                     onMouseEnter={handleMouseEnter}
-                    onMouseUp={handleMouseUp}
+                    onMouseUp={() => {}}
                   />
                 );
               })}

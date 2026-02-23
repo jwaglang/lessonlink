@@ -35,6 +35,7 @@ import {
   limit,
   onSnapshot,
   runTransaction,
+  writeBatch,
   increment,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -912,6 +913,121 @@ export async function toggleLearnerAvailabilityBulk(
     }
   }
 
+  return results;
+}
+
+/** 
+ * Bulk SET tutor availability — uses writeBatch for single network call.
+ * Sets all slots to the given `isAvailable` value (no read-before-write needed).
+ * Used by drag-select in availability-calendar.tsx.
+ */
+export async function setAvailabilityBulk(
+  slots: { date: Date; time: string }[],
+  isAvailable: boolean
+): Promise<Availability[]> {
+  const { formatISO, startOfDay: sodFn } = await import('date-fns');
+  const batch = writeBatch(db);
+  const results: Availability[] = [];
+
+  for (const slot of slots) {
+    const dateISO = formatISO(sodFn(slot.date));
+
+    const q = query(
+      availabilityCollection,
+      where('date', '==', dateISO),
+      where('time', '==', slot.time),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const existingDoc = snapshot.docs[0];
+      batch.update(doc(db, 'availability', existingDoc.id), {
+        isAvailable,
+        updatedAt: Timestamp.now(),
+      });
+      results.push({
+        id: existingDoc.id,
+        ...existingDoc.data(),
+        isAvailable,
+      } as Availability);
+    } else {
+      const newRef = doc(availabilityCollection);
+      const newData = {
+        date: dateISO,
+        time: slot.time,
+        isAvailable,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+      batch.set(newRef, newData);
+      results.push({
+        id: newRef.id,
+        ...newData,
+      } as Availability);
+    }
+  }
+
+  await batch.commit();
+  return results;
+}
+
+/** 
+ * Bulk SET learner availability — uses writeBatch for single network call.
+ * Sets all slots to the given `isAvailable` value (no read-before-write needed).
+ * Used by drag-select in learner-availability-calendar.tsx.
+ */
+export async function setLearnerAvailabilityBulk(
+  studentId: string,
+  slots: { date: Date; time: string }[],
+  isAvailable: boolean
+): Promise<LearnerAvailability[]> {
+  const { formatISO, startOfDay: sodFn } = await import('date-fns');
+  const batch = writeBatch(db);
+  const results: LearnerAvailability[] = [];
+
+  for (const slot of slots) {
+    const dateISO = formatISO(sodFn(slot.date));
+
+    const q = query(
+      learnerAvailabilityCollection,
+      where('studentId', '==', studentId),
+      where('date', '==', dateISO),
+      where('time', '==', slot.time),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const existingDoc = snapshot.docs[0];
+      batch.update(doc(db, 'learnerAvailability', existingDoc.id), {
+        isAvailable,
+        updatedAt: Timestamp.now(),
+      });
+      results.push({
+        id: existingDoc.id,
+        ...existingDoc.data(),
+        isAvailable,
+      } as LearnerAvailability);
+    } else {
+      const newRef = doc(learnerAvailabilityCollection);
+      const newData = {
+        studentId,
+        date: dateISO,
+        time: slot.time,
+        isAvailable,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+      batch.set(newRef, newData);
+      results.push({
+        id: newRef.id,
+        ...newData,
+      } as LearnerAvailability);
+    }
+  }
+
+  await batch.commit();
   return results;
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   addDays,
   eachDayOfInterval,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LearnerAvailability, SessionInstance } from '@/lib/types';
-import { toggleLearnerAvailability, toggleLearnerAvailabilityBulk } from '@/lib/firestore';
+import { setLearnerAvailabilityBulk } from '@/lib/firestore';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
@@ -29,6 +29,47 @@ function isSameDay(d1: Date, d2: Date) {
 
 function getSessionDate(instance: SessionInstance): string {
   return (instance as any).lessonDate || (instance as any).date || '';
+}
+
+/** Get the hour index (0-23) from a time string like "09:00" */
+function hourIndex(time: string): number {
+  return parseInt(time.split(':')[0], 10);
+}
+
+/** Get the day index (0-6) within the given days array */
+function dayIndex(date: Date, days: Date[]): number {
+  return days.findIndex(d => isSameDay(d, date));
+}
+
+/**
+ * Compute column-fill rectangle selection.
+ * Every column between startCol and endCol is filled from startRow to endRow.
+ */
+function computeColumnFillSlots(
+  startDate: Date,
+  startTime: string,
+  currentDate: Date,
+  currentTime: string,
+  days: Date[]
+): Set<string> {
+  const startCol = dayIndex(startDate, days);
+  const endCol = dayIndex(currentDate, days);
+  const startRow = hourIndex(startTime);
+  const endRow = hourIndex(currentTime);
+
+  const minCol = Math.min(startCol, endCol);
+  const maxCol = Math.max(startCol, endCol);
+  const minRow = Math.min(startRow, endRow);
+  const maxRow = Math.max(startRow, endRow);
+
+  const slots = new Set<string>();
+  for (let col = minCol; col <= maxCol; col++) {
+    if (col < 0 || col >= days.length) continue;
+    for (let row = minRow; row <= maxRow; row++) {
+      slots.add(`${days[col].getTime()}-${hours[row]}`);
+    }
+  }
+  return slots;
 }
 
 interface LearnerAvailabilityCalendarProps {
@@ -45,109 +86,137 @@ export default function LearnerAvailabilityCalendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStartSlot, setDragStartSlot] = useState<{ date: Date; time: string } | null>(null);
   const [highlightedSlots, setHighlightedSlots] = useState<Set<string>>(new Set());
-  const [dragTargetAvailable, setDragTargetAvailable] = useState<boolean | null>(null);
+
+  // Use refs for drag state to avoid stale closures in the global mouseup handler
+  const dragStartRef = useRef<{ date: Date; time: string } | null>(null);
+  const dragTargetRef = useRef<boolean>(true);
+  const highlightedRef = useRef<Set<string>>(new Set());
+  const isDraggingRef = useRef(false);
 
   const weekStart = startOfWeek(currentDate);
   const weekEnd = endOfWeek(currentDate);
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const handleSlotClick = async (date: Date, time: string) => {
-    const updatedSlot = await toggleLearnerAvailability(studentId, date, time);
-    setAvailability((prev) => {
-      const updatedDate = startOfDay(new Date(updatedSlot.date));
-      const existingIndex = prev.findIndex(
-        (a) =>
-          startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() &&
-          a.time === updatedSlot.time
-      );
-      if (existingIndex > -1) {
-        const next = [...prev];
-        next[existingIndex] = updatedSlot;
-        return next;
-      }
-      return [...prev, updatedSlot];
-    });
-  };
+  // Keep ref in sync with state
+  useEffect(() => {
+    highlightedRef.current = highlightedSlots;
+  }, [highlightedSlots]);
 
-  // Drag handlers for bulk toggle
-  const handleMouseDown = (date: Date, time: string) => {
-    const slotKey = `${date.getTime()}-${time}`; // Use timestamp to avoid hyphen issues
+  // Global mouseup handler
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDraggingRef.current) {
+        commitDrag();
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [availability, studentId]);
+
+  // --- Drag handlers ---
+
+  const handleMouseDown = useCallback((date: Date, time: string) => {
     const availableSlot = availability.find(
       (a) => isSameDay(startOfDay(parseISO(a.date)), date) && a.time === time
     );
     const isCurrentlyAvailable = availableSlot?.isAvailable ?? false;
+    const targetValue = !isCurrentlyAvailable;
 
+    isDraggingRef.current = true;
     setIsDragging(true);
-    setDragStartSlot({ date, time });
-    setDragTargetAvailable(!isCurrentlyAvailable);
-    setHighlightedSlots(new Set([slotKey]));
-  };
-
-  const handleMouseEnter = (date: Date, time: string) => {
-    if (!isDragging) return;
+    dragStartRef.current = { date, time };
+    dragTargetRef.current = targetValue;
 
     const slotKey = `${date.getTime()}-${time}`;
-    setHighlightedSlots((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(slotKey);
-      return newSet;
+    const newSet = new Set([slotKey]);
+    setHighlightedSlots(newSet);
+    highlightedRef.current = newSet;
+  }, [availability]);
+
+  const handleMouseEnter = useCallback((date: Date, time: string) => {
+    if (!isDraggingRef.current || !dragStartRef.current) return;
+
+    // Column-fill: recompute entire rectangle from start to current
+    const newSlots = computeColumnFillSlots(
+      dragStartRef.current.date,
+      dragStartRef.current.time,
+      date,
+      time,
+      days
+    );
+    setHighlightedSlots(newSlots);
+    highlightedRef.current = newSlots;
+  }, [days]);
+
+  const commitDrag = useCallback(async () => {
+    const highlighted = highlightedRef.current;
+    const targetValue = dragTargetRef.current;
+
+    // Reset drag state immediately (responsive UI)
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    dragStartRef.current = null;
+    setHighlightedSlots(new Set());
+    highlightedRef.current = new Set();
+
+    if (highlighted.size === 0) return;
+
+    // Convert highlighted slot keys to { date, time } array
+    const slotsToSet = Array.from(highlighted).map(key => {
+      const dashIdx = key.indexOf('-');
+      const timestamp = key.substring(0, dashIdx);
+      const time = key.substring(dashIdx + 1);
+      return { date: new Date(parseInt(timestamp)), time };
     });
-  };
 
-  const handleMouseUp = async () => {
-    if (!isDragging || !dragStartSlot) {
-      setIsDragging(false);
-      setHighlightedSlots(new Set());
-      return;
-    }
-
-    const slotsToToggle = Array.from(highlightedSlots).map((key) => {
-      const [timestamp, time] = key.split('-');
-      const date = new Date(parseInt(timestamp));
-      return { date, time };
+    // OPTIMISTIC UI: update local state immediately
+    setAvailability(prev => {
+      const newAvail = [...prev];
+      for (const slot of slotsToSet) {
+        const slotDate = startOfDay(slot.date);
+        const existingIndex = newAvail.findIndex(
+          a => startOfDay(parseISO(a.date)).getTime() === slotDate.getTime() && a.time === slot.time
+        );
+        if (existingIndex > -1) {
+          newAvail[existingIndex] = { ...newAvail[existingIndex], isAvailable: targetValue };
+        } else {
+          newAvail.push({
+            id: `temp-${slot.date.getTime()}-${slot.time}`,
+            studentId,
+            date: slotDate.toISOString(),
+            time: slot.time,
+            isAvailable: targetValue,
+          } as LearnerAvailability);
+        }
+      }
+      return newAvail;
     });
 
-    if (slotsToToggle.length > 0) {
-      const updatedSlots = await toggleLearnerAvailabilityBulk(studentId, slotsToToggle);
+    // BACKGROUND: write to Firestore (single batch call)
+    try {
+      const updatedSlots = await setLearnerAvailabilityBulk(studentId, slotsToSet, targetValue);
 
-      setAvailability((prev) => {
-        let next = [...prev];
-        updatedSlots.forEach((updated) => {
+      // Replace optimistic entries with real Firestore data
+      setAvailability(prev => {
+        let newAvail = [...prev];
+        for (const updated of updatedSlots) {
           const updatedDate = startOfDay(new Date(updated.date));
-          const existingIndex = next.findIndex(
-            (a) =>
-              startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() &&
-              a.time === updated.time
+          const existingIndex = newAvail.findIndex(
+            a => startOfDay(new Date(a.date)).getTime() === updatedDate.getTime() && a.time === updated.time
           );
           if (existingIndex > -1) {
-            next[existingIndex] = updated;
+            newAvail[existingIndex] = updated;
           } else {
-            next.push(updated);
+            newAvail.push(updated);
           }
-        });
-        return next;
+        }
+        return newAvail;
       });
+    } catch (err) {
+      console.error('Failed to save learner availability:', err);
     }
-
-    setIsDragging(false);
-    setDragStartSlot(null);
-    setHighlightedSlots(new Set());
-    setDragTargetAvailable(null);
-  };
-
-  // Handle global mouse up to end dragging
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragging) {
-        handleMouseUp();
-      }
-    };
-
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [isDragging, highlightedSlots, dragStartSlot, studentId]);
+  }, [studentId]);
 
   return (
     <Card>
@@ -178,10 +247,10 @@ export default function LearnerAvailabilityCalendar({
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">
-          Click a time slot to mark when you're available. Tutors can use this to find times that work for both of you.
+          Click a time slot to mark when you&apos;re available. Tutors can use this to find times that work for both of you.
         </p>
 
-        <div className="grid grid-cols-8 border-t text-sm">
+        <div className="grid grid-cols-8 border-t text-sm select-none">
           <div className="border-b border-r p-2 font-semibold text-center text-muted-foreground">
             Time
           </div>
@@ -199,7 +268,6 @@ export default function LearnerAvailabilityCalendar({
             <React.Fragment key={hour}>
               <div
                 className="border-b border-r p-2 text-center text-muted-foreground font-mono text-xs"
-                key={`${hour}-label`}
               >
                 {hour}
               </div>
@@ -235,9 +303,6 @@ export default function LearnerAvailabilityCalendar({
                         ? 'bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800'
                         : 'hover:bg-muted/50'
                     }`}
-                    onClick={() => {
-                      if (!isBooked) handleSlotClick(day, hour);
-                    }}
                     onMouseDown={() => {
                       if (!isBooked) handleMouseDown(day, hour);
                     }}
@@ -245,7 +310,7 @@ export default function LearnerAvailabilityCalendar({
                       if (!isBooked) handleMouseEnter(day, hour);
                     }}
                     onMouseUp={() => {
-                      handleMouseUp();
+                      // handled by global mouseup
                     }}
                     title={
                       isBooked
