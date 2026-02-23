@@ -34,8 +34,8 @@ export default function TeacherPortalLayout({
     // Check if the user is a teacher or admin
     async function checkAuthorization() {
       try {
-        const teacherProfile = await getTeacherProfileByEmail(user.email!);
-        const isAdmin = user.email === ADMIN_EMAIL;
+        const teacherProfile = await getTeacherProfileByEmail(user!.email!);
+        const isAdmin = user!.email === ADMIN_EMAIL;
 
         if (teacherProfile || isAdmin) {
           setIsAuthorized(true);

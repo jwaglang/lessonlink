@@ -160,7 +160,7 @@ export default function AdminImportPage() {
           await addDoc(collection(db, 'sessionFeedback'), {
             sessionInstanceId: `import_${session.sessionCode}`,
             studentId: studentId || `import_${parsed.learner.name.toLowerCase().replace(/\s+/g, '_')}`,
-            teacherId: user.uid,
+            teacherId: user!.uid,
             courseId: parsed.course?.name || 'unknown',
             unitId: session.unitName || 'unknown',
             sessionTitle: session.sessionTitle || 'Imported Session',
@@ -188,7 +188,7 @@ export default function AdminImportPage() {
       for (const payment of parsed.payments) {
         await addDoc(collection(db, 'importedPayments'), {
           studentId: studentId || `import_${parsed.learner.name.toLowerCase().replace(/\s+/g, '_')}`,
-          teacherId: user.uid,
+          teacherId: user!.uid,
           package: payment.package,
           type: payment.type,
           details: payment.details,
