@@ -85,6 +85,7 @@ export default function LearnerAvailabilityCalendar({
 }: LearnerAvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
+  useEffect(() => { setAvailability(initialAvailability); }, [initialAvailability]);
   const [isDragging, setIsDragging] = useState(false);
   const [highlightedSlots, setHighlightedSlots] = useState<Set<string>>(new Set());
 

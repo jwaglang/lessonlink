@@ -57,6 +57,10 @@ service cloud.firestore {
       allow write: if isAdmin() || isTeacher();
     }
 
+    match /scheduleTemplates/{docId} {
+    allow read, write: if request.auth != null;
+    }
+
     // ===================================
     // SESSION INSTANCES (booked classes)
     // studentId = Auth UID (v7 convention)
