@@ -64,6 +64,7 @@ import type {
   AssessmentReport,
   OutputCitation,
   SessionFeedback,
+  ScheduleTemplate,
 } from './types';
 
 // ===================================
@@ -91,6 +92,7 @@ export type {
   Payment,
   AssessmentReport,
   OutputCitation,
+  ScheduleTemplate,
 };
 
 // ===================================
@@ -1788,4 +1790,38 @@ export async function updateSessionFeedback(id: string, data: Partial<SessionFee
     ...data,
     updatedAt: nowIso(),
   } as any);
+}
+
+// =========================================
+// Schedule Templates (Calendar Feature 3)
+// =========================================
+
+const scheduleTemplatesCollection = collection(db, 'scheduleTemplates');
+
+export async function createScheduleTemplate(template: Omit<ScheduleTemplate, 'id'>): Promise<ScheduleTemplate> {
+  const ref = await addDoc(scheduleTemplatesCollection, {
+    ...template,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  });
+  const snap = await getDoc(ref);
+  return asId<ScheduleTemplate>(snap.id, snap.data());
+}
+
+export async function getScheduleTemplatesByOwner(ownerId: string): Promise<ScheduleTemplate[]> {
+  const q = query(
+    scheduleTemplatesCollection,
+    where('ownerId', '==', ownerId),
+    orderBy('updatedAt', 'desc')
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => asId<ScheduleTemplate>(d.id, d.data()));
+}
+
+export async function updateScheduleTemplate(id: string, updates: Partial<ScheduleTemplate>): Promise<void> {
+  await updateDoc(doc(db, 'scheduleTemplates', id), { ...updates, updatedAt: nowIso() } as any);
+}
+
+export async function deleteScheduleTemplate(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'scheduleTemplates', id));
 }

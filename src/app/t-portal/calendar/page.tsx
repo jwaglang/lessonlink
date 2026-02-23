@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import ScheduleTemplateModal from '@/components/schedule-template-modal';
 import PageHeader from "@/components/page-header";
 import WeeklyCalendar from "./components/weekly-calendar";
 import { 
@@ -17,7 +18,7 @@ import BookSessionForm from './components/book-session-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AvailabilityCalendar from './components/availability-calendar';
 import { useAuth } from '@/components/auth-provider';
-import { Calendar, Copy, Check } from 'lucide-react';
+import { Calendar, Copy, Check, CalendarPlus } from 'lucide-react';
 
 export default function CalendarPage() {
     const { user } = useAuth();
@@ -34,6 +35,7 @@ export default function CalendarPage() {
     const [selectedSlot, setSelectedSlot] = useState<{ date: Date; time: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -108,6 +110,15 @@ export default function CalendarPage() {
                     <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setTemplateModalOpen(true)}
+                        className="gap-2"
+                    >
+                        <CalendarPlus className="h-4 w-4" />
+                        Schedule Template
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={handleCopyICalLink}
                         className="gap-2"
                     >
@@ -148,6 +159,17 @@ export default function CalendarPage() {
                     )}
                 </DialogContent>
             </Dialog>
+            {user?.uid && (
+                <ScheduleTemplateModal
+                    open={templateModalOpen}
+                    onOpenChange={setTemplateModalOpen}
+                    ownerId={user.uid}
+                    ownerType="teacher"
+                    onApplied={() => {
+                        getAvailability().then(setAvailability);
+                    }}
+                />
+            )}
         </div>
     );
 }

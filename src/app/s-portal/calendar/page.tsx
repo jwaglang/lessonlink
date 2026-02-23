@@ -37,13 +37,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { GraduationCap, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Users, Calendar, Check } from 'lucide-react';
+import { GraduationCap, ChevronLeft, ChevronRight, Clock, ArrowLeft, AlertCircle, CheckCircle, Users, Calendar, Check, CalendarPlus } from 'lucide-react';
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isFuture, startOfDay } from 'date-fns';
 import type { Availability, Course, Student } from '@/lib/types';
 import { calculateLessonPrice } from '@/lib/types';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
 import Loading from '@/app/loading';
+import ScheduleTemplateModal from '@/components/schedule-template-modal';
 
 
 function BookingPageContent() {
@@ -69,6 +70,7 @@ function BookingPageContent() {
   const [learnerAvailability, setLearnerAvailability] = useState<LearnerAvailability[]>([]);
   const [sessionInstances, setSessionInstances] = useState<SessionInstance[]>([]);
   const [copied, setCopied] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
   
   // Booking dialog state
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
@@ -342,6 +344,15 @@ function BookingPageContent() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setTemplateModalOpen(true)}
+              className="gap-2"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              Schedule Template
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleCopyICalLink}
               className="gap-2"
             >
@@ -560,6 +571,17 @@ function BookingPageContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {student && (
+        <ScheduleTemplateModal
+          open={templateModalOpen}
+          onOpenChange={setTemplateModalOpen}
+          ownerId={student.id}
+          ownerType="learner"
+          onApplied={() => {
+            getLearnerAvailability(student.id).then(setLearnerAvailability);
+          }}
+        />
+      )}
     </div>
   );
 }

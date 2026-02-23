@@ -596,3 +596,17 @@ export interface SessionFeedback {
   createdAt: string;
   updatedAt: string;
 }
+
+// =========================================
+// Schedule Templates (Calendar Feature 3)
+// =========================================
+
+export interface ScheduleTemplate {
+  id: string;
+  ownerId: string;
+  ownerType: 'teacher' | 'learner';
+  name: string;
+  slots: { day: number; time: string }[];
+  createdAt: string;
+  updatedAt: string;
+}
