@@ -151,11 +151,11 @@ export default function LandingPage() {
         avatarUrl: '',
         status: 'trial',
         isNewStudent: true,
-        birthday: signupBirthday || null,
-        gender: resolvedGender || null,
-        messagingContacts: cleanedMessaging.length > 0 ? cleanedMessaging : null,
-        primaryContact: signupPrimary.name ? signupPrimary : null,
-        secondaryContact: signupSecondary.name ? signupSecondary : null,
+        birthday: signupBirthday ?? undefined,
+        gender: resolvedGender ?? undefined,
+        messagingContacts: cleanedMessaging.length > 0 ? cleanedMessaging ?? undefined : undefined,
+        primaryContact: signupPrimary.name ? signupPrimary ?? undefined : undefined,
+        secondaryContact: signupSecondary.name ? signupSecondary ?? undefined : undefined,
       });
 
       router.push('/s-portal');

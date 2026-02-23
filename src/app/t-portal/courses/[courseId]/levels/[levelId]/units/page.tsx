@@ -143,8 +143,11 @@ export default function UnitsPage() {
                 uncommittedHours: hours,
                 committedHours: 0,
                 completedHours: 0,
-                totalPurchasedHours: hours,
+                packageId: '',
+                totalHours: hours,
                 currency: 'EUR',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             });
             
             // Refresh credit info
@@ -190,7 +193,15 @@ export default function UnitsPage() {
                 courseId: courseId,
                 hoursReserved: assigningUnit.estimatedHours,
                 sessionsTotal: sessions.length || 4,
-                status: 'assigned'
+                status: 'assigned',
+                totalHoursCompleted: 0,
+                targetHours: assigningUnit.estimatedHours,
+                percentComplete: 0,
+                unitsCompleted: 0,
+                sessionsCompleted: 0,
+                unitsTotal: 1,
+                lastActivityAt: new Date().toISOString(),
+                startedAt: new Date().toISOString(),
             });
             
             // Send notification to learner
@@ -205,7 +216,10 @@ export default function UnitsPage() {
                     type: 'unit',
                     id: assigningUnit.id
                 },
-                actionLink: '/s-portal/units'
+                actionLink: '/s-portal/units',
+                createdAt: new Date().toISOString(),
+                fromType: 'system',
+                toType: 'student',
             });
             
             toast({ 
@@ -332,6 +346,7 @@ export default function UnitsPage() {
                         <DialogTitle>{selectedUnit ? 'Edit' : 'Add'} Unit</DialogTitle>
                     </DialogHeader>
                     <UnitForm 
+                        courseId={courseId}
                         levelId={levelId}
                         unit={selectedUnit}
                         onSuccess={handleFormSuccess}

@@ -146,7 +146,7 @@ export default function ProfileEditorPage() {
       const available = await isUsernameAvailable(profile.username);
       
       if (profileId) {
-        const existingProfile = await getTeacherProfileById(profileId);
+        const existingProfile = await getTeacherProfileByEmail(user.email!);
         if (existingProfile?.username === profile.username) {
           setUsernameStatus('available');
           return;
@@ -242,6 +242,8 @@ export default function ProfileEditorPage() {
       otherLanguages: parseArrayInput(languagesInput),
       specialties: parseArrayInput(specialtiesInput),
       interests: parseArrayInput(interestsInput),
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     try {

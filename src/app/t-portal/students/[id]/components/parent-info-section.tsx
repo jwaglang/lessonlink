@@ -54,8 +54,8 @@ export default function ParentInfoSection({ student, studentId, isAdmin, onStude
     setSaving(true);
     try {
       const updates: Partial<Student> = {
-        primaryContact: primary.name ? primary : null,
-        secondaryContact: secondary.name ? secondary : null,
+        primaryContact: primary.name ? primary ?? undefined : undefined,
+        secondaryContact: secondary.name ? secondary ?? undefined : undefined,
       };
       const updated = await updateStudent(studentId, updates);
       onStudentUpdate?.(updated);

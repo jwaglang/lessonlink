@@ -1,6 +1,7 @@
 // ========================================
 // LessonLink AI Provider Abstraction
 // Multi-provider support: MiniMax, Claude, DeepSeek, Kimi
+// Failover: if primary fails, tries next in chain
 // ========================================
 
 export interface AiMessage {
@@ -17,6 +18,7 @@ export interface AiResponse {
     completionTokens?: number;
     totalTokens?: number;
   };
+  failoverAttempts?: number;
 }
 
 export interface ProviderConfig {
@@ -68,15 +70,24 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 };
 
 // ========================================
-// Task-to-Provider Mapping
-// Change these to switch which AI handles what
+// Task-to-Provider Failover Chains
+// Each task has an ordered list: try first, then fallback
+// Only providers with a valid API key in env will be attempted
 // ========================================
 
+export const TASK_FAILOVER: Record<string, string[]> = {
+  assessment_analysis: ['deepseek', 'minimax', 'claude'],
+  parent_report: ['deepseek', 'minimax', 'claude'],
+  translation: ['deepseek', 'minimax', 'kimi'],
+  session_feedback: ['deepseek', 'minimax', 'claude'],
+};
+
+// Legacy mapping (kept for reference, failover chains take priority)
 export const TASK_PROVIDERS: Record<string, string> = {
-  assessment_analysis: 'minimax',
-  parent_report: 'minimax',
+  assessment_analysis: 'deepseek',
+  parent_report: 'deepseek',
   translation: 'deepseek',
-  session_feedback: 'minimax',  // Phase 16
+  session_feedback: 'deepseek',
 };
 
 // ========================================
@@ -132,7 +143,6 @@ async function callClaude(config: ProviderConfig, messages: AiMessage[]): Promis
   const apiKey = process.env[config.apiKeyEnvVar];
   if (!apiKey) throw new Error(`Missing env var: ${config.apiKeyEnvVar}`);
 
-  // Claude API uses a different format: system prompt is separate
   const systemMessage = messages.find((m) => m.role === 'system');
   const nonSystemMessages = messages.filter((m) => m.role !== 'system');
 
@@ -179,7 +189,6 @@ async function callClaude(config: ProviderConfig, messages: AiMessage[]): Promis
 }
 
 async function callOpenAiCompatible(config: ProviderConfig, messages: AiMessage[]): Promise<AiResponse> {
-  // DeepSeek and Kimi both use OpenAI-compatible endpoints
   const apiKey = process.env[config.apiKeyEnvVar];
   if (!apiKey) throw new Error(`Missing env var: ${config.apiKeyEnvVar}`);
 
@@ -224,21 +233,10 @@ async function callOpenAiCompatible(config: ProviderConfig, messages: AiMessage[
 }
 
 // ========================================
-// Main Entry Point
+// Single Provider Call (used by failover)
 // ========================================
 
-export async function callAiProvider(
-  taskOrProvider: string,
-  messages: AiMessage[]
-): Promise<AiResponse> {
-  // Resolve task name to provider, or use directly if it's a provider name
-  const providerName = TASK_PROVIDERS[taskOrProvider] ?? taskOrProvider;
-  const config = PROVIDERS[providerName];
-
-  if (!config) {
-    throw new Error(`Unknown AI provider: ${providerName}`);
-  }
-
+function callSingleProvider(config: ProviderConfig, messages: AiMessage[]): Promise<AiResponse> {
   switch (config.provider) {
     case 'minimax':
       return callMinimax(config, messages);
@@ -250,4 +248,61 @@ export async function callAiProvider(
     default:
       throw new Error(`No handler for provider: ${config.provider}`);
   }
+}
+
+// ========================================
+// Main Entry Point (with failover)
+// ========================================
+
+export async function callAiProvider(
+  taskOrProvider: string,
+  messages: AiMessage[]
+): Promise<AiResponse> {
+  // Get the failover chain for this task
+  const chain = TASK_FAILOVER[taskOrProvider];
+
+  if (chain) {
+    // Filter to providers that have an API key set
+    const availableChain = chain.filter((p) => {
+      const config = PROVIDERS[p];
+      return config && process.env[config.apiKeyEnvVar];
+    });
+
+    if (availableChain.length === 0) {
+      throw new Error(`No AI providers available for task "${taskOrProvider}". Check your API keys.`);
+    }
+
+    const errors: string[] = [];
+
+    for (let i = 0; i < availableChain.length; i++) {
+      const providerName = availableChain[i];
+      const config = PROVIDERS[providerName];
+
+      try {
+        console.log(`[AI] Trying ${providerName} for "${taskOrProvider}"${i > 0 ? ` (failover attempt ${i})` : ''}`);
+        const result = await callSingleProvider(config, messages);
+        if (i > 0) {
+          console.log(`[AI] Failover succeeded: ${providerName} handled "${taskOrProvider}" after ${i} failed attempt(s)`);
+        }
+        return { ...result, failoverAttempts: i };
+      } catch (err: any) {
+        const errMsg = err.message || String(err);
+        errors.push(`${providerName}: ${errMsg}`);
+        console.warn(`[AI] ${providerName} failed for "${taskOrProvider}": ${errMsg}`);
+
+        // If this was the last provider, throw with all errors
+        if (i === availableChain.length - 1) {
+          throw new Error(`All AI providers failed for "${taskOrProvider}":\n${errors.join('\n')}`);
+        }
+        // Otherwise continue to next provider
+      }
+    }
+  }
+
+  // Fallback: direct provider name (not a task)
+  const config = PROVIDERS[taskOrProvider];
+  if (!config) {
+    throw new Error(`Unknown AI provider or task: ${taskOrProvider}`);
+  }
+  return callSingleProvider(config, messages);
 }

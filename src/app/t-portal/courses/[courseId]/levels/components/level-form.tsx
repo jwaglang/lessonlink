@@ -33,6 +33,9 @@ export default function LevelForm({ courseId, level, onSuccess }: LevelFormProps
                 description,
                 order: Number(order),
                 targetHours: Number(targetHours),
+                updatedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                gseRange: '',
             };
 
             if (level?.id) {

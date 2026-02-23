@@ -58,11 +58,11 @@ export default function LearnerInfoSection({ student, studentId, isAdmin, onStud
       const updates: Partial<Student> = {
         name,
         email,
-        birthday: birthday || null,
-        gender: resolvedGender || null,
-        school: school || null,
-        dragonLevel: (dragonLevel as Student['dragonLevel']) || null,
-        messagingContacts: cleanedContacts.length > 0 ? cleanedContacts : null,
+        birthday: birthday ?? undefined,
+        gender: resolvedGender ?? undefined,
+        school: school ?? undefined,
+        dragonLevel: (dragonLevel as Student['dragonLevel']) ?? undefined,
+        messagingContacts: cleanedContacts.length > 0 ? cleanedContacts ?? undefined : undefined,
       };
       const updated = await updateStudent(studentId, updates);
       onStudentUpdate?.(updated);

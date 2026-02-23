@@ -25,6 +25,7 @@ import { format, parseISO } from 'date-fns';
 import type { ApprovalRequest, ApprovalRequestType } from '@/lib/types';
 
 const requestTypeLabels: Record<ApprovalRequestType, string> = {
+  approvalRequest: 'Approval Request',
   new_student_booking: 'New Student',
   late_reschedule: 'Late Reschedule',
   late_cancel: 'Late Cancel',
@@ -33,6 +34,7 @@ const requestTypeLabels: Record<ApprovalRequestType, string> = {
 };
 
 const requestTypeIcons: Record<ApprovalRequestType, React.ReactNode> = {
+  approvalRequest: <Clock className="h-4 w-4" />,
   new_student_booking: <UserPlus className="h-4 w-4" />,
   late_reschedule: <CalendarClock className="h-4 w-4" />,
   late_cancel: <CalendarX className="h-4 w-4" />,

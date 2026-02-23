@@ -213,7 +213,11 @@ export async function seedTeacherJonProfile(): Promise<TeacherProfile> {
     return updated;
   } else {
     console.log('Creating new profile...');
-    const created = await createTeacherProfile(teacherJonProfile);
+    const created = await createTeacherProfile({
+        ...teacherJonProfile,
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+    });
     console.log('Profile created!');
     return created;
   }

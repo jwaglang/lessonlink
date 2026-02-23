@@ -64,6 +64,8 @@ export default function CourseForm({ course, onSuccess }: CourseFormProps) {
                     ...values,
                     thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
                     imageUrl: newHeroUrl,
+                    description: values.description ?? '',
+                    pitch: values.pitch ?? '',
                 };
 
                 let savedCourse;

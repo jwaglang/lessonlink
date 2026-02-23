@@ -10,12 +10,14 @@ import { addSession, updateSession } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface SessionFormProps {
+    courseId: string;
+    levelId: string;
     unitId: string;
     session?: any;
     onSuccess: () => void;
 }
 
-export default function SessionForm({ unitId, session, onSuccess }: SessionFormProps) {
+export default function SessionForm({ courseId, levelId, unitId, session, onSuccess }: SessionFormProps) {
     const [title, setTitle] = useState(session?.title || '');
     const [littleQuestion, setLittleQuestion] = useState(session?.littleQuestion || '');
     const [description, setDescription] = useState(session?.description || '');
@@ -32,14 +34,16 @@ export default function SessionForm({ unitId, session, onSuccess }: SessionFormP
 
         try {
             const sessionData = {
-                unitId: unitId,
+                courseId,
+                levelId,
+                unitId,
                 title,
                 littleQuestion,
                 description,
                 order: Number(order),
                 duration: Number(duration),
                 thumbnailUrl,
-                materials: materials.split(',').map(m => m.trim()).filter(Boolean),
+                materials: materials.split(',').map((m: string) => m.trim()).filter(Boolean),
                 homeworkId: session?.homeworkId || null,
             };
 

@@ -55,7 +55,6 @@ export default function WeeklyCalendar({
 // Session feedback state
 const [feedbackSessionId, setFeedbackSessionId] = useState<string | null>(null);
 const [feedbackNotes, setFeedbackNotes] = useState('');
-const [feedbackProvider, setFeedbackProvider] = useState<string>('minimax');
 const [generatingFeedback, setGeneratingFeedback] = useState(false);
 const [feedbackResult, setFeedbackResult] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
 const [editedFeedback, setEditedFeedback] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
@@ -119,7 +118,6 @@ async function handleGenerateFeedback() {
         sessionTitle: selectedSession.title || 'Untitled Session',
         sessionDate: getSessionDate(selectedSession) || '',
         teacherNotes: feedbackNotes,
-        provider: feedbackProvider,
       }),
     });
     const data = await res.json();
@@ -227,6 +225,41 @@ function resetFeedbackState() {
   setFeedbackSaved(false);
   setFeedbackDocId(null);
 }
+// Load existing feedback when opening a completed session
+React.useEffect(() => {
+  if (!selectedSession || selectedSession.status !== 'completed') return;
+  
+  let cancelled = false;
+  
+  async function loadExistingFeedback() {
+    try {
+      const existing = await getSessionFeedbackByInstance(selectedSession!.id);
+      if (cancelled || !existing) return;
+      
+      setFeedbackDocId(existing.id);
+      setFeedbackNotes(existing.teacherNotes || '');
+      setFeedbackLanguage(existing.parentReport?.language || 'en');
+      setEditedFeedback({
+        summary: existing.parentReport?.summary || '',
+        progressHighlights: existing.parentReport?.progressHighlights || '',
+        suggestedActivities: existing.parentReport?.suggestedActivities || '',
+      });
+      setFeedbackResult({
+        summary: existing.parentReport?.summary || '',
+        progressHighlights: existing.parentReport?.progressHighlights || '',
+        suggestedActivities: existing.parentReport?.suggestedActivities || '',
+      });
+      if (existing.status === 'sent') {
+        setFeedbackSaved(true);
+      }
+    } catch (err) {
+      console.error('Failed to load existing feedback:', err);
+    }
+  }
+  
+  loadExistingFeedback();
+  return () => { cancelled = true; };
+}, [selectedSession]);
 
 async function handleMarkComplete(sessionId: string) {
     if (!sessionId) return;

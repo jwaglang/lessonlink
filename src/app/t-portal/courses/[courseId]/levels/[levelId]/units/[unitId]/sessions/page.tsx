@@ -168,6 +168,8 @@ export default function SessionsPage() {
                         <DialogTitle>{selectedSession ? 'Edit' : 'Add'} Session</DialogTitle>
                     </DialogHeader>
                     <SessionForm 
+                        courseId={courseId}
+                        levelId={levelId}
                         unitId={unitId}
                         session={selectedSession}
                         onSuccess={handleFormSuccess}
