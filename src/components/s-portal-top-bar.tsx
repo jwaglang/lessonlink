@@ -118,7 +118,7 @@ export default function SPortalTopBar() {
                 className="w-full justify-start gap-3 h-auto py-3"
                 onClick={() => setTopUpDialogOpen(false)}
               >
-                <Link href={`/s-portal/t-profiles/${assignedTutor.username}/courses`}>
+                <Link href="/s-portal/top-up">
                   <GraduationCap className="h-5 w-5 flex-shrink-0" />
                   <div className="text-left">
                     <p className="font-semibold">Add credit for {assignedTutor.name}</p>

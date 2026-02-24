@@ -231,8 +231,8 @@ export interface StudentPackage {
 export interface StudentCredit {
   id: string;
   studentId: string; // Firebase Auth UID
-  courseId: string;
-  packageId: string;              // Links to studentPackages
+  courseId?: string;               // Optional — legacy course-specific credit
+  packageId?: string;              // Optional — links to studentPackages
   totalHours: number;             // Total hours purchased (e.g., 10)
   uncommittedHours: number;       // Hours available for new units
   committedHours: number;         // Hours reserved for assigned units

@@ -125,9 +125,8 @@ export default function StudentPortalPage() {
         const studentSessions = await getSessionInstancesByStudentId(studentRecord.id);
         setSessions(studentSessions);
         
-        // Fetch student credit
-        const courseId = '45Jkyfg94otjc4d22dZT'; // Hardcoded for now (Kiddoland course)
-        const credit = await getStudentCredit(studentRecord.id, courseId);
+        // Fetch student credit (course-agnostic — one pool per learner)
+        const credit = await getStudentCredit(studentRecord.id);
         setStudentCredit(credit);
         
         // Fetch reviewed lesson IDs

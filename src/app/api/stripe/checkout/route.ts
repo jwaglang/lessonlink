@@ -11,18 +11,21 @@ export async function POST(req: NextRequest) {
       duration: Duration;
       studentId: string;
       studentEmail: string;
-      courseId: string;
-      courseTitle: string;
+      courseId?: string;
+      courseTitle?: string;
     };
 
-    // Validate required fields
-    if (!packageType || !duration || !studentId || !studentEmail || !courseId || !courseTitle) {
+    // Validate required fields (courseId/courseTitle optional for Top Up)
+    if (!packageType || !duration || !studentId || !studentEmail) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const resolvedCourseId = courseId || 'top-up';
+    const resolvedCourseTitle = courseTitle || 'Top Up Credit';
+
     // Calculate price dynamically
     const priceCalc = calculatePrice(packageType, duration);
-    const productName = getProductName(courseTitle, packageType, duration);
+    const productName = getProductName(resolvedCourseTitle, packageType, duration);
 
     // Create Stripe Checkout Session with dynamic price_data
     const session = await stripe.checkout.sessions.create({
@@ -43,8 +46,8 @@ export async function POST(req: NextRequest) {
       ],
       metadata: {
         studentId,
-        courseId,
-        courseTitle,
+        courseId: resolvedCourseId,
+        courseTitle: resolvedCourseTitle,
         packageType,
         duration: String(duration),
         hours: String(priceCalc.hours),

@@ -31,10 +31,13 @@ export async function POST(req: NextRequest) {
     const session = event.data.object;
     const metadata = session.metadata;
 
-    if (!metadata?.studentId || !metadata?.courseId) {
+    if (!metadata?.studentId) {
       console.error('Webhook missing required metadata:', metadata);
       return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
     }
+
+    const resolvedCourseId = metadata.courseId || 'top-up';
+    const resolvedCourseTitle = metadata.courseTitle || 'Top Up Credit';
 
     const packageType = metadata.packageType as PackageType;
     const hours = Number(metadata.hours);
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
       // 1. Create Payment record
       await adminDb.collection('payments').add({
         studentId: metadata.studentId,
-        courseId: metadata.courseId,
+        courseId: resolvedCourseId,
         amount: amountTotal,
         currency,
         type: packageType === 'single' ? 'one_off' : 'package',
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
         stripePaymentIntentId: typeof session.payment_intent === 'string'
           ? session.payment_intent
           : session.payment_intent?.id ?? '',
-        notes: `${metadata.courseTitle} — ${packageType} (${metadata.duration}min)`,
+        notes: `${resolvedCourseTitle} — ${packageType} (${metadata.duration}min)`,
       });
 
       // 2. Create StudentPackage record
@@ -68,8 +71,8 @@ export async function POST(req: NextRequest) {
 
       const packageRef = await adminDb.collection('studentPackages').add({
         studentId: metadata.studentId,
-        courseId: metadata.courseId,
-        courseTitle: metadata.courseTitle,
+        courseId: resolvedCourseId,
+        courseTitle: resolvedCourseTitle,
         totalHours: hours,
         hoursRemaining: hours,
         price: amountTotal,
@@ -82,10 +85,9 @@ export async function POST(req: NextRequest) {
         status: 'active',
       });
 
-      // 3. Create or update StudentCredit
+      // 3. Create or update StudentCredit (course-agnostic — one pool per learner)
       const creditQuery = await adminDb.collection('studentCredit')
         .where('studentId', '==', metadata.studentId)
-        .where('courseId', '==', metadata.courseId)
         .limit(1)
         .get();
 
@@ -100,7 +102,6 @@ export async function POST(req: NextRequest) {
       } else {
         await adminDb.collection('studentCredit').add({
           studentId: metadata.studentId,
-          courseId: metadata.courseId,
           packageId: packageRef.id,
           totalHours: hours,
           uncommittedHours: hours,

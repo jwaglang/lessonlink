@@ -590,12 +590,11 @@ export async function completeSession(instanceId: string): Promise<void> {
       } as any);
     }
 
-    // Credit settlement
+    // Credit settlement (course-agnostic — one pool per learner)
     if (inst.billingType === 'credit') {
       const creditQ = query(
         studentCreditCollection,
         where('studentId', '==', inst.studentId),
-        where('courseId', '==', inst.courseId),
         limit(1)
       );
       const creditSnap = await getDocs(creditQ);
@@ -1420,11 +1419,11 @@ export async function getAllStudentCredits(): Promise<StudentCredit[]> {
   return snapshot.docs.map(d => asId<StudentCredit>(d.id, d.data()));
 }
 
-export async function getStudentCredit(studentId: string, courseId: string): Promise<StudentCredit | null> {
+export async function getStudentCredit(studentId: string, _courseId?: string): Promise<StudentCredit | null> {
+  // Course-agnostic: one credit pool per learner
   const snapshot = await getDocs(query(
     studentCreditCollection,
     where('studentId', '==', studentId),
-    where('courseId', '==', courseId),
     limit(1)
   ));
   if (snapshot.empty) return null;
@@ -1449,18 +1448,17 @@ export async function deleteStudentCredit(creditId: string): Promise<void> {
 /**
  * Reserve credit for a unit assignment (uncommitted -> committed).
  */
-export async function reserveCredit(studentId: string, courseId: string, hoursToReserve: number): Promise<void> {
+export async function reserveCredit(studentId: string, _courseId: string, hoursToReserve: number): Promise<void> {
   if (hoursToReserve <= 0) throw new Error('hoursToReserve must be > 0');
 
   await runTransaction(db, async (tx) => {
     const snapshot = await getDocs(query(
       studentCreditCollection,
       where('studentId', '==', studentId),
-      where('courseId', '==', courseId),
       limit(1)
     ));
 
-    if (snapshot.empty) throw new Error('No studentCredit found for this course');
+    if (snapshot.empty) throw new Error('No credit found. Please top up before booking.');
 
     const creditDoc = snapshot.docs[0];
     const creditRef = doc(db, 'studentCredit', creditDoc.id);
