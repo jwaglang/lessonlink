@@ -148,7 +148,7 @@ export default function PackagesPage() {
                             credits.map(credit => (
                                 <TableRow key={credit.id}>
                                     <TableCell className="font-medium">{getStudentName(credit.studentId)}</TableCell>
-                                    <TableCell>{getCourseTitle(credit.courseId)}</TableCell>
+                                    <TableCell>{getCourseTitle(credit.courseId ?? '')}</TableCell>
                                     <TableCell><Badge variant="secondary">{credit.totalHours}h</Badge></TableCell>
                                     <TableCell><Badge variant="default">{credit.uncommittedHours}h</Badge></TableCell>
                                     <TableCell>{credit.committedHours}h</TableCell>
