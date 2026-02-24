@@ -257,10 +257,27 @@ export function generateLearnerAlerts(
   packages: StudentPackage[],
   credits: StudentCredit[],
   progress: StudentProgress[],
-  _rewards: StudentRewards | null
+  _rewards: StudentRewards | null,
+  student?: Student | null
 ): Alert[] {
   const now = new Date().toISOString();
   const alerts: Alert[] = [];
+
+  // === YELLOW ALERT: Incomplete profile ===
+  if (student) {
+    const incomplete = getIncompleteFields(student);
+    if (incomplete.length > 0) {
+      const missingLabels = incomplete.map(f => f.label).join(', ');
+      alerts.push({
+        id: 'yellow-profile-incomplete',
+        level: 'yellow',
+        title: 'Complete Your Profile',
+        description: `Please fill in: ${missingLabels}. You must complete your profile before booking sessions.`,
+        link: '/s-portal/settings',
+        timestamp: now,
+      });
+    }
+  }
 
   // === RED ALERTS ===
 

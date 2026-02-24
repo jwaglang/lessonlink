@@ -90,7 +90,7 @@ export default function LandingPage() {
   function validateStep(step: number): boolean {
     setError('');
     if (step === 1) {
-      if (!signupEmail || !signupPassword || !signupConfirm) {
+      if (!signupEmail || !signupPassword || !signupConfirm || !signupName.trim()) {
         setError('All fields are required');
         return false;
       }
@@ -103,22 +103,7 @@ export default function LandingPage() {
         return false;
       }
     }
-    if (step === 2) {
-      if (!signupName.trim()) {
-        setError('Name is required');
-        return false;
-      }
-      if (!signupBirthday) {
-        setError('Birthday is required');
-        return false;
-      }
-    }
-    if (step === 4 && isUnder18) {
-      if (!signupPrimary.name.trim() || !signupPrimary.email.trim()) {
-        setError('Primary contact name and email are required for learners under 18');
-        return false;
-      }
-    }
+    // Steps 2-4 have no required validation — user can skip
     return true;
   }
 
@@ -134,7 +119,8 @@ export default function LandingPage() {
   }
 
   async function handleSignupComplete() {
-    if (!validateStep(signupStep)) return;
+    // Always validate Step 1 (name + email + password), skip validation for other steps
+    if (!validateStep(1)) return;
 
     setLoading(true);
     setError('');
@@ -503,6 +489,10 @@ export default function LandingPage() {
                       <Label>Confirm Password</Label>
                       <Input type="password" placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Full Name</Label>
+                      <Input placeholder="Learner's full name" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
+                    </div>
                   </div>
                 )}
 
@@ -510,10 +500,7 @@ export default function LandingPage() {
                 {signupStep === 2 && (
                   <div className="space-y-4">
                     <p className="text-sm font-semibold text-center">Tell us about yourself</p>
-                    <div className="space-y-2">
-                      <Label>Full Name</Label>
-                      <Input placeholder="Learner's full name" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-                    </div>
+                    <p className="text-xs text-muted-foreground text-center">You can skip this for now and fill it in later</p>
                     <div className="space-y-2">
                       <Label>Birthday</Label>
                       <Input type="date" value={signupBirthday} onChange={(e) => setSignupBirthday(e.target.value)} />
@@ -608,15 +595,22 @@ export default function LandingPage() {
                   ) : (
                     <div />
                   )}
-                  {signupStep < totalSteps ? (
-                    <Button onClick={handleNext}>
-                      Next <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button onClick={handleSignupComplete} disabled={loading}>
-                      {loading ? 'Creating account...' : 'Complete Sign Up'}
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {signupStep > 1 && (
+                      <Button variant="ghost" onClick={handleSignupComplete} disabled={loading}>
+                        {loading ? 'Creating account...' : 'Skip for now'}
+                      </Button>
+                    )}
+                    {signupStep < totalSteps ? (
+                      <Button onClick={handleNext}>
+                        Next <ArrowRight className="ml-1 h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button onClick={handleSignupComplete} disabled={loading}>
+                        {loading ? 'Creating account...' : 'Complete Sign Up'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>

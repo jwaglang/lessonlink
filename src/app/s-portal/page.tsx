@@ -150,7 +150,8 @@ export default function StudentPortalPage() {
           packagesData,
           creditsData,
           progressData,
-          rewardsData
+          rewardsData,
+          studentRecord
         );
         setLearnerAlerts(generatedAlerts);
 

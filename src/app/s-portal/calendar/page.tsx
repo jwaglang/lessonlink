@@ -43,6 +43,7 @@ import type { Availability, Course, Student } from '@/lib/types';
 import { calculateLessonPrice } from '@/lib/types';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
+import { isProfileComplete } from '@/lib/profile-completeness';
 import Loading from '@/app/loading';
 import ScheduleTemplateModal from '@/components/schedule-template-modal';
 
@@ -181,6 +182,15 @@ function BookingPageContent() {
 
   async function handleBookLesson() {
     if (!selectedSlot || !selectedCourse || !student || !user?.uid) return;
+
+    // Block booking if profile is incomplete
+    if (!isProfileComplete(student)) {
+      setBookingResult({
+        type: 'pending_approval',
+        message: 'Please complete your profile before booking. Go to Settings to fill in your birthday and contact information.',
+      });
+      return;
+    }
 
     // Require unit/session linkage for Phase 3D completion workflow
     const unitId = unitIdFromQuery;
