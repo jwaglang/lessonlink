@@ -20,7 +20,7 @@ import {
 } from '@/lib/firestore';
 import type { TeacherProfile } from '@/lib/types';
 
-const LOW_CREDIT_THRESHOLD = 6; // hours — below this, Buy becomes primary
+const LOW_CREDIT_THRESHOLD = 6; // hours — below this, Top Up becomes primary
 
 export default function SPortalTopBar() {
   const { user } = useAuth();
@@ -28,7 +28,7 @@ export default function SPortalTopBar() {
 
   const [hoursRemaining, setHoursRemaining] = useState<number | null>(null);
   const [assignedTutor, setAssignedTutor] = useState<TeacherProfile | null>(null);
-  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [topUpDialogOpen, setTopUpDialogOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -55,7 +55,7 @@ export default function SPortalTopBar() {
     fetchData();
   }, [user]);
 
-  // Context-aware: if credit is low or zero, Buy is primary
+  // Context-aware: if credit is low or zero, Top Up is primary
   const creditIsLow = hoursRemaining !== null && hoursRemaining < LOW_CREDIT_THRESHOLD;
 
   const bookButton = (
@@ -70,15 +70,15 @@ export default function SPortalTopBar() {
     </Button>
   );
 
-  const buyButton = (
+  const topUpButton = (
     <Button
       variant={creditIsLow ? 'default' : 'outline'}
       size="sm"
-      onClick={() => setBuyDialogOpen(true)}
+      onClick={() => setTopUpDialogOpen(true)}
       className="gap-1.5"
     >
       <ShoppingBag className="h-4 w-4" />
-      Buy
+      Top Up
     </Button>
   );
 
@@ -88,22 +88,22 @@ export default function SPortalTopBar() {
       <div className="flex items-center justify-end gap-2 px-4 py-2 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         {creditIsLow ? (
           <>
-            {buyButton}
+            {topUpButton}
             {bookButton}
           </>
         ) : (
           <>
             {bookButton}
-            {buyButton}
+            {topUpButton}
           </>
         )}
       </div>
 
-      {/* Buy dialog */}
-      <Dialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen}>
+      {/* Top Up dialog */}
+      <Dialog open={topUpDialogOpen} onOpenChange={setTopUpDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Buy Sessions</DialogTitle>
+            <DialogTitle>Top Up</DialogTitle>
             <DialogDescription>
               {creditIsLow
                 ? 'Your credit is running low. Top up to keep booking sessions.'
@@ -116,7 +116,7 @@ export default function SPortalTopBar() {
               <Button
                 asChild
                 className="w-full justify-start gap-3 h-auto py-3"
-                onClick={() => setBuyDialogOpen(false)}
+                onClick={() => setTopUpDialogOpen(false)}
               >
                 <Link href={`/s-portal/t-profiles/${assignedTutor.username}/courses`}>
                   <GraduationCap className="h-5 w-5 flex-shrink-0" />
@@ -132,7 +132,7 @@ export default function SPortalTopBar() {
               asChild
               variant={assignedTutor ? 'outline' : 'default'}
               className="w-full justify-start gap-3 h-auto py-3"
-              onClick={() => setBuyDialogOpen(false)}
+              onClick={() => setTopUpDialogOpen(false)}
             >
               <Link href="/s-portal/t-profiles">
                 <Search className="h-5 w-5 flex-shrink-0" />
