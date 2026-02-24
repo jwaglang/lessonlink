@@ -16,7 +16,7 @@ const DISCOUNTS = {
 
 const SESSIONS_PER_PACKAGE = {
   single: { 30: 1, 60: 1 },
-  '10-pack': { 30: 10, 60: 10 },
+  '10-pack': { 30: 20, 60: 10 },
   'full-course': { 30: 120, 60: 60 }, // both = 60 hours total
 } as const;
 
