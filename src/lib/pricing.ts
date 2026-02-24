@@ -40,13 +40,17 @@ export interface PriceCalculation {
 }
 
 export function calculatePrice(packageType: PackageType, duration: Duration): PriceCalculation {
-  const basePerLesson = BASE_RATES[duration];
+  const baseHourlyRate = 31.68; // Always €31.68/hr regardless of duration
   const discount = DISCOUNTS[packageType];
   const sessions = SESSIONS_PER_PACKAGE[packageType][duration];
   const hours = duration === 30 ? sessions * 0.5 : sessions;
 
-  const discountedPerLesson = +(basePerLesson * (1 - discount)).toFixed(2);
-  const subtotal = +(discountedPerLesson * sessions).toFixed(2);
+  // Calculate from hours (like the pricing spec does) to avoid rounding drift
+  const discountedHourlyRate = +(baseHourlyRate * (1 - discount)).toFixed(2);
+  const subtotal = +(discountedHourlyRate * hours).toFixed(2);
+  const discountedPerLesson = +(subtotal / sessions).toFixed(2);
+  const basePerLesson = BASE_RATES[duration];
+
   const processingFee = +(subtotal * PROCESSING_FEE_RATE).toFixed(2);
   const total = +(subtotal + processingFee).toFixed(2);
   const totalCents = Math.round(total * 100);
