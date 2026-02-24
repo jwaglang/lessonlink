@@ -96,16 +96,8 @@ export default function TopUpPage() {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-8 p-4 md:p-8">
-      <div className="mb-2">
-        <Link href="/s-portal">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </Link>
-      </div>
+return (
+  <div className="flex flex-col gap-8 p-4 md:p-8">
 
       <PageHeader title="Top Up" description="Purchase hours to use on any course">
         <div className="flex items-center gap-3">
