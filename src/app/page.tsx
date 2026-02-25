@@ -137,11 +137,11 @@ export default function LandingPage() {
         avatarUrl: '',
         status: 'trial',
         isNewStudent: true,
-        birthday: signupBirthday ?? undefined,
-        gender: resolvedGender ?? undefined,
-        messagingContacts: cleanedMessaging.length > 0 ? cleanedMessaging ?? undefined : undefined,
-        primaryContact: signupPrimary.name ? signupPrimary ?? undefined : undefined,
-        secondaryContact: signupSecondary.name ? signupSecondary ?? undefined : undefined,
+        ...(signupBirthday && { birthday: signupBirthday }),
+        ...(resolvedGender && { gender: resolvedGender }),
+        ...(cleanedMessaging.length > 0 && { messagingContacts: cleanedMessaging }),
+        ...(signupPrimary.name && { primaryContact: signupPrimary }),
+        ...(signupSecondary.name && { secondaryContact: signupSecondary }),
       });
 
       router.push('/s-portal');
