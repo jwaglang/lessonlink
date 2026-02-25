@@ -112,25 +112,25 @@ export default function SPortalTopBar() {
           </DialogHeader>
 
           <div className="flex flex-col gap-3 pt-2">
-            {assignedTutor ? (
-              <Button
-                asChild
-                className="w-full justify-start gap-3 h-auto py-3"
-                onClick={() => setTopUpDialogOpen(false)}
-              >
-                <Link href="/s-portal/top-up">
-                  <GraduationCap className="h-5 w-5 flex-shrink-0" />
-                  <div className="text-left">
-                    <p className="font-semibold">Add credit for {assignedTutor.name}</p>
-                    <p className="text-xs opacity-80 font-normal">View sessions for your current tutor</p>
-                  </div>
-                </Link>
-              </Button>
-            ) : null}
+            <Button
+              asChild
+              className="w-full justify-start gap-3 h-auto py-3"
+              onClick={() => setTopUpDialogOpen(false)}
+            >
+              <Link href="/s-portal/top-up">
+                <GraduationCap className="h-5 w-5 flex-shrink-0" />
+                <div className="text-left">
+                  <p className="font-semibold">
+                    {assignedTutor ? `Add credit for ${assignedTutor.name}` : 'Top up your credit'}
+                  </p>
+                  <p className="text-xs opacity-80 font-normal">Purchase a package to book sessions</p>
+                </div>
+              </Link>
+            </Button>
 
             <Button
               asChild
-              variant={assignedTutor ? 'outline' : 'default'}
+              variant="outline"
               className="w-full justify-start gap-3 h-auto py-3"
               onClick={() => setTopUpDialogOpen(false)}
             >

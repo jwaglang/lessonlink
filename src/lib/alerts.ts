@@ -356,5 +356,19 @@ export function generateLearnerAlerts(
     });
   }
 
+  // No credits at all — prompt to top up
+  const totalUncommitted = credits.reduce((sum, c) => sum + (c.uncommittedHours ?? 0), 0);
+  const totalCommitted = credits.reduce((sum, c) => sum + (c.committedHours ?? 0), 0);
+  if (credits.length === 0 || (totalUncommitted === 0 && totalCommitted === 0)) {
+    alerts.push({
+      id: 'blue-no-credits',
+      level: 'blue',
+      title: 'Add Credit to Get Started',
+      description: 'Purchase a package to start booking sessions with your tutor.',
+      link: '/s-portal/top-up',
+      timestamp: now,
+    });
+  }
+
   return sortAlerts(alerts);
 }
