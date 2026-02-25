@@ -26,10 +26,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GraduationCap, BookOpen, BookOpenCheck, Plus, Trash2, ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
 import { GradientIcon } from '@/components/gradient-icon';
+import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LandingPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [learnerDialogOpen, setLearnerDialogOpen] = useState(false);
   const [tutorDialogOpen, setTutorDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -144,6 +146,11 @@ export default function LandingPage() {
         ...(signupSecondary.name && { secondaryContact: signupSecondary }),
       });
 
+      setLearnerDialogOpen(false);
+      toast({
+        title: 'Welcome to LessonLink! 🎉',
+        description: 'Your account has been created successfully.',
+      });
       router.push('/s-portal');
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
