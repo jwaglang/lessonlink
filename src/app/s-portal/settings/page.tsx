@@ -88,8 +88,17 @@ export default function StudentSettingsPage() {
         setName(studentData.name || '');
         setAvatarUrl(studentData.avatarUrl || '');
         setBirthday(studentData.birthday || '');
-        setGender(studentData.gender || '');
-        setCustomGender(studentData.gender === 'Other' ? studentData.customGender || '' : '');
+        
+        // FIX: Check if gender is a standard option or custom value
+        const g = studentData.gender || '';
+        if (['Male', 'Female', 'Other', 'Prefer not to say'].includes(g)) {
+          setGender(g);           // Standard option
+          setCustomGender('');    // No custom value
+        } else if (g) {
+          setGender('Other');     // Custom value like "fury"
+          setCustomGender(g);     // Store it in customGender state for display
+        }
+        
         setSchool(studentData.school || '');
         setMessagingContacts(studentData.messagingContacts || []);
         setPrimaryContact(studentData.primaryContact || null);
@@ -166,26 +175,29 @@ export default function StudentSettingsPage() {
   }
 
   async function handleSave() {
-    if (!user?.uid || !student) {
-      setSaveMessage({ type: 'error', text: 'You must be logged in to save.' });
-      return;
-    }
+  if (!user?.uid || !student) {
+    setSaveMessage({ type: 'error', text: 'You must be logged in to save.' });
+    return;
+  }
 
-    setSaving(true);
-    setSaveMessage(null);
+  setSaving(true);
+  setSaveMessage(null);
 
-    const updatedData: Partial<Student> = {
-      name,
-      avatarUrl,
-      birthday,
-      gender: gender === 'Other' ? customGender : gender,
-      customGender: gender === 'Other' ? customGender : undefined,
-      school,
-      messagingContacts: messagingContacts.filter(c => c.handle.trim()),
-      primaryContact: primaryContact || undefined,
-      secondaryContact: secondaryContact || undefined,
-      updatedAt: new Date().toISOString(),
-    };
+  // FIX: Determine final gender value — custom values go directly into gender field
+  const finalGender = gender === 'Other' && customGender ? customGender : gender;
+
+  const updatedData: Partial<Student> = {
+    name,
+    avatarUrl,
+    birthday,
+    gender: finalGender || undefined,  // Only include if has value
+    school,
+    messagingContacts: messagingContacts.filter(c => c.handle.trim()),
+    primaryContact: primaryContact || undefined,
+    secondaryContact: secondaryContact || undefined,
+    updatedAt: new Date().toISOString(),
+    // ❌ NO customGender field — it doesn't exist in Student type
+  };
 
     try {
       await updateStudent(user.uid, updatedData);
