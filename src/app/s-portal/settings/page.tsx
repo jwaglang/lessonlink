@@ -186,7 +186,24 @@ export default function StudentSettingsPage() {
   // Determine final gender value
   const finalGender = gender === 'Other' && customGender ? customGender : gender;
 
-  // ✅ FIX: Use conditional spread - never include undefined fields
+  // Helper: strip undefined from ParentContact
+  function cleanContact(contact: ParentContact | null): ParentContact | undefined {
+    if (!contact) return undefined;
+    return {
+      name: contact.name,
+      email: contact.email,
+      ...(contact.phone && { phone: contact.phone }),
+      relationship: contact.relationship,
+      ...(contact.country && { country: contact.country }),
+      ...(contact.city && { city: contact.city }),
+      ...(contact.messaging && contact.messaging.length > 0 && { messaging: contact.messaging }),
+      ...(contact.preferredContactMethod && { preferredContactMethod: contact.preferredContactMethod }),
+      ...(contact.profession && { profession: contact.profession }),
+      ...(contact.englishProficiency && { englishProficiency: contact.englishProficiency }),
+    };
+  }
+
+  // ✅ FIX: Use conditional spread - never include undefined fields (including nested)
   const updatedData: Partial<Student> = {
     ...(name && { name }),
     ...(avatarUrl && { avatarUrl }),
@@ -194,9 +211,9 @@ export default function StudentSettingsPage() {
     ...(finalGender && { gender: finalGender }),
     ...(school && { school }),
     ...(messagingContacts.length > 0 && { messagingContacts: messagingContacts.filter(c => c.handle.trim()) }),
-    ...(primaryContact && { primaryContact }),
-    ...(secondaryContact && { secondaryContact }),
-    updatedAt: new Date().toISOString(),  // Always include timestamp
+    ...(primaryContact && { primaryContact: cleanContact(primaryContact) }),
+    ...(secondaryContact && { secondaryContact: cleanContact(secondaryContact) }),
+    updatedAt: new Date().toISOString(),
   };
 
   try {
