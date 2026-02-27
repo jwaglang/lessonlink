@@ -36,21 +36,17 @@ service cloud.firestore {
     // STUDENTS
     // studentId (doc ID) = Auth UID
     match /students/{studentId} {
-      // Read: admin, assigned teacher, or the student themselves (doc ID == auth.uid)
-      allow read: if isAuthenticated() && (
-        isAdmin() ||
-        (isTeacher() && resource.data.assignedTeacherId == request.auth.uid) ||
-        (studentId == request.auth.uid)
-      );
-
-      // Create: only if creating their own record (doc ID == auth.uid, email matches)
-      allow create: if isAuthenticated() && 
-        studentId == request.auth.uid &&
-        request.resource.data.email == request.auth.token.email;
-
-      // Updates: admin or teacher only
-      allow update, delete: if isAdmin() || isTeacher();
-    }
+    allow read: if isAdmin() || 
+                  isAssignedTeacher(studentId) || 
+                  isOwner(studentId);
+    
+    allow create: if isAuthenticated() && 
+                    studentId == request.auth.uid &&
+                    request.resource.data.email == request.auth.token.email;
+       
+    // ✅ FIX (ADD isOwner):
+    allow update, delete: if isAdmin() || isTeacher() || isOwner(studentId);
+  }
 
     match /availability/{availId} {
       allow read, list: if true;
