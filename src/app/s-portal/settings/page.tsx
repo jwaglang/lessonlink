@@ -91,7 +91,7 @@ export default function StudentSettingsPage() {
         
         // FIX: Check if gender is a standard option or custom value
         const g = studentData.gender || '';
-        if (['Male', 'Female', 'Other', 'Prefer not to say'].includes(g)) {
+        if (['boy', 'girl', 'other'].includes(g.toLowerCase())) {
           setGender(g);           // Standard option
           setCustomGender('');    // No custom value
         } else if (g) {
@@ -327,10 +327,9 @@ export default function StudentSettingsPage() {
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                  <SelectItem value="Prefer not to say">Prefer not to say</SelectItem>
+                  <SelectItem value="boy">Boy</SelectItem>
+                  <SelectItem value="girl">Girl</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
