@@ -183,31 +183,31 @@ export default function StudentSettingsPage() {
   setSaving(true);
   setSaveMessage(null);
 
-  // FIX: Determine final gender value — custom values go directly into gender field
+  // Determine final gender value
   const finalGender = gender === 'Other' && customGender ? customGender : gender;
 
+  // ✅ FIX: Use conditional spread - never include undefined fields
   const updatedData: Partial<Student> = {
-    name,
-    avatarUrl,
-    birthday,
-    gender: finalGender || undefined,  // Only include if has value
-    school,
-    messagingContacts: messagingContacts.filter(c => c.handle.trim()),
-    primaryContact: primaryContact || undefined,
-    secondaryContact: secondaryContact || undefined,
-    updatedAt: new Date().toISOString(),
-    // ❌ NO customGender field — it doesn't exist in Student type
+    ...(name && { name }),
+    ...(avatarUrl && { avatarUrl }),
+    ...(birthday && { birthday }),
+    ...(finalGender && { gender: finalGender }),
+    ...(school && { school }),
+    ...(messagingContacts.length > 0 && { messagingContacts: messagingContacts.filter(c => c.handle.trim()) }),
+    ...(primaryContact && { primaryContact }),
+    ...(secondaryContact && { secondaryContact }),
+    updatedAt: new Date().toISOString(),  // Always include timestamp
   };
 
-    try {
-      await updateStudent(user.uid, updatedData);
-      setSaveMessage({ type: 'success', text: 'Profile saved successfully!' });
-    } catch (error: any) {
-      setSaveMessage({ type: 'error', text: error.message || 'Failed to save profile' });
-    } finally {
-      setSaving(false);
-    }
+  try {
+    await updateStudent(user.uid, updatedData);
+    setSaveMessage({ type: 'success', text: 'Profile saved successfully!' });
+  } catch (error: any) {
+    setSaveMessage({ type: 'error', text: error.message || 'Failed to save profile' });
+  } finally {
+    setSaving(false);
   }
+}
 
   if (authLoading || loading) {
     return (
