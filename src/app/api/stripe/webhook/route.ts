@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
       console.log(`✅ Stripe webhook processed: ${packageType} for student ${metadata.studentId}`);
     } catch (err) {
-      console.error('Webhook processing error:', err);
+      console.error('Webhook processing error:', err instanceof Error ? err.message : err, err instanceof Error ? err.stack : '');
       return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
     }
   }
