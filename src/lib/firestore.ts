@@ -499,8 +499,13 @@ export async function bookLesson(input: {
     if (!credit) {
       throw new Error('No credit found. Please complete payment before booking.');
     }
-    if (input.billingType === 'credit' && typeof credit.committedHours === 'number' && credit.committedHours < input.durationHours) {
-      throw new Error('Insufficient reserved credit for this unit.');
+    if (input.billingType === 'credit') {
+      const available = credit.uncommittedHours ?? 0;
+      if (available < input.durationHours) {
+        throw new Error('Insufficient credit. Please top up before booking.');
+      }
+      // Reserve hours at booking time
+      await reserveCredit(input.studentId, input.courseId ?? '', input.durationHours);
     }
   }
 

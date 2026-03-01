@@ -213,7 +213,15 @@ service cloud.firestore {
         (isTeacher() && assignedTeacherUid(resource.data.studentId) == request.auth.uid) ||
         (resource.data.studentId == request.auth.uid)
       );
-      allow write: if isAdmin() || isTeacher();
+      allow create, delete: if isAdmin() || isTeacher();
+      // Admin/Teacher full update
+      allow update: if isAdmin() || isTeacher();
+      // Learner can only reserve credit (shift uncommitted → committed)
+      allow update: if isAuthenticated() &&
+        resource.data.studentId == request.auth.uid &&
+        request.resource.data.totalHours == resource.data.totalHours &&
+        request.resource.data.completedHours == resource.data.completedHours &&
+        request.resource.data.studentId == resource.data.studentId;
     }
 
     // studentId = Auth UID

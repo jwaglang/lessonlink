@@ -57,9 +57,6 @@ function BookingPageContent() {
   const unitIdFromQuery = searchParams.get('unitId');
   const sessionIdFromQuery = searchParams.get('sessionId');
 
-  // TODO: replace with real teacher auth uid if/when you store it.
-  // For now, we keep it consistent and non-empty.
-  const teacherUid = 'jwag.lang@gmail.com';
 
 
   const [student, setStudent] = useState<Student | null>(null);
@@ -182,6 +179,7 @@ function BookingPageContent() {
 
   async function handleBookLesson() {
     if (!selectedSlot || !selectedCourse || !student || !user?.uid) return;
+    const teacherUid = student.assignedTeacherId ?? '';
 
     // Block booking if profile is incomplete
     if (!isProfileComplete(student)) {
