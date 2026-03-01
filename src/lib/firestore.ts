@@ -471,9 +471,9 @@ export async function getSessionInstance(instanceId: string): Promise<SessionIns
 export async function bookLesson(input: {
   studentId: string;        // Auth UID (= doc ID)
   teacherUid: string;       // Auth UID of teacher
-  courseId: string;
-  unitId: string;
-  sessionId: string;
+  courseId?: string;
+  unitId?: string;
+  sessionId?: string;
   lessonDate: string;
   startTime: string;
   endTime: string;
@@ -482,24 +482,20 @@ export async function bookLesson(input: {
   rate?: number;
   title?: string;
 }): Promise<SessionInstance> {
-  // Gate 1: progress exists (unless trial)
+  // Gate 1: T-L relationship exists (unless trial)
   if (input.billingType !== 'trial') {
-    const progressQ = query(
-      studentProgressCollection,
-      where('studentId', '==', input.studentId),
-      where('courseId', '==', input.courseId),
-      where('unitId', '==', input.unitId),
-      limit(1)
-    );
-    const progressSnap = await getDocs(progressQ);
-    if (progressSnap.empty) {
-      throw new Error('Unit not assigned. Please request approval first.');
+    const studentDoc = await getStudentById(input.studentId);
+    if (!studentDoc?.assignedTeacherId) {
+      throw new Error('No tutor assigned. Please select a tutor first.');
+    }
+    if (studentDoc.assignedTeacherId !== input.teacherUid) {
+      throw new Error('You can only book sessions with your assigned tutor.');
     }
   }
 
   // Gate 2: credit exists (unless trial)
   if (input.billingType !== 'trial') {
-    const credit = await getStudentCredit(input.studentId, input.courseId);
+    const credit = await getStudentCredit(input.studentId);
     if (!credit) {
       throw new Error('No credit found. Please complete payment before booking.');
     }
@@ -511,9 +507,9 @@ export async function bookLesson(input: {
   const payload: any = {
     studentId: input.studentId,       // Auth UID
     teacherUid: input.teacherUid,     // Auth UID
-    courseId: input.courseId,
-    unitId: input.unitId,
-    sessionId: input.sessionId,
+    courseId: input.courseId ?? null,
+    unitId: input.unitId ?? null,
+    sessionId: input.sessionId ?? null,
     title: input.title ?? null,
     lessonDate: input.lessonDate,
     date: input.lessonDate, // compatibility

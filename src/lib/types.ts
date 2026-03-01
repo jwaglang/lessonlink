@@ -83,8 +83,8 @@ export interface SessionInstance {
   studentId: string;   // Firebase Auth UID (= student doc ID)
   teacherUid: string;  // Firebase Auth UID of teacher
   courseId: string;
-  unitId: string;
-  sessionId: string;   // template session id
+  unitId?: string;
+  sessionId?: string;   // template session id
 
   title?: string; // session title (denormalized for UI)
 

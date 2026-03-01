@@ -196,9 +196,9 @@ function BookingPageContent() {
     const unitId = unitIdFromQuery;
     const sessionId = sessionIdFromQuery;
 
+    // unitId and sessionId are optional — L can book without unit assignment
     if (!unitId || !sessionId) {
-      console.error('Missing unitId/sessionId in booking URL');
-      return;
+      console.warn('No unitId/sessionId in URL — booking without unit assignment');
     }
 
     setIsBooking(true);
@@ -264,8 +264,8 @@ function BookingPageContent() {
           billingType: 'credit',
 
           courseId: selectedCourse,
-          unitId,
-          sessionId,
+          unitId: unitId ?? undefined,
+          sessionId: sessionId ?? undefined,
           durationHours: selectedDuration / 60,
           teacherUid,
         });
