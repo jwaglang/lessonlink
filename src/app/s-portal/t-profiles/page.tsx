@@ -19,7 +19,7 @@ import {
   Globe,
   UserCheck,
 } from 'lucide-react';
-import { getAllTeacherProfiles, getStudentById, updateStudent, getTeacherProfileById } from '@/lib/firestore';
+import { getAllTeacherProfiles, getStudentById, updateStudent, getTeacherProfileById, getApprovalRequests, createApprovalRequest } from '@/lib/firestore';
 import type { TeacherProfile, Student } from '@/lib/types';
 import Loading from '@/app/loading';
 import { useAuth } from '@/components/auth-provider';
@@ -128,6 +128,7 @@ export default function TProfilesPage() {
   const [allProfiles, setAllProfiles] = useState<TeacherProfile[]>([]);
   const [student, setStudent] = useState<Student | null>(null);
   const [assignedTutor, setAssignedTutor] = useState<TeacherProfile | null>(null);
+  const [pendingTeacherIds, setPendingTeacherIds] = useState<string[]>([]); // teacherId with pending requests
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -149,6 +150,15 @@ export default function TProfilesPage() {
         setAssignedTutor(assigned);
       }
 
+      // NEW: Get list of teachers with pending requests
+      const allPending = await getApprovalRequests('pending');
+      if (user?.uid) {
+        const myPending = allPending.filter(
+          p => p.studentId === user.uid && p.type === 'tutor_assignment'
+        );
+        setPendingTeacherIds(myPending.map(p => p.teacherUid || ''));
+      }
+
       setLoading(false);
     }
     fetchData();
@@ -164,6 +174,34 @@ export default function TProfilesPage() {
     const updatedStudent = { ...student, starredTutorIds: updated };
     setStudent(updatedStudent);
     await updateStudent(user.uid, { starredTutorIds: updated });
+  };
+
+  // Handle "Request as My Tutor" click
+  const handleRequestTutor = async (teacherId: string) => {
+    try {
+      // Ensure we have student data
+      if (!student?.id || !student.name) return;
+      
+      // Create the approval request
+      await createApprovalRequest({
+        type: 'tutor_assignment',
+        studentId: student.id,
+        studentName: student.name,
+        studentEmail: student.email || '',
+        teacherUid: teacherId,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      });
+      
+      // Update pending list immediately (optimistic UI update)
+      setPendingTeacherIds(prev => [...prev, teacherId]);
+      
+      // Optional: Show feedback to user
+      alert(`Request sent! The tutor will review shortly.`);
+    } catch (error) {
+      console.error('Failed to request tutor:', error);
+      alert('Failed to send request. Please try again.');
+    }
   };
 
   const starredIds = student?.starredTutorIds ?? [];
@@ -248,14 +286,41 @@ export default function TProfilesPage() {
         {/* Results */}
         {filteredProfiles.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProfiles.map((profile) => (
-              <TutorCard
-                key={profile.id}
-                profile={profile}
-                isStarred={starredIds.includes(profile.id)}
-                onToggleStar={handleToggleStar}
-              />
-            ))}
+            {filteredProfiles.map((profile) => {
+              const isMyTutor = student?.assignedTeacherId === profile.id;
+              const hasPendingRequest = pendingTeacherIds.includes(profile.id);
+
+              return (
+                <div key={profile.id}>
+                  <TutorCard
+                    profile={profile}
+                    isStarred={starredIds.includes(profile.id)}
+                    onToggleStar={handleToggleStar}
+                  />
+                  
+                  {isMyTutor && (
+                    <Badge variant="default" className="w-full mt-2">
+                      My Tutor
+                    </Badge>
+                  )}
+                  
+                  {!isMyTutor && hasPendingRequest && (
+                    <Badge variant="outline" className="w-full mt-2">
+                      Request Pending
+                    </Badge>
+                  )}
+                  
+                  {!isMyTutor && !hasPendingRequest && (
+                    <Button 
+                      onClick={() => handleRequestTutor(profile.id)} 
+                      className="w-full mt-2"
+                    >
+                      Request as My Tutor
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <Card>
