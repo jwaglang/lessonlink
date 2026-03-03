@@ -1127,6 +1127,36 @@ export async function resolveApprovalRequest(
       actionLink: '/s-portal/book',
       createdAt: nowIso(),
     } as any);
+  } else if (req.type === 'tutor_assignment') {
+    if (resolution === 'approved' && req.teacherUid) {
+      // Assign student to teacher
+      const studentRef = doc(db, 'students', req.studentId);
+      await updateDoc(studentRef, {
+        assignedTeacherId: req.teacherUid,
+        updatedAt: nowIso(),
+      } as any);
+
+      // Notify student via in-app message (in-app only for Phase 1)
+      await createMessage({
+        to: req.studentId,
+        from: req.teacherUid || 'system',
+        fromType: 'system',
+        toType: 'student',
+        type: 'notification',
+        content: `${req.teacherName ? req.teacherName + ' approved your request!' : 'Your tutor request has been approved!'} You can now start booking sessions.`,
+        timestamp: nowIso(),
+        read: false,
+        relatedEntity: { type: 'approvalRequest', id: requestId },
+        actionLink: '/s-portal/calendar',
+        createdAt: nowIso(),
+      } as any);
+    }
+    
+    // Update approval status (for both approved and denied)
+    await updateDoc(approvalRef, { 
+      status: resolution, 
+      resolvedAt: nowIso() 
+    } as any);
   } else {
     // fallback: approve without side effects
     await updateDoc(approvalRef, { status: 'approved', resolvedAt: nowIso() } as any);

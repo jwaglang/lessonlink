@@ -173,7 +173,7 @@ export interface Session {
   homeworkId?: string | null;
 }
 
-export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request' | 'approvalRequest';
+export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request' | 'tutor_assignment' | 'approvalRequest';
 
 export interface ApprovalRequest {
   id: string;
@@ -198,6 +198,7 @@ export interface ApprovalRequest {
   sessionId?: string;
   durationHours?: number;
   teacherUid?: string;
+  teacherName?: string;  // Teacher's name for notification messages
 }
 
 export interface UserSettings {

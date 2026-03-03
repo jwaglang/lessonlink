@@ -31,6 +31,7 @@ const requestTypeLabels: Record<ApprovalRequestType, string> = {
   late_cancel: 'Late Cancel',
   package_extension: 'Package Extension',
   pause_request: 'Pause Request',
+  tutor_assignment: 'Tutor Assignment',
 };
 
 const requestTypeIcons: Record<ApprovalRequestType, React.ReactNode> = {
@@ -40,6 +41,7 @@ const requestTypeIcons: Record<ApprovalRequestType, React.ReactNode> = {
   late_cancel: <CalendarX className="h-4 w-4" />,
   package_extension: <Clock className="h-4 w-4" />,
   pause_request: <Package className="h-4 w-4" />,
+  tutor_assignment: <UserPlus className="h-4 w-4" />,
 };
 
 export default function ApprovalsPage() {
@@ -232,6 +234,7 @@ export default function ApprovalsPage() {
                   {confirmAction.request.type === 'new_student_booking' && ' The lesson will be confirmed.'}
                   {confirmAction.request.type === 'late_reschedule' && ' The lesson will be rescheduled.'}
                   {confirmAction.request.type === 'late_cancel' && ' The lesson will be cancelled.'}
+                  {confirmAction.request.type === 'tutor_assignment' && ' You will be assigned as their tutor.'}
                 </>
               ) : (
                 <>
@@ -239,6 +242,7 @@ export default function ApprovalsPage() {
                   {confirmAction?.request.type === 'new_student_booking' && ' The booking will not proceed.'}
                   {confirmAction?.request.type === 'late_reschedule' && ' The lesson will keep its original time.'}
                   {confirmAction?.request.type === 'late_cancel' && ' The lesson will remain scheduled.'}
+                  {confirmAction?.request.type === 'tutor_assignment' && ' They will need to select another tutor.'}
                 </>
               )}
             </AlertDialogDescription>
