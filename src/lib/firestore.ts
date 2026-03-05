@@ -554,24 +554,24 @@ export async function updateSessionInstanceStatus(
  * - studentProgress: sessionsCompleted += 1, totalHoursCompleted += durationHours
  * - studentCredit: committedHours -= durationHours, completedHours += durationHours
  */
+/**
+ * Completion workflow (Variant-1):
+ * - sessionInstances.status -> 'completed'
+ * - studentProgress: sessionsCompleted += 1, totalHoursCompleted += durationHours (if progress record exists)
+ * - studentCredit: committedHours -= durationHours, completedHours += durationHours, completedSessions += 1
+ */
 export async function completeSession(instanceId: string): Promise<void> {
   const ref = doc(db, 'sessionInstances', instanceId);
 
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error('SessionInstance not found');
+  // 1. Read the session instance to get studentId, courseId, unitId, billingType
+  const instSnap = await getDoc(ref);
+  if (!instSnap.exists()) throw new Error('SessionInstance not found');
+  const inst = normalizeSessionInstance(instSnap.id, instSnap.data());
+  if (inst.status === 'completed') return; // Idempotent
 
-    const inst = normalizeSessionInstance(snap.id, snap.data());
-
-    if (inst.status === 'completed') return; // Idempotent
-
-    tx.update(ref, {
-      status: 'completed',
-      completedAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-
-    // Progress update (best-effort)
+  // 2. Find related docs BEFORE the transaction (queries not allowed inside tx)
+  let progressDocId: string | null = null;
+  if (inst.courseId && inst.unitId) {
     const progressQ = query(
       studentProgressCollection,
       where('studentId', '==', inst.studentId),
@@ -579,10 +579,55 @@ export async function completeSession(instanceId: string): Promise<void> {
       where('unitId', '==', inst.unitId),
       limit(1)
     );
-
     const progressSnap = await getDocs(progressQ);
     if (!progressSnap.empty) {
-      const pRef = doc(db, 'studentProgress', progressSnap.docs[0].id);
+      progressDocId = progressSnap.docs[0].id;
+    }
+  }
+
+  let creditDocId: string | null = null;
+  if (inst.billingType === 'credit') {
+    const creditQ = query(
+      studentCreditCollection,
+      where('studentId', '==', inst.studentId),
+      limit(1)
+    );
+    const creditSnap = await getDocs(creditQ);
+    if (!creditSnap.empty) {
+      creditDocId = creditSnap.docs[0].id;
+    }
+  }
+
+  // 3. Run transaction with known doc references only
+  await runTransaction(db, async (tx) => {
+    // === ALL READS FIRST ===
+    const txSnap = await tx.get(ref);
+    if (!txSnap.exists()) throw new Error('SessionInstance not found');
+    const txInst = normalizeSessionInstance(txSnap.id, txSnap.data());
+    if (txInst.status === 'completed') return; // Idempotent
+
+    // Read progress doc if it exists
+    let pRef: ReturnType<typeof doc> | null = null;
+    if (progressDocId) {
+      pRef = doc(db, 'studentProgress', progressDocId);
+      await tx.get(pRef);
+    }
+
+    // Read credit doc if it exists
+    let cRef: ReturnType<typeof doc> | null = null;
+    if (creditDocId) {
+      cRef = doc(db, 'studentCredit', creditDocId);
+      await tx.get(cRef);
+    }
+
+    // === ALL WRITES AFTER ===
+    tx.update(ref, {
+      status: 'completed',
+      completedAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    if (pRef) {
       tx.update(pRef, {
         sessionsCompleted: increment(1),
         totalHoursCompleted: increment(inst.durationHours),
@@ -591,22 +636,13 @@ export async function completeSession(instanceId: string): Promise<void> {
       } as any);
     }
 
-    // Credit settlement (course-agnostic — one pool per learner)
-    if (inst.billingType === 'credit') {
-      const creditQ = query(
-        studentCreditCollection,
-        where('studentId', '==', inst.studentId),
-        limit(1)
-      );
-      const creditSnap = await getDocs(creditQ);
-      if (!creditSnap.empty) {
-        const cRef = doc(db, 'studentCredit', creditSnap.docs[0].id);
-        tx.update(cRef, {
-          committedHours: increment(-inst.durationHours),
-          completedHours: increment(inst.durationHours),
-          updatedAt: Timestamp.now(),
-        } as any);
-      }
+    if (cRef) {
+      tx.update(cRef, {
+        committedHours: increment(-inst.durationHours),
+        completedHours: increment(inst.durationHours),
+        completedSessions: increment(1),
+        updatedAt: Timestamp.now(),
+      } as any);
     }
   });
 }

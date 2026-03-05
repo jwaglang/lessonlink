@@ -238,6 +238,7 @@ export interface StudentCredit {
   uncommittedHours: number;       // Hours available for new units
   committedHours: number;         // Hours reserved for assigned units
   completedHours: number;         // Hours already used/consumed
+  completedSessions?: number;     // Number of sessions completed
   currency: string;               // USD, EUR, etc.
   createdAt: string;              // ISO timestamp
   updatedAt: string;              // ISO timestamp
