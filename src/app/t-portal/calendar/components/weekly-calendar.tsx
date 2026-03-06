@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight, Loader2, Sparkles, CheckCircle, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Sparkles, CheckCircle, Send, XCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,8 +27,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { updateSessionInstanceStatus, completeSession, createSessionFeedback, getSessionFeedbackByInstance, updateSessionFeedback } from '@/lib/firestore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { completeSession, cancelSessionInstance, createSessionFeedback, getSessionFeedbackByInstance, updateSessionFeedback } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -63,49 +72,20 @@ const [translatingFeedback, setTranslatingFeedback] = useState(false);
 const [savingFeedback, setSavingFeedback] = useState(false);
 const [feedbackSaved, setFeedbackSaved] = useState(false);
 const [feedbackDocId, setFeedbackDocId] = useState<string | null>(null);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const { toast } = useToast();
+const [cancelTarget, setCancelTarget] = useState<SessionInstanceWithStudent | null>(null);
+const [cancellingSessionId, setCancellingSessionId] = useState<string | null>(null);
+const { toast } = useToast();
 
-  const weekStart = startOfWeek(currentDate);
-  const weekEnd = endOfWeek(currentDate);
-  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+const weekStart = startOfWeek(currentDate);
+const weekEnd = endOfWeek(currentDate);
+const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const sessionsWithStudents: SessionInstanceWithStudent[] = sessionInstances.map((instance) => ({
-    ...instance,
-    student: students.find((s) => s.id === instance.studentId),
-  }));
+const sessionsWithStudents: SessionInstanceWithStudent[] = sessionInstances.map((instance) => ({
+  ...instance,
+  student: students.find((s) => s.id === instance.studentId),
+}));
 
-  const handleStatusChange = async (newStatus: SessionInstance['status']) => {
-    if (!selectedSession) return;
-    
-    setUpdatingStatus(true);
-    try {
-      await updateSessionInstanceStatus(selectedSession.id, newStatus);
-      
-      const updatedData = { 
-        status: newStatus,
-        ...(newStatus === 'completed' ? { completedAt: new Date().toISOString() } : {})
-      };
-      
-      setSessionInstances(prev => 
-        prev.map(s => s.id === selectedSession.id ? { ...s, ...updatedData } : s)
-      );
-      setSelectedSession(prev => prev ? { ...prev, ...updatedData } : null);
-      
-      toast({ title: 'Success', description: 'Session status updated.' });
-    } catch (e: any) {
-      console.error('Status update error:', e);
-      toast({ 
-        title: 'Error', 
-        description: e.message || 'Could not update status.', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
-  // === Session Feedback Handlers ===
+// === Session Feedback Handlers ===
 
 async function handleGenerateFeedback() {
   if (!selectedSession || !feedbackNotes.trim()) return;
@@ -294,6 +274,34 @@ async function handleMarkComplete(sessionId: string) {
     }
   }
 
+  async function handleConfirmCancel() {
+    if (!cancelTarget) return;
+    setCancellingSessionId(cancelTarget.id);
+    try {
+      const result = await cancelSessionInstance(cancelTarget.id, cancelTarget.studentId);
+      if (result.approvalRequired) {
+        toast({
+          title: 'Approval Required',
+          description: 'This session is within 24 hours. A cancellation request has been sent for approval.',
+        });
+      } else {
+        setSessionInstances(prev =>
+          prev.map(s => s.id === cancelTarget.id ? { ...s, status: 'cancelled' as const } : s)
+        );
+        setSelectedSession(prev =>
+          prev?.id === cancelTarget.id ? { ...prev, status: 'cancelled' as const } : prev
+        );
+        toast({ title: 'Session Cancelled', description: 'The session has been cancelled and credit returned.' });
+      }
+    } catch (err: any) {
+      console.error('[handleConfirmCancel]', err);
+      toast({ title: 'Error', description: err.message || 'Could not cancel session.', variant: 'destructive' });
+    } finally {
+      setCancellingSessionId(null);
+      setCancelTarget(null);
+    }
+  }
+
   return (
     <Card>
       <CardContent className="p-4">
@@ -423,43 +431,106 @@ async function handleMarkComplete(sessionId: string) {
                 
                 <div>
                   <h4 className="font-semibold mb-2">Session Status</h4>
-                  <Select 
-                    value={selectedSession.status} 
-                    onValueChange={handleStatusChange}
-                    disabled={updatingStatus}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Set status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="rescheduled">Rescheduled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedSession.status === 'scheduled' ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          className="w-full"
+                        >
+                          Scheduled
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          disabled={!!completingSessionId}
+                          onClick={() => handleMarkComplete(selectedSession.id)}
+                        >
+                          {completingSessionId === selectedSession.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                          )}
+                          Complete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full"
+                          disabled={!!cancellingSessionId}
+                          onClick={() => setCancelTarget(selectedSession)}
+                        >
+                          {cancellingSessionId === selectedSession.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <XCircle className="h-4 w-4 mr-2" />
+                          )}
+                          Cancel
+                        </Button>
+                      </>
+                    ) : selectedSession.status === 'completed' ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          className="w-full bg-green-50 text-green-700 border-green-200"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Completed
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setFeedbackSessionId(selectedSession.id)}
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Write Feedback
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          className="w-full opacity-50"
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : selectedSession.status === 'cancelled' ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          className="w-full bg-red-50 text-red-700 border-red-200"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Cancelled
+                        </Button>
+                        <Button size="sm" variant="outline" disabled className="w-full opacity-50">Complete</Button>
+                        <Button size="sm" variant="outline" disabled className="w-full opacity-50">Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          className="w-full bg-amber-50 text-amber-700 border-amber-200"
+                        >
+                          Rescheduled
+                        </Button>
+                        <Button size="sm" variant="outline" disabled className="w-full opacity-50">Complete</Button>
+                        <Button size="sm" variant="outline" disabled className="w-full opacity-50">Cancel</Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               
               <DialogFooter className="flex-col items-stretch gap-4 sm:flex-col">
-          {/* Mark Complete button — hidden once completed */}
-          {selectedSession.status !== 'completed' && (
-            <Button
-              type="button"
-              variant="default"
-              disabled={!!completingSessionId}
-              onClick={() => handleMarkComplete(selectedSession.id)}
-            >
-              {completingSessionId === selectedSession.id ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Completing...
-                </>
-              ) : (
-                'Mark Complete'
-              )}
-            </Button>
-          )}
 
           {/* Session Feedback Section — appears after completion */}
           {(selectedSession.status === 'completed' || feedbackSessionId === selectedSession.id) && !feedbackSaved && (
@@ -588,6 +659,42 @@ async function handleMarkComplete(sessionId: string) {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelTarget && (() => {
+                const scheduledAt = new Date(`${getSessionDate(cancelTarget)}T${cancelTarget.startTime}:00`);
+                const hoursUntil = (scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
+                return hoursUntil < 24 ? (
+                  <span className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <span>
+                      This session is within 24 hours. Cancellation will require approval and will not
+                      take effect immediately.
+                    </span>
+                  </span>
+                ) : (
+                  <>This will cancel the session and return the credit to the learner. This action cannot be undone.</>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!cancellingSessionId}>Keep Session</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              disabled={!!cancellingSessionId}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancellingSessionId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Cancel Session
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

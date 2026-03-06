@@ -29,6 +29,7 @@ import {
   Loader2,
   AlertTriangle,
   CalendarPlus,
+  Sparkles,
 } from 'lucide-react';
 import { format, parseISO, isFuture, startOfDay, differenceInHours } from 'date-fns';
 import Link from 'next/link';
@@ -178,30 +179,39 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <BillingBadge type={session.billingType} />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className=""
-                      onClick={() => handleMarkComplete(session)}
-                      disabled={actionLoading === session.id}
-                    >
-                      {actionLoading === session.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-1 h-3 w-3" /> Complete
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 border-red-300 hover:bg-red-50"
-                      onClick={() => setCancelTarget(session)}
-                      disabled={actionLoading === session.id}
-                    >
-                      <XCircle className="mr-1 h-3 w-3" /> Cancel
-                    </Button>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled
+                        className="w-full"
+                      >
+                        Scheduled
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleMarkComplete(session)}
+                        disabled={actionLoading === session.id}
+                      >
+                        {actionLoading === session.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1" /> Complete
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => setCancelTarget(session)}
+                        disabled={actionLoading === session.id}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" /> Cancel
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -256,17 +266,39 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <BillingBadge type={session.billingType} />
-                    <StatusBadge status={session.status} />
-                    {session.status === 'completed' && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs"
-                        onClick={() => window.location.href = '/t-portal/calendar'}
-                      >
-                        Write Feedback
-                      </Button>
-                    )}
+                    <div className="grid grid-cols-3 gap-2">
+                      {session.status === 'completed' ? (
+                        <>
+                          <Button size="sm" variant="outline" disabled className="w-full bg-green-50 text-green-700 border-green-200">
+                            <CheckCircle className="h-3 w-3 mr-1" /> Completed
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => window.location.href = '/t-portal/calendar'}
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" /> Feedback
+                          </Button>
+                          <Button size="sm" variant="outline" disabled className="w-full opacity-50">Cancel</Button>
+                        </>
+                      ) : session.status === 'cancelled' ? (
+                        <>
+                          <Button size="sm" variant="outline" disabled className="w-full bg-red-50 text-red-700 border-red-200">
+                            <XCircle className="h-3 w-3 mr-1" /> Cancelled
+                          </Button>
+                          <Button size="sm" variant="outline" disabled className="w-full opacity-50">Complete</Button>
+                          <Button size="sm" variant="outline" disabled className="w-full opacity-50">Cancel</Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="outline" disabled className="w-full bg-amber-50 text-amber-700 border-amber-200">
+                            Rescheduled
+                          </Button>
+                          <Button size="sm" variant="outline" disabled className="w-full opacity-50">Complete</Button>
+                          <Button size="sm" variant="outline" disabled className="w-full opacity-50">Cancel</Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

@@ -733,10 +733,30 @@ export async function cancelSessionInstance(
     return { success: false, approvalRequired: true };
   }
 
+  // Cancel the session
   await updateDoc(doc(db, 'sessionInstances', instanceId), {
     status: 'cancelled',
     updatedAt: Timestamp.now(),
   } as any);
+
+  // Return credit: committed -> uncommitted
+  if (existing.billingType === 'credit') {
+    const creditQ = query(
+      studentCreditCollection,
+      where('studentId', '==', existing.studentId),
+      limit(1)
+    );
+    const creditSnap = await getDocs(creditQ);
+    if (!creditSnap.empty) {
+      const cRef = doc(db, 'studentCredit', creditSnap.docs[0].id);
+      await updateDoc(cRef, {
+        committedHours: increment(-existing.durationHours),
+        uncommittedHours: increment(existing.durationHours),
+        updatedAt: Timestamp.now(),
+      } as any);
+    }
+  }
+
   return { success: true };
 }
 
