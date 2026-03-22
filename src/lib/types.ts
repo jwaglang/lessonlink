@@ -274,6 +274,12 @@ export interface StudentProgress {
   hoursReserved?: number;
   createdAt?: string;
   updatedAt?: string;
+  // Phase 15-B: Homework tracking
+  homeworkAssigned?: number;         // total HW assignments for this unit
+  homeworkCompleted?: number;        // HW with status 'graded'
+  homeworkCompletionRate?: number;   // homeworkCompleted / homeworkAssigned (0-1)
+  // Phase 15-B: Practice hours from homework
+  homeworkPracticeHours?: number;    // total active practice hours from graded HW
 }
 
 
@@ -609,6 +615,96 @@ export interface ScheduleTemplate {
   ownerType: 'teacher' | 'learner';
   name: string;
   slots: { day: number; time: string }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =========================================
+// Phase 15-B: Homework System
+// =========================================
+
+export type HomeworkType = 'workbook' | 'phonics_workbook' | 'song_worksheet' | 'sentence_switcher' | 'other';
+export type HomeworkStatus = 'assigned' | 'delivered' | 'submitted' | 'graded';
+export type HomeworkDeliveryMethod = 'email' | 'manual' | 'in_app';
+
+// A single practice session (one sitting where the student worked on the homework)
+export interface PracticeSession {
+  startTime: string;       // ISO timestamp — when the student started this sitting
+  endTime: string;         // ISO timestamp — when the student stopped this sitting
+  activeMinutes: number;   // active practice time (tab-away time excluded)
+}
+
+// Parsed results from the Kiddoland homework JSON export
+export interface ParsedHomeworkResults {
+  // Common fields (present in every tool type)
+  studentName?: string;
+  completedActivities: string[];   // activity identifiers completed
+  totalActivities: number;         // total available
+  completionRate: number;          // 0-1 (completedActivities.length / totalActivities)
+
+  // Practice time tracking
+  practiceSessions: PracticeSession[];   // every sitting logged
+  totalPracticeMinutes: number;          // sum of all activeMinutes
+
+  // Workbook-specific (WHITE, Phonics, future levels)
+  wordLevels?: Record<string, number>;    // vocabulary mastery per word
+  dragonLevel?: string;                   // 'white', 'yellow', etc.
+
+  // Song worksheet-specific
+  matchingScore?: { correct: number; total: number };
+  questionAnswers?: Record<string, string>;
+  talkAnswers?: Record<string, string>;
+  singCount?: number;
+
+  // Sentence switcher-specific
+  missions?: { prompt: string; correctAnswer?: string; studentAnswer: string }[];
+
+  // Generic catch-all for future tool types
+  toolSpecificData?: Record<string, any>;
+}
+
+export interface HomeworkAssignment {
+  id: string;
+
+  // Links
+  studentId: string;
+  teacherId: string;
+  courseId: string;
+  unitId: string;
+  sessionId?: string;              // session template ID (optional — can be unit-level HW)
+  sessionInstanceId?: string;      // specific session instance that triggered this HW
+
+  // Content
+  title: string;                   // e.g. "Colors and Shapes Workbook"
+  description?: string;            // T's instructions to L/parent
+  homeworkType: HomeworkType;
+
+  // Delivery
+  deliveryMethod: HomeworkDeliveryMethod;
+  deliveredAt?: string;            // ISO timestamp when email sent
+
+  // Submission (JSON upload from external tool)
+  submission?: {
+    uploadedAt: string;            // ISO timestamp
+    uploadedBy: 'teacher' | 'parent';
+    rawJson: Record<string, any>;  // full JSON from workbook/worksheet export
+    parsedResults: ParsedHomeworkResults;
+  };
+
+  // Grading
+  grading?: {
+    score: number;                 // 0-100 percentage
+    maxScore: number;              // max possible (e.g. 8 for 8 activities)
+    achievedScore: number;         // actual achieved (e.g. 6 of 8)
+    teacherNotes?: string;         // T's comments on the submission
+    gradedAt: string;              // ISO timestamp
+    gradedBy: string;              // teacherId
+    practiceHours: number;         // total active practice hours from this HW
+  };
+
+  // Status
+  status: HomeworkStatus;
+  dueDate?: string;                // optional due date
   createdAt: string;
   updatedAt: string;
 }

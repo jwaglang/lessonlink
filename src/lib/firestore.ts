@@ -65,6 +65,7 @@ import type {
   OutputCitation,
   SessionFeedback,
   ScheduleTemplate,
+  HomeworkAssignment,
 } from './types';
 
 // ===================================
@@ -93,6 +94,7 @@ export type {
   AssessmentReport,
   OutputCitation,
   ScheduleTemplate,
+  HomeworkAssignment,
 };
 
 // ===================================
@@ -138,6 +140,7 @@ export const messagesCollection = collection(db, 'messages');
 const paymentsCollection = collection(db, 'payments');
 const assessmentReportsCollection = collection(db, 'assessmentReports');
 const sessionFeedbackCollection = collection(db, 'sessionFeedback');
+const homeworkAssignmentsCollection = collection(db, 'homeworkAssignments');
 
 /* =========================================================
    Helpers
@@ -1909,4 +1912,125 @@ export async function updateScheduleTemplate(id: string, updates: Partial<Schedu
 
 export async function deleteScheduleTemplate(id: string): Promise<void> {
   await deleteDoc(doc(db, 'scheduleTemplates', id));
+}
+
+/* =========================================================
+   Homework Assignments (Phase 15-B)
+   ========================================================= */
+
+export async function createHomeworkAssignment(data: Omit<HomeworkAssignment, 'id'>): Promise<string> {
+  const ref = await addDoc(homeworkAssignmentsCollection, {
+    ...data,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  } as any);
+  return ref.id;
+}
+
+export async function getHomeworkAssignment(id: string): Promise<HomeworkAssignment | null> {
+  const snap = await getDoc(doc(db, 'homeworkAssignments', id));
+  return snap.exists() ? asId<HomeworkAssignment>(snap.id, snap.data()) : null;
+}
+
+export async function updateHomeworkAssignment(id: string, data: Partial<HomeworkAssignment>): Promise<void> {
+  await updateDoc(doc(db, 'homeworkAssignments', id), {
+    ...data,
+    updatedAt: nowIso(),
+  } as any);
+}
+
+export async function deleteHomeworkAssignment(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'homeworkAssignments', id));
+}
+
+export async function getHomeworkByStudent(studentId: string): Promise<HomeworkAssignment[]> {
+  const q = query(homeworkAssignmentsCollection, where('studentId', '==', studentId), orderBy('createdAt', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => asId<HomeworkAssignment>(d.id, d.data()));
+}
+
+export async function getHomeworkBySessionInstance(sessionInstanceId: string): Promise<HomeworkAssignment[]> {
+  const q = query(homeworkAssignmentsCollection, where('sessionInstanceId', '==', sessionInstanceId));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => asId<HomeworkAssignment>(d.id, d.data()));
+}
+
+export async function getHomeworkByUnit(unitId: string, studentId: string): Promise<HomeworkAssignment[]> {
+  const q = query(
+    homeworkAssignmentsCollection,
+    where('unitId', '==', unitId),
+    where('studentId', '==', studentId),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => asId<HomeworkAssignment>(d.id, d.data()));
+}
+
+export async function getPendingHomework(studentId: string): Promise<HomeworkAssignment[]> {
+  const q = query(
+    homeworkAssignmentsCollection,
+    where('studentId', '==', studentId),
+    where('status', 'in', ['assigned', 'delivered', 'submitted'])
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => asId<HomeworkAssignment>(d.id, d.data()));
+}
+
+/**
+ * After grading homework, update the related studentProgress record
+ * with homework stats (count, accuracy avg, practice hours).
+ */
+export async function updateProgressWithHomeworkStats(
+  studentId: string,
+  courseId: string,
+  unitId: string
+): Promise<void> {
+  // Get all graded homework for this unit + student
+  const q = query(
+    homeworkAssignmentsCollection,
+    where('studentId', '==', studentId),
+    where('unitId', '==', unitId),
+    where('status', '==', 'graded')
+  );
+  const snap = await getDocs(q);
+  const graded = snap.docs.map(d => d.data());
+
+  // Get all homework (any status) for this unit + student
+  const allQ = query(
+    homeworkAssignmentsCollection,
+    where('studentId', '==', studentId),
+    where('unitId', '==', unitId)
+  );
+  const allSnap = await getDocs(allQ);
+  const totalAssigned = allSnap.size;
+
+  // Calculate stats
+  const totalCompleted = graded.length;
+  const completionRate = totalAssigned > 0 ? totalCompleted / totalAssigned : 0;
+  const accuracySum = graded.reduce((sum, hw) => sum + (hw.grading?.score ?? 0), 0);
+  const accuracyAvg = totalCompleted > 0 ? accuracySum / totalCompleted : 0;
+  const practiceHours = graded.reduce((sum, hw) => sum + (hw.grading?.practiceHours ?? 0), 0);
+
+  // Find the matching studentProgress doc
+  const progressQ = query(
+    studentProgressCollection,
+    where('studentId', '==', studentId),
+    where('courseId', '==', courseId),
+    where('unitId', '==', unitId),
+    limit(1)
+  );
+  const progressSnap = await getDocs(progressQ);
+
+  if (!progressSnap.empty) {
+    const progressRef = doc(db, 'studentProgress', progressSnap.docs[0].id);
+    await updateDoc(progressRef, {
+      homeworkAssigned: totalAssigned,
+      homeworkCompleted: totalCompleted,
+      homeworkAccuracyAvg: Math.round(accuracyAvg * 100) / 100,
+      homeworkCompletionRate: Math.round(completionRate * 100) / 100,
+      homeworkPracticeHours: Math.round(practiceHours * 100) / 100,
+      updatedAt: nowIso(),
+      lastActivityAt: nowIso(),
+    } as any);
+  }
 }

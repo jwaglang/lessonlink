@@ -165,3 +165,105 @@ export function sessionReminderEmail(params: {
 
   return { subject, html: baseTemplate(content) };
 }
+
+// ========================================
+// Homework Assignment Email (T assigns HW to L)
+// ========================================
+
+export function homeworkAssignmentEmail(params: {
+  learnerName: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  unitTitle?: string;
+  teacherName?: string;
+}): { subject: string; html: string } {
+  const { learnerName, title, description, dueDate, unitTitle, teacherName } = params;
+
+  const subject = `New Homework: ${title}`;
+
+  const content = `
+    <p>Hi <strong>${learnerName}</strong>'s family!</p>
+    <p>${teacherName ? `<strong>${teacherName}</strong> has` : 'Your teacher has'} assigned new homework:</p>
+
+    <div class="section">
+      <h3>${title}</h3>
+      ${unitTitle ? `<p><strong>Unit:</strong> ${unitTitle}</p>` : ''}
+      ${description ? `<p>${description}</p>` : ''}
+      ${dueDate ? `<p><strong>Due:</strong> ${dueDate}</p>` : ''}
+    </div>
+
+    <div class="section">
+      <h3>How to Complete</h3>
+      <p>1. Open the workbook or worksheet file your teacher sent</p>
+      <p>2. Complete all the activities</p>
+      <p>3. When finished, click the <strong>Export</strong> button in the workbook</p>
+      <p>4. Send the exported file back to your teacher</p>
+    </div>
+
+    <p>Have fun learning!</p>
+    ${teacherName ? `<p>Kind regards,<br><strong>${teacherName}</strong></p>` : ''}
+  `;
+
+  return { subject, html: baseTemplate(content) };
+}
+
+// ========================================
+// Homework Graded Email (notify parent after T grades)
+// ========================================
+
+export function homeworkGradedEmail(params: {
+  learnerName: string;
+  title: string;
+  unitTitle?: string;
+  score: number;
+  achievedScore: number;
+  maxScore: number;
+  practiceHours: number;
+  totalHoursTowardTarget: number;
+  levelTargetHours: number;
+  teacherNotes?: string;
+  teacherName?: string;
+}): { subject: string; html: string } {
+  const {
+    learnerName, title, unitTitle, score, achievedScore, maxScore,
+    practiceHours, totalHoursTowardTarget, levelTargetHours,
+    teacherNotes, teacherName,
+  } = params;
+
+  const subject = `Homework Graded: ${title} — ${learnerName}`;
+
+  const practiceDisplay = practiceHours < 1
+    ? `${Math.round(practiceHours * 60)} minutes`
+    : `${practiceHours.toFixed(1)} hours`;
+
+  const content = `
+    <p>Dear Parent/Guardian of <strong>${learnerName}</strong>,</p>
+    <p>${teacherName ? `<strong>${teacherName}</strong> has` : 'Your teacher has'} graded ${learnerName}'s homework:</p>
+
+    <div class="section">
+      <h3>${title}</h3>
+      ${unitTitle ? `<p><strong>Unit:</strong> ${unitTitle}</p>` : ''}
+      <p><strong>Score:</strong> ${achievedScore}/${maxScore} (${Math.round(score)}%)</p>
+      <p><strong>Practice Time:</strong> ${practiceDisplay}</p>
+    </div>
+
+    <div class="section">
+      <h3>Progress Toward Level Target</h3>
+      <p><strong>${totalHoursTowardTarget.toFixed(1)}</strong> of <strong>${levelTargetHours}</strong> practice hours completed</p>
+      <p>That's <strong>${Math.round((totalHoursTowardTarget / levelTargetHours) * 100)}%</strong> of the way there!</p>
+    </div>
+
+    ${teacherNotes ? `
+    <div class="section">
+      <h3>Teacher's Notes</h3>
+      <p>${teacherNotes}</p>
+    </div>
+    ` : ''}
+
+    <p>Keep up the great work!</p>
+    ${teacherName ? `<p>Kind regards,<br><strong>${teacherName}</strong></p>` : ''}
+  `;
+
+  return { subject, html: baseTemplate(content) };
+}
