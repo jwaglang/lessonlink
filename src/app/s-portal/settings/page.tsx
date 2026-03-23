@@ -82,7 +82,7 @@ export default function StudentSettingsPage() {
     if (authLoading || !user?.uid) return;
 
     async function loadStudent() {
-      const studentData = await getStudentById(user.uid);
+      const studentData = await getStudentById(user!.uid);
       if (studentData) {
         setStudent(studentData);
         setName(studentData.name || '');
@@ -192,7 +192,7 @@ export default function StudentSettingsPage() {
     return {
       name: contact.name,
       email: contact.email,
-      ...(contact.phone && { phone: contact.phone }),
+      phone: contact.phone || '',
       relationship: contact.relationship,
       ...(contact.country && { country: contact.country }),
       ...(contact.city && { city: contact.city }),
@@ -571,12 +571,12 @@ function ParentContactDialog({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [relationship, setRelationship] = useState('');
+  const [relationship, setRelationship] = useState<ParentContact['relationship']>('guardian');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [preferredContactMethod, setPreferredContactMethod] = useState('Email');
   const [profession, setProfession] = useState('');
-  const [englishProficiency, setEnglishProficiency] = useState('');
+  const [englishProficiency, setEnglishProficiency] = useState<ParentContact['englishProficiency']>(undefined);
   const [contactMessaging, setContactMessaging] = useState<MessagingContact[]>([]);
   const [msgApp, setMsgApp] = useState('WeChat');
   const [msgHandle, setMsgHandle] = useState('');
@@ -585,12 +585,12 @@ function ParentContactDialog({
     setName('');
     setEmail('');
     setPhone('');
-    setRelationship('');
+    setRelationship('guardian');
     setCountry('');
     setCity('');
     setPreferredContactMethod('Email');
     setProfession('');
-    setEnglishProficiency('');
+    setEnglishProficiency(undefined);
     setContactMessaging([]);
   }
 
@@ -600,7 +600,7 @@ function ParentContactDialog({
     const contact: ParentContact = {
       name,
       email,
-      phone: phone || undefined,
+      phone: phone || '',
       relationship,
       country: country || undefined,
       city: city || undefined,
@@ -674,7 +674,7 @@ function ParentContactDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="pc-relationship">Relationship {isUnder18 && isPrimary && '*'}</Label>
-              <Select value={relationship} onValueChange={setRelationship}>
+              <Select value={relationship} onValueChange={(v) => setRelationship(v as ParentContact['relationship'])}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select relationship" />
                 </SelectTrigger>
@@ -732,7 +732,7 @@ function ParentContactDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="pc-english">English Proficiency</Label>
-            <Select value={englishProficiency} onValueChange={setEnglishProficiency}>
+            <Select value={englishProficiency || ''} onValueChange={(v) => setEnglishProficiency(v as ParentContact['englishProficiency'])}>
               <SelectTrigger>
                 <SelectValue placeholder="Select level" />
               </SelectTrigger>
