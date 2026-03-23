@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, BookOpen, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { HomeworkType, HomeworkDeliveryMethod } from '@/lib/types';
+import type { HomeworkType, HomeworkDeliveryMethod, HomeworkAssignment } from '@/lib/types';
+import { createHomeworkAssignment } from '@/lib/firestore';
 
 interface AssignHomeworkFormProps {
   // Pre-fill data from the session context
@@ -68,34 +69,28 @@ export default function AssignHomeworkForm({
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/homework/assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentId,
-          teacherId,
-          courseId,
-          unitId,
-          sessionId: sessionId || undefined,
-          sessionInstanceId: sessionInstanceId || undefined,
-          title: title.trim(),
-          description: description.trim() || undefined,
-          homeworkType,
-          deliveryMethod,
-          dueDate: dueDate || undefined,
-          parentEmail: deliveryMethod === 'email' ? parentEmail : undefined,
-          learnerName,
-          unitTitle,
-          teacherName,
-        }),
-      });
+      const homeworkData: Omit<HomeworkAssignment, 'id'> = {
+        studentId,
+        teacherId,
+        courseId,
+        unitId,
+        sessionId: sessionId || undefined,
+        sessionInstanceId: sessionInstanceId || undefined,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        homeworkType,
+        deliveryMethod,
+        dueDate: dueDate || undefined,
+        status: 'assigned',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to assign homework');
+      await createHomeworkAssignment(homeworkData);
 
       toast({
         title: 'Homework Assigned',
-        description: deliveryMethod === 'email' ? 'Homework assigned and email sent.' : 'Homework assigned.',
+        description: 'Homework assigned successfully.',
       });
       onAssigned?.();
     } catch (err: any) {
