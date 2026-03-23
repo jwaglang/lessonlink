@@ -21,9 +21,6 @@ export default function TeacherPortalLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
-  if (!user) return null;
-  const currentUser = user;
-
   useEffect(() => {
     if (authLoading) {
       return; // Wait for Firebase auth to initialize
@@ -36,9 +33,10 @@ export default function TeacherPortalLayout({
 
     // Check if the user is a teacher or admin
     async function checkAuthorization() {
+      if (!user) return;
       try {
-        const teacherProfile = await getTeacherProfileByEmail(currentUser.email!);
-        const isAdmin = currentUser.email === ADMIN_EMAIL;
+        const teacherProfile = await getTeacherProfileByEmail(user.email!);
+        const isAdmin = user.email === ADMIN_EMAIL;
 
         if (teacherProfile || isAdmin) {
           setIsAuthorized(true);
@@ -57,6 +55,8 @@ export default function TeacherPortalLayout({
     checkAuthorization();
 
   }, [user, authLoading, router]);
+
+  if (!user) return null;
 
   if (isChecking || authLoading) {
     return (
