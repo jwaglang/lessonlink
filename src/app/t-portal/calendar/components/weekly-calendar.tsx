@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight, Loader2, Sparkles, CheckCircle, Send, XCircle, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Sparkles, CheckCircle, Send, XCircle, AlertTriangle, BookOpen } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,6 +40,7 @@ import {
 import { completeSession, cancelSessionInstance, createSessionFeedback, getSessionFeedbackByInstance, updateSessionFeedback } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import AssignHomeworkForm from '@/components/assign-homework-form';
 
 type SessionInstanceWithStudent = SessionInstance & { student?: Student };
 
@@ -74,6 +75,8 @@ const [feedbackSaved, setFeedbackSaved] = useState(false);
 const [feedbackDocId, setFeedbackDocId] = useState<string | null>(null);
 const [cancelTarget, setCancelTarget] = useState<SessionInstanceWithStudent | null>(null);
 const [cancellingSessionId, setCancellingSessionId] = useState<string | null>(null);
+const [showHomeworkForm, setShowHomeworkForm] = useState(false);
+const [homeworkAssigned, setHomeworkAssigned] = useState(false);
 const { toast } = useToast();
 
 const weekStart = startOfWeek(currentDate);
@@ -204,6 +207,8 @@ function resetFeedbackState() {
   setFeedbackLanguage('en');
   setFeedbackSaved(false);
   setFeedbackDocId(null);
+  setShowHomeworkForm(false);
+  setHomeworkAssigned(false);
 }
 // Load existing feedback when opening a completed session
 React.useEffect(() => {
@@ -652,6 +657,51 @@ async function handleMarkComplete(sessionId: string) {
           {feedbackSaved && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
               ✅ Feedback saved and ready to send.
+            </div>
+          )}
+
+          {/* Assign Homework Section — appears for any completed session */}
+          {selectedSession.status === 'completed' && !homeworkAssigned && (
+            <div className="w-full border-t pt-4">
+              {!showHomeworkForm ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowHomeworkForm(true)}
+                >
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Assign Homework
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    Assign Homework
+                  </h4>
+                  <AssignHomeworkForm
+                    studentId={selectedSession.studentId}
+                    teacherId={selectedSession.teacherUid || ''}
+                    courseId={selectedSession.courseId || ''}
+                    unitId={selectedSession.unitId || ''}
+                    sessionId={selectedSession.sessionId || undefined}
+                    sessionInstanceId={selectedSession.id}
+                    sessionTitle={selectedSession.title || ''}
+                    parentEmail={selectedSession.student?.primaryContact?.email}
+                    learnerName={selectedSession.student?.name}
+                    unitTitle={undefined}
+                    teacherName={undefined}
+                    onAssigned={() => setHomeworkAssigned(true)}
+                    onCancel={() => setShowHomeworkForm(false)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Homework assigned confirmation */}
+          {homeworkAssigned && (
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-md text-purple-800 text-sm">
+              ✅ Homework assigned.
             </div>
           )}
         </DialogFooter>

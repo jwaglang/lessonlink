@@ -14,6 +14,7 @@ import ProfileProgressTab from './components/profile-progress-tab';
 import SessionsTab from './components/sessions-tab';
 import PackagesTab from './components/packages-tab';
 import PaymentsTab from './components/payments-tab';
+import HomeworkTab from './components/homework-tab';
 
 export default function LearnerProfilePage() {
   const params = useParams();
@@ -91,6 +92,7 @@ export default function LearnerProfilePage() {
         <TabsList>
           <TabsTrigger value="profile">Profile & Progress</TabsTrigger>
           <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="homework">Homework</TabsTrigger>
           <TabsTrigger value="packages">Packages & Credits</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
@@ -105,6 +107,10 @@ export default function LearnerProfilePage() {
 
         <TabsContent value="sessions" className="mt-6">
           <SessionsTab studentId={studentId} student={student} />
+        </TabsContent>
+
+        <TabsContent value="homework" className="mt-6">
+          <HomeworkTab studentId={studentId} student={student} />
         </TabsContent>
 
         <TabsContent value="packages" className="mt-6">

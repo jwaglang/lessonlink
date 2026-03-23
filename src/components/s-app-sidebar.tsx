@@ -273,7 +273,8 @@ const StudentAppSidebar = () => {
                   pathname.startsWith('/s-portal/tutors') ||
                   pathname.startsWith('/s-portal/t-profiles') ||
                   pathname.startsWith('/s-portal/feedback') ||
-                  pathname.startsWith('/s-portal/evaluations')
+                  pathname.startsWith('/s-portal/evaluations') ||
+                  pathname.startsWith('/s-portal/homework')
                 }
                 tooltip="Tutors"
               >
@@ -307,6 +308,14 @@ const StudentAppSidebar = () => {
                     <Link href="/s-portal/evaluations" className="flex items-center gap-2">
                       <ClipboardCheck className="h-3.5 w-3.5" />
                       Evaluations
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/homework'}>
+                    <Link href="/s-portal/homework" className="flex items-center gap-2">
+                      <BookOpen className="h-3.5 w-3.5" />
+                      Homework
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>

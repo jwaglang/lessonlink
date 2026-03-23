@@ -30,9 +30,17 @@ import {
   AlertTriangle,
   CalendarPlus,
   Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import { format, parseISO, isFuture, startOfDay, differenceInHours } from 'date-fns';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import AssignHomeworkForm from '@/components/assign-homework-form';
 
 interface SessionsTabProps {
   studentId: string;
@@ -45,6 +53,7 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<SessionInstance | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [hwDialogSession, setHwDialogSession] = useState<SessionInstance | null>(null);
 
   useEffect(() => {
     async function fetchSessions() {
@@ -279,7 +288,14 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
                           >
                             <Sparkles className="h-3 w-3 mr-1" /> Feedback
                           </Button>
-                          <Button size="sm" variant="outline" disabled className="w-full opacity-50">Cancel</Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => setHwDialogSession(session)}
+                          >
+                            <BookOpen className="h-3 w-3 mr-1" /> Assign HW
+                          </Button>
                         </>
                       ) : session.status === 'cancelled' ? (
                         <>
@@ -345,6 +361,33 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Assign Homework Dialog */}
+      <Dialog open={!!hwDialogSession} onOpenChange={() => setHwDialogSession(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Assign Homework
+            </DialogTitle>
+          </DialogHeader>
+          {hwDialogSession && (
+            <AssignHomeworkForm
+              studentId={hwDialogSession.studentId}
+              teacherId={hwDialogSession.teacherUid || ''}
+              courseId={hwDialogSession.courseId || ''}
+              unitId={hwDialogSession.unitId || ''}
+              sessionId={hwDialogSession.sessionId || undefined}
+              sessionInstanceId={hwDialogSession.id}
+              sessionTitle={hwDialogSession.title || ''}
+              parentEmail={student.primaryContact?.email}
+              learnerName={student.name}
+              onAssigned={() => setHwDialogSession(null)}
+              onCancel={() => setHwDialogSession(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
