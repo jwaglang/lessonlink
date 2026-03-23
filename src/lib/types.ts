@@ -676,7 +676,8 @@ export interface HomeworkAssignment {
 
   // Content
   title: string;                   // e.g. "Colors and Shapes Workbook"
-  description?: string;            // T's instructions to L/parent
+  description?: string;            // AI-generated or T-written summary of the assignment
+  teacherInstructions?: string;    // T's specific instructions to L/parent (what to do, what to focus on)
   homeworkType: HomeworkType;
 
   // Delivery
@@ -686,7 +687,7 @@ export interface HomeworkAssignment {
   // Submission (JSON upload from external tool)
   submission?: {
     uploadedAt: string;            // ISO timestamp
-    uploadedBy: 'teacher' | 'parent';
+    uploadedBy: 'teacher' | 'parent' | 'student';
     rawJson: Record<string, any>;  // full JSON from workbook/worksheet export
     parsedResults: ParsedHomeworkResults;
   };

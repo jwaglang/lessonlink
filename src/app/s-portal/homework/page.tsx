@@ -2,14 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth-provider';
-import { getHomeworkByStudent } from '@/lib/firestore';
+import { getHomeworkByStudent, updateHomeworkAssignment, getHomeworkAssignment } from '@/lib/firestore';
+import { parseHomeworkJson, isValidKiddolandExport, detectToolType } from '@/lib/homework-parser';
 import type { HomeworkAssignment } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle, Clock, Star, FileText } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Star,
+  FileText,
+  Upload,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  AlertCircle,
+  RotateCcw,
+} from 'lucide-react';
+import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import PageHeader from '@/components/page-header';
+import { useToast } from '@/hooks/use-toast';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   assigned: { label: 'Assigned', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
@@ -63,6 +79,10 @@ export default function HomeworkPage() {
   const totalPracticeHours = homework
     .filter(h => h.grading)
     .reduce((sum, h) => sum + (h.grading?.practiceHours ?? 0), 0);
+
+  function handleHomeworkUpdate(updated: HomeworkAssignment) {
+    setHomework(prev => prev.map(h => h.id === updated.id ? updated : h));
+  }
 
   if (authLoading || loading) {
     return (
@@ -122,82 +142,329 @@ export default function HomeworkPage() {
       </div>
 
       {/* Homework List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BookOpen className="h-5 w-5" />
-            Assignments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+      {filtered.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground text-center py-8">
               {homework.length === 0 ? 'No homework assigned yet.' : 'No homework matching this filter.'}
             </p>
-          ) : (
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((hw) => (
+            <HomeworkCard key={hw.id} homework={hw} onUpdate={handleHomeworkUpdate} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Homework Card (expandable) ── */
+
+function HomeworkCard({ homework: hw, onUpdate }: { homework: HomeworkAssignment; onUpdate: (hw: HomeworkAssignment) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Due date logic
+  const dueDate = hw.dueDate ? parseISO(hw.dueDate) : null;
+  const isOverdue = dueDate ? isPast(dueDate) : false;
+  const daysUntilDue = dueDate ? differenceInDays(dueDate, new Date()) : null;
+
+  function getDueDateColor(): string {
+    if (!dueDate) return '';
+    if (isOverdue) return 'text-red-600 dark:text-red-400';
+    if (daysUntilDue !== null && daysUntilDue <= 2) return 'text-amber-600 dark:text-amber-400';
+    return 'text-green-600 dark:text-green-400';
+  }
+
+  function getDueDateLabel(): string {
+    if (!dueDate) return '';
+    if (isOverdue) return `Overdue (was ${format(dueDate, 'MMM d')})`;
+    if (daysUntilDue === 0) return 'Due today';
+    if (daysUntilDue === 1) return 'Due tomorrow';
+    return `Due ${format(dueDate, 'MMM d')} (${daysUntilDue} days)`;
+  }
+
+  const canUpload = (hw.status === 'assigned' || hw.status === 'delivered') && !isOverdue;
+  const canResubmit = hw.status === 'submitted' && !isOverdue;
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const text = await file.text();
+      const rawJson = JSON.parse(text);
+
+      if (!isValidKiddolandExport(rawJson)) {
+        throw new Error('This does not look like a Kiddoland homework export. Please check the file.');
+      }
+
+      const toolType = detectToolType(rawJson) || hw.homeworkType;
+      const parsedResults = parseHomeworkJson(rawJson, toolType);
+
+      await updateHomeworkAssignment(hw.id, {
+        submission: {
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: 'student',
+          rawJson,
+          parsedResults,
+        },
+        status: 'submitted',
+      });
+
+      toast({
+        title: 'Work Submitted!',
+        description: `${Math.round(parsedResults.completionRate * 100)}% completed. Your teacher will review it soon.`,
+      });
+
+      onUpdate({
+        ...hw,
+        status: 'submitted',
+        submission: {
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: 'student',
+          rawJson,
+          parsedResults,
+        },
+      });
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      setUploadError(err.message || 'Failed to upload. Make sure it\'s a valid JSON export from your workbook.');
+    } finally {
+      setUploading(false);
+      // Reset file input
+      e.target.value = '';
+    }
+  }
+
+  return (
+    <Card className={hw.status === 'graded' ? 'border-green-200 dark:border-green-800' : ''}>
+      {/* Collapsed summary — always visible */}
+      <div
+        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{hw.title}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{TYPE_LABELS[hw.homeworkType] || hw.homeworkType}</span>
+              {dueDate && (
+                <>
+                  <span>·</span>
+                  <span className={getDueDateColor()}>{getDueDateLabel()}</span>
+                </>
+              )}
+              {hw.grading && (
+                <>
+                  <span>·</span>
+                  <span className="font-medium text-green-700 dark:text-green-300">
+                    {Math.round(hw.grading.score)}%
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge className={STATUS_CONFIG[hw.status]?.color || ''}>
+            {STATUS_CONFIG[hw.status]?.label || hw.status}
+          </Badge>
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </div>
+      </div>
+
+      {/* Expanded detail view */}
+      {expanded && (
+        <CardContent className="pt-0 pb-4 space-y-4 border-t">
+
+          {/* Description */}
+          {hw.description && (
+            <div className="pt-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">About This Homework</p>
+              <p className="text-sm">{hw.description}</p>
+            </div>
+          )}
+
+          {/* Teacher Instructions */}
+          {(hw as any).teacherInstructions && (
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-1">Teacher Instructions</p>
+              <p className="text-sm">{(hw as any).teacherInstructions}</p>
+            </div>
+          )}
+
+          {/* Assignment info */}
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <span>Assigned: {format(parseISO(hw.createdAt), 'MMM d, yyyy')}</span>
+            {dueDate && (
+              <span className={getDueDateColor()}>
+                {isOverdue ? '⚠️' : '📅'} {getDueDateLabel()}
+              </span>
+            )}
+          </div>
+
+          {/* === STATUS-BASED SECTIONS === */}
+
+          {/* Assigned / Delivered — show upload button */}
+          {(hw.status === 'assigned' || hw.status === 'delivered') && (
             <div className="space-y-3">
-              {filtered.map((hw) => (
-                <div
-                  key={hw.id}
-                  className="rounded-md border px-4 py-3 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium">{hw.title}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{TYPE_LABELS[hw.homeworkType] || hw.homeworkType}</span>
-                          <span>·</span>
-                          <span>Assigned {format(parseISO(hw.createdAt), 'MMM d, yyyy')}</span>
-                          {hw.dueDate && (
+              {canUpload ? (
+                <div className="p-4 border-2 border-dashed border-purple-200 dark:border-purple-800 rounded-lg text-center space-y-2">
+                  <Upload className="h-8 w-8 mx-auto text-purple-400" />
+                  <p className="text-sm font-medium">Ready to submit your work?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Click the Export button in your workbook, then upload the JSON file here.
+                  </p>
+                  <div className="pt-2">
+                    <Label htmlFor="hw-upload" className="cursor-pointer">
+                      <Button asChild variant="default" disabled={uploading}>
+                        <span>
+                          {uploading ? (
                             <>
-                              <span>·</span>
-                              <span>Due {format(parseISO(hw.dueDate), 'MMM d')}</span>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload My Work
                             </>
                           )}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge className={STATUS_CONFIG[hw.status]?.color || ''}>
-                      {STATUS_CONFIG[hw.status]?.label || hw.status}
-                    </Badge>
-                  </div>
-
-                  {hw.description && (
-                    <p className="text-sm text-muted-foreground pl-8">{hw.description}</p>
-                  )}
-
-                  {/* Show grade details if graded */}
-                  {hw.grading && (
-                    <div className="pl-8 p-3 bg-green-50 dark:bg-green-900/20 rounded-md space-y-1">
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="font-medium text-green-700 dark:text-green-300">
-                          Score: {hw.grading.achievedScore}/{hw.grading.maxScore} ({Math.round(hw.grading.score)}%)
                         </span>
-                        {hw.grading.practiceHours > 0 && (
-                          <span className="text-muted-foreground">
-                            {hw.grading.practiceHours < 1
-                              ? `${Math.round(hw.grading.practiceHours * 60)}min practice`
-                              : `${hw.grading.practiceHours.toFixed(1)}h practice`
-                            }
-                          </span>
-                        )}
-                      </div>
-                      {hw.grading.teacherNotes && (
-                        <p className="text-sm text-muted-foreground italic">
-                          "{hw.grading.teacherNotes}"
-                        </p>
-                      )}
-                    </div>
+                      </Button>
+                    </Label>
+                    <Input
+                      id="hw-upload"
+                      type="file"
+                      accept=".json"
+                      onChange={handleUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              ) : isOverdue ? (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  This homework is past due. Please contact your teacher.
+                </div>
+              ) : null}
+
+              {uploadError && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-md text-red-800 dark:text-red-300 text-sm">
+                  {uploadError}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Submitted — show confirmation + resubmit option */}
+          {hw.status === 'submitted' && (
+            <div className="space-y-3">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md text-sm text-amber-800 dark:text-amber-300">
+                ✅ Work submitted! Your teacher will review and grade it soon.
+              </div>
+
+              {hw.submission?.parsedResults && (
+                <div className="p-3 bg-muted rounded-md text-sm space-y-1">
+                  <p>Activities completed: {hw.submission.parsedResults.completedActivities.length} of {hw.submission.parsedResults.totalActivities}</p>
+                  {hw.submission.parsedResults.totalPracticeMinutes > 0 && (
+                    <p>Practice time: {hw.submission.parsedResults.totalPracticeMinutes} minutes</p>
                   )}
                 </div>
-              ))}
+              )}
+
+              {canResubmit && (
+                <div>
+                  <Label htmlFor="hw-resubmit" className="cursor-pointer">
+                    <Button asChild variant="outline" size="sm" disabled={uploading}>
+                      <span>
+                        {uploading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Try Again?
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </Label>
+                  <Input
+                    id="hw-resubmit"
+                    type="file"
+                    accept=".json"
+                    onChange={handleUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </div>
+              )}
+
+              {isOverdue && hw.status === 'submitted' && (
+                <div className="p-2 text-xs text-muted-foreground">
+                  Work submitted. No further changes allowed (past due date).
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Graded — show score, feedback, and progress summary */}
+          {hw.status === 'graded' && hw.grading && (
+            <div className="space-y-3">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Score</p>
+                    <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+                      {hw.grading.achievedScore}/{hw.grading.maxScore}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{Math.round(hw.grading.score)}%</p>
+                  </div>
+                  <div className="text-right">
+                    {hw.grading.practiceHours > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Practice Time</p>
+                        <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                          {hw.grading.practiceHours < 1
+                            ? `${Math.round(hw.grading.practiceHours * 60)} min`
+                            : `${hw.grading.practiceHours.toFixed(1)} hrs`
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {hw.grading.teacherNotes && (
+                  <div className="border-t border-green-200 dark:border-green-700 pt-3">
+                    <p className="text-xs font-medium text-green-700 dark:text-green-300 uppercase tracking-wide mb-1">Teacher Feedback</p>
+                    <p className="text-sm italic">"{hw.grading.teacherNotes}"</p>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Graded on {format(parseISO(hw.grading.gradedAt), 'MMM d, yyyy')}
+                </p>
+              </div>
             </div>
           )}
         </CardContent>
-      </Card>
-    </div>
+      )}
+    </Card>
   );
 }
 
