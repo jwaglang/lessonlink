@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Student, HomeworkAssignment } from '@/lib/types';
-import { getHomeworkByStudent } from '@/lib/firestore';
+import { getHomeworkByStudent, updateHomeworkAssignment, updateProgressWithHomeworkStats } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { isValidKiddolandExport, detectToolType } from '@/lib/homework-parser';
+import { parseHomeworkJson, isValidKiddolandExport, detectToolType } from '@/lib/homework-parser';
 
 interface HomeworkTabProps {
   studentId: string;
@@ -250,18 +250,31 @@ function UploadDialog({
       const text = await file.text();
       const rawJson = JSON.parse(text);
 
-      const res = await fetch(`/api/homework/${homework.id}/upload-results`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawJson, uploadedBy: 'teacher' }),
-      });
+      // Validate the JSON looks like a Kiddoland export
+      if (!isValidKiddolandExport(rawJson)) {
+        throw new Error('This does not appear to be a valid Kiddoland homework export. Please check the file and try again.');
+      }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      // Auto-detect tool type or use the homework's type
+      const toolType = detectToolType(rawJson) || homework.homeworkType;
+
+      // Parse the JSON into normalized results
+      const parsedResults = parseHomeworkJson(rawJson, toolType);
+
+      // Update the homework doc directly via client Firestore
+      await updateHomeworkAssignment(homework.id, {
+        submission: {
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: 'teacher',
+          rawJson,
+          parsedResults,
+        },
+        status: 'submitted',
+      });
 
       toast({
         title: 'Results Uploaded',
-        description: `Completion: ${Math.round(data.parsedResults.completionRate * 100)}% — ${data.practiceMinutes} minutes of practice`,
+        description: `Completion: ${Math.round(parsedResults.completionRate * 100)}% — ${parsedResults.totalPracticeMinutes ?? 0} minutes of practice`,
       });
 
       // Return updated homework (re-fetch would be cleaner but this works)
@@ -272,7 +285,7 @@ function UploadDialog({
           uploadedAt: new Date().toISOString(),
           uploadedBy: 'teacher',
           rawJson,
-          parsedResults: data.parsedResults,
+          parsedResults,
         },
       });
     } catch (err: any) {
@@ -358,25 +371,52 @@ function GradeDialog({
     try {
       const maxScore = homework.submission?.parsedResults?.totalActivities ?? 0;
       const achievedScore = Math.round((score / 100) * maxScore);
+      const practiceMinutes = homework.submission?.parsedResults?.totalPracticeMinutes ?? 0;
+      const practiceHours = Math.round((practiceMinutes / 60) * 100) / 100;
 
-      const res = await fetch(`/api/homework/${homework.id}/grade`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Update homework doc directly via client Firestore
+      await updateHomeworkAssignment(homework.id, {
+        grading: {
           score,
           maxScore,
           achievedScore,
           teacherNotes: teacherNotes.trim() || undefined,
+          gradedAt: new Date().toISOString(),
           gradedBy: homework.teacherId,
-          parentEmail: student.primaryContact?.email,
-          learnerName: student.name,
-          teacherName: undefined,
-          levelTargetHours: 200,
-        }),
+          practiceHours,
+        },
+        status: 'graded',
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Grading failed');
+      // Update studentProgress with homework stats
+      await updateProgressWithHomeworkStats(
+        homework.studentId,
+        homework.courseId,
+        homework.unitId
+      );
+
+      // Send graded email to parent (server-side — needs Resend API key)
+      if (student.primaryContact?.email) {
+        try {
+          await fetch('/api/email/send-homework-graded', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              parentEmail: student.primaryContact.email,
+              learnerName: student.name,
+              title: homework.title,
+              score,
+              achievedScore,
+              maxScore,
+              practiceHours,
+              teacherNotes: teacherNotes.trim() || undefined,
+            }),
+          });
+        } catch (emailErr) {
+          // Email failure should not block grading
+          console.error('Failed to send graded email:', emailErr);
+        }
+      }
 
       toast({ title: 'Homework Graded', description: `Score: ${achievedScore}/${maxScore} (${score}%)` });
 
@@ -390,7 +430,7 @@ function GradeDialog({
           teacherNotes: teacherNotes.trim() || undefined,
           gradedAt: new Date().toISOString(),
           gradedBy: homework.teacherId,
-          practiceHours: data.practiceHours ?? 0,
+          practiceHours,
         },
       });
     } catch (err: any) {

@@ -58,6 +58,7 @@ export default function AssignHomeworkForm({
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<HomeworkDeliveryMethod>(parentEmail ? 'email' : 'manual');
+  const [teacherInstructions, setTeacherInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -78,6 +79,7 @@ export default function AssignHomeworkForm({
         sessionInstanceId: sessionInstanceId || undefined,
         title: title.trim(),
         description: description.trim() || undefined,
+        teacherInstructions: teacherInstructions.trim() || undefined,
         homeworkType,
         deliveryMethod,
         dueDate: dueDate || undefined,
@@ -136,6 +138,20 @@ export default function AssignHomeworkForm({
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="hw-teacher-instructions">Instructions for this learner (optional)</Label>
+        <Textarea
+          id="hw-teacher-instructions"
+          placeholder="e.g. Focus on the vocabulary section, skip activity 3..."
+          value={teacherInstructions}
+          onChange={(e) => setTeacherInstructions(e.target.value)}
+          rows={2}
+        />
+        <p className="text-xs text-muted-foreground">
+          Custom instructions just for this learner. The description above stays the same for everyone.
+        </p>
       </div>
 
       <div className="space-y-2">
