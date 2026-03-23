@@ -17,11 +17,12 @@ export default function TeacherPortalLayout({
   children: React.ReactNode;
 }) {
   const { user, loading: authLoading } = useAuth();
-  if (!user) return null;
-  const currentUser = user;
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+
+  if (!user) return null;
+  const currentUser = user;
 
   useEffect(() => {
     if (authLoading) {
