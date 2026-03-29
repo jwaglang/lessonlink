@@ -16,6 +16,10 @@ export interface EmailOptions {
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: {
+    filename: string;
+    content: Buffer;
+  }[];
 }
 
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -26,6 +30,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       subject: options.subject,
       html: options.html,
       replyTo: options.replyTo || DEFAULT_REPLY_TO,
+      attachments: options.attachments,
     });
 
     if (error) {

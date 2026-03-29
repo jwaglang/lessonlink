@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       learnerName,
       unitTitle,
       teacherName,
+      attachmentHtml,
+      attachmentFilename,
     } = body;
 
     // Validate required fields
@@ -65,7 +67,19 @@ export async function POST(request: NextRequest) {
         teacherName,
       });
 
-      const emailResult = await sendEmail({ to: parentEmail, subject, html });
+      const emailResult = await sendEmail({
+        to: parentEmail,
+        subject,
+        html,
+        attachments: attachmentHtml
+          ? [
+              {
+                filename: attachmentFilename || 'homework.html',
+                content: Buffer.from(attachmentHtml),
+              },
+            ]
+          : undefined,
+      });
 
       if (emailResult.success) {
         await updateHomeworkAssignment(homeworkId, {

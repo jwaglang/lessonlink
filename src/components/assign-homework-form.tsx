@@ -59,6 +59,8 @@ export default function AssignHomeworkForm({
   const [dueDate, setDueDate] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<HomeworkDeliveryMethod>(parentEmail ? 'email' : 'manual');
   const [teacherInstructions, setTeacherInstructions] = useState('');
+  const [attachmentHtml, setAttachmentHtml] = useState<string | null>(null);
+  const [attachmentFilename, setAttachmentFilename] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -88,7 +90,23 @@ export default function AssignHomeworkForm({
         updatedAt: new Date().toISOString(),
       };
 
-      await createHomeworkAssignment(homeworkData);
+      if (deliveryMethod === 'email') {
+        await fetch('/api/homework/assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...homeworkData,
+            parentEmail,
+            learnerName,
+            unitTitle,
+            teacherName,
+            attachmentHtml,
+            attachmentFilename,
+          }),
+        });
+      } else {
+        await createHomeworkAssignment(homeworkData);
+      }
 
       toast({
         title: 'Homework Assigned',
@@ -177,6 +195,26 @@ export default function AssignHomeworkForm({
         </Select>
         {deliveryMethod === 'email' && !parentEmail && (
           <p className="text-xs text-amber-600">No parent email on file. Add one in the learner profile, or switch to Manual.</p>
+        )}
+        {deliveryMethod === 'email' && (
+          <div className="space-y-2 mt-4">
+            <Label htmlFor="hw-attachment">Attach Workbook (optional)</Label>
+            <Input
+              id="hw-attachment"
+              type="file"
+              accept=".html"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const text = await file.text();
+                setAttachmentHtml(text);
+                setAttachmentFilename(file.name);
+              }}
+            />
+            {attachmentFilename && (
+              <p className="text-xs text-muted-foreground">Selected: {attachmentFilename}</p>
+            )}
+          </div>
         )}
       </div>
 
