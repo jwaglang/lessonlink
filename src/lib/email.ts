@@ -18,12 +18,15 @@ export interface EmailOptions {
   replyTo?: string;
   attachments?: {
     filename: string;
-    content: Buffer;
+    content: string;
   }[];
 }
 
 export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    if (options.attachments) {
+      console.log('[sendEmail] Sending with attachments:', options.attachments.map(a => a.filename));
+    }
     const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: options.to,
@@ -38,6 +41,7 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
       return { success: false, error: error.message };
     }
 
+    console.log('[sendEmail] Success, email ID:', data?.id);
     return { success: true, id: data?.id };
   } catch (err: any) {
     console.error('Email send error:', err);

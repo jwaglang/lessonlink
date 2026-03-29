@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
         teacherName,
       });
 
+      console.log('[Homework Assign] Sending email to:', parentEmail);
+      console.log('[Homework Assign] Has attachment:', !!attachmentHtml, 'filename:', attachmentFilename || 'homework.html');
+
       const emailResult = await sendEmail({
         to: parentEmail,
         subject,
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
           ? [
               {
                 filename: attachmentFilename || 'homework.html',
-                content: Buffer.from(attachmentHtml),
+                content: Buffer.from(attachmentHtml).toString('base64'),
               },
             ]
           : undefined,
@@ -86,6 +89,8 @@ export async function POST(request: NextRequest) {
           status: 'delivered',
           deliveredAt: new Date().toISOString(),
         });
+      } else {
+        console.error('[Homework Assign] Email send failed:', emailResult.error);
       }
     }
 
