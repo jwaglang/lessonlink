@@ -1,102 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
 import { homeworkAssignmentEmail } from '@/lib/email-templates';
-import { createHomeworkAssignment, updateHomeworkAssignment } from '@/lib/firestore';
-import type { HomeworkAssignment } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      studentId,
-      teacherId,
-      courseId,
-      unitId,
-      sessionId,
-      sessionInstanceId,
+      // Homework info (for email content)
       title,
       description,
-      homeworkType,
-      deliveryMethod,
       dueDate,
-      // Email fields (only if deliveryMethod === 'email')
+      homeworkType,
+      // For email
       parentEmail,
       learnerName,
       unitTitle,
       teacherName,
+      // Attachment
       attachmentHtml,
       attachmentFilename,
     } = body;
 
     // Validate required fields
-    if (!studentId || !teacherId || !courseId || !unitId || !title || !homeworkType) {
+    if (!parentEmail || !title) {
       return NextResponse.json(
-        { error: 'Missing required fields: studentId, teacherId, courseId, unitId, title, homeworkType' },
+        { error: 'Missing required fields: parentEmail, title' },
         { status: 400 }
       );
     }
 
-    // Create the homework assignment doc
-    const homeworkData: Omit<HomeworkAssignment, 'id'> = {
-      studentId,
-      teacherId,
-      courseId,
-      unitId,
-      sessionId: sessionId || undefined,
-      sessionInstanceId: sessionInstanceId || undefined,
+    // Build email
+    const { subject, html } = homeworkAssignmentEmail({
+      learnerName: learnerName || 'Your child',
       title,
-      description: description || undefined,
-      homeworkType,
-      deliveryMethod: deliveryMethod || 'manual',
-      dueDate: dueDate || undefined,
-      status: 'assigned',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+      description,
+      dueDate,
+      unitTitle,
+      teacherName,
+    });
 
-    const homeworkId = await createHomeworkAssignment(homeworkData);
+    console.log('[Homework Assign] Sending email to:', parentEmail);
+    console.log('[Homework Assign] Has attachment:', !!attachmentHtml, 'filename:', attachmentFilename || 'homework.html');
 
-    // Send email if requested
-    if (deliveryMethod === 'email' && parentEmail) {
-      const { subject, html } = homeworkAssignmentEmail({
-        learnerName: learnerName || 'Your child',
-        title,
-        description,
-        dueDate,
-        unitTitle,
-        teacherName,
-      });
+    // Send email
+    const emailResult = await sendEmail({
+      to: parentEmail,
+      subject,
+      html,
+      attachments: attachmentHtml
+        ? [
+            {
+              filename: attachmentFilename || 'homework.html',
+              content: Buffer.from(attachmentHtml).toString('base64'),
+            },
+          ]
+        : undefined,
+    });
 
-      console.log('[Homework Assign] Sending email to:', parentEmail);
-      console.log('[Homework Assign] Has attachment:', !!attachmentHtml, 'filename:', attachmentFilename || 'homework.html');
-
-      const emailResult = await sendEmail({
-        to: parentEmail,
-        subject,
-        html,
-        attachments: attachmentHtml
-          ? [
-              {
-                filename: attachmentFilename || 'homework.html',
-                content: Buffer.from(attachmentHtml).toString('base64'),
-              },
-            ]
-          : undefined,
-      });
-
-      if (emailResult.success) {
-        await updateHomeworkAssignment(homeworkId, {
-          status: 'delivered',
-          deliveredAt: new Date().toISOString(),
-        });
-      } else {
-        console.error('[Homework Assign] Email send failed:', emailResult.error);
-      }
+    if (!emailResult.success) {
+      console.error('[Homework Assign] Email send failed:', emailResult.error);
+      return NextResponse.json({ error: emailResult.error }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, homeworkId });
+    console.log('[Homework Assign] Email sent successfully, ID:', emailResult.id);
+    return NextResponse.json({ success: true, emailId: emailResult.id });
+
   } catch (error: any) {
-    console.error('Homework assign error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to assign homework' }, { status: 500 });
+    console.error('Homework email error:', error);
+    return NextResponse.json({ error: error.message || 'Failed to send email' }, { status: 500 });
   }
 }

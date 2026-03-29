@@ -91,11 +91,15 @@ export default function AssignHomeworkForm({
       };
 
       if (deliveryMethod === 'email') {
+        // Send email with attachment
         await fetch('/api/homework/assign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ...homeworkData,
+            title: title.trim(),
+            description: description.trim() || undefined,
+            dueDate: dueDate || undefined,
+            homeworkType,
             parentEmail,
             learnerName,
             unitTitle,
@@ -104,6 +108,9 @@ export default function AssignHomeworkForm({
             attachmentFilename,
           }),
         });
+
+        // Also create the homework document in Firestore (client-side, user is logged in)
+        await createHomeworkAssignment(homeworkData);
       } else {
         await createHomeworkAssignment(homeworkData);
       }
