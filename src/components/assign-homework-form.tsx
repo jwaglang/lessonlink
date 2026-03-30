@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, BookOpen, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { HomeworkType, HomeworkDeliveryMethod, HomeworkAssignment } from '@/lib/types';
-import { createHomeworkAssignment } from '@/lib/firestore';
+import { createHomeworkAssignment, updateHomeworkAssignment } from '@/lib/firestore';
 
 interface AssignHomeworkFormProps {
   // Pre-fill data from the session context
@@ -91,26 +91,56 @@ export default function AssignHomeworkForm({
       };
 
       if (deliveryMethod === 'email') {
-        // Send email with attachment
-        await fetch('/api/homework/assign', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: title.trim(),
-            description: description.trim() || undefined,
-            dueDate: dueDate || undefined,
-            homeworkType,
-            parentEmail,
-            learnerName,
-            unitTitle,
-            teacherName,
-            attachmentHtml,
-            attachmentFilename,
-          }),
-        });
+        // Create the homework document first (client-side, user is logged in)
+        const docId = await createHomeworkAssignment(homeworkData);
 
-        // Also create the homework document in Firestore (client-side, user is logged in)
-        await createHomeworkAssignment(homeworkData);
+        // Send email with attachment
+        let emailSent = false;
+        try {
+          const emailRes = await fetch('/api/homework/assign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: title.trim(),
+              description: description.trim() || undefined,
+              dueDate: dueDate || undefined,
+              homeworkType,
+              parentEmail,
+              learnerName,
+              unitTitle,
+              teacherName,
+              attachmentHtml,
+              attachmentFilename,
+            }),
+          });
+          if (emailRes.ok) {
+            emailSent = true;
+          } else {
+            const errData = await emailRes.json().catch(() => ({}));
+            console.error('[Homework] Email send failed:', errData);
+          }
+        } catch (emailErr) {
+          console.error('[Homework] Email request failed:', emailErr);
+        }
+
+        if (emailSent) {
+          // Update status to 'delivered' now that email is confirmed sent
+          try {
+            await updateHomeworkAssignment(docId, {
+              status: 'delivered',
+              deliveredAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+          } catch (updateErr) {
+            console.error('[Homework] Failed to update status to delivered:', updateErr);
+          }
+        } else {
+          toast({
+            title: 'Homework assigned, but email failed',
+            description: 'The homework was saved but the email could not be sent. Try resending manually.',
+            variant: 'destructive',
+          });
+        }
       } else {
         await createHomeworkAssignment(homeworkData);
       }
@@ -213,6 +243,15 @@ export default function AssignHomeworkForm({
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
+                if (file.size > 6 * 1024 * 1024) {
+                  toast({
+                    title: 'File too large',
+                    description: 'Attachments must be under 6 MB. Use Manual delivery for larger files.',
+                    variant: 'destructive',
+                  });
+                  e.target.value = '';
+                  return;
+                }
                 const text = await file.text();
                 setAttachmentHtml(text);
                 setAttachmentFilename(file.name);
