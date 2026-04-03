@@ -1,0 +1,102 @@
+flowchart TB
+    subgraph Teacher["👨‍🏫 TEACHER PORTAL /t-portal"]
+        T1[Create Units & Sessions]
+        T2[Apply Unit to Student]
+        T3[Mark Session Complete]
+        T4[Upload Assessment Audio]
+        T5[Generate AI Reports]
+        T6[Manual Adjustments<br/>XP/HP Local Only]
+    end
+
+    subgraph LessonLink["🎓 LESSONLINK CORE SYSTEM<br/>(Firebase/Next.js)"]
+        LL1[(Units Database<br/>Big Questions)]
+        LL2[(Sessions Database<br/>Little Questions)]
+        LL3[(Homeworks Database)]
+        LL4[(Student Progress<br/>Hours/Accuracy)]
+        LL5[(Student Rewards<br/>XP/HP Display)]
+    end
+
+    subgraph Student["👨‍🎓 STUDENT PORTAL /s-portal"]
+        S1[View Unit Plans<br/>with BQ & LQ]
+        S2[Book Sessions]
+        S3[Submit Homework]
+        S4[View Progress<br/>Basic Stats]
+    end
+
+    subgraph AI["🤖 CLAUDE AI API"]
+        AI1[Generate Assessment<br/>Reports from Notes]
+    end
+
+    subgraph Petland["🎮 PETLAND REWARD SYSTEM<br/>(Separate Firebase App)"]
+        P1[Passport: AI Pet Avatar]
+        P2[Playground: Memory Game<br/>Vocab Reviews +10 HP]
+        P3[Pet Shop: Buy Accessories]
+        P4[Travel Agency: RPG Games]
+        P5[XP/HP Generation<br/>SOURCE OF TRUTH]
+    end
+
+    subgraph Email["📧 EMAIL SYSTEM"]
+        E1[Send Homework]
+        E2[Send Reports]
+        E3[Send Progress Updates]
+    end
+
+    %% Teacher to LessonLink
+    T1 --> LL1
+    T1 --> LL2
+    T2 -->|Creates bookable<br/>session slots| LL4
+    T3 -->|Auto-tracks hours,<br/>triggers homework prompt| LL4
+    T3 --> LL3
+    T4 --> AI1
+    T6 -->|Admin only,<br/>local to LL| LL5
+    
+    %% AI to LessonLink
+    AI1 -->|Returns generated<br/>report| T5
+    T5 --> LL4
+    
+    %% LessonLink to Student
+    LL1 --> S1
+    LL2 --> S2
+    LL3 --> S3
+    LL4 --> S4
+    LL5 -->|Read-only display<br/>of XP/HP| S4
+    
+    %% Student to LessonLink
+    S2 -->|Books session| LL4
+    S3 -->|Submits work| LL3
+    
+    %% LessonLink to Email
+    LL3 -->|Homework assignments| E1
+    LL4 -->|Assessment reports| E2
+    LL4 -->|Progress updates| E3
+    
+    %% Petland to Student (External)
+    P2 -.->|Student plays games<br/>in Petland app| P5
+    
+    %% ONE-WAY SYNC: Petland → LL ONLY
+    P5 ==>|✅ WEBHOOK<br/>POST /api/rewards/sync<br/>XP/HP updates| LL5
+
+    %% NO REVERSE SYNC
+    LL5 -.->|❌ NO SYNC BACK<br/>Manual adjustments<br/>stay in LL only| P5
+
+    %% Styling
+    style LL5 fill:#ffe66d,stroke:#333,stroke-width:2px
+    style P5 fill:#ffe66d,stroke:#333,stroke-width:2px
+    style P2 fill:#b8e994,stroke:#333,stroke-width:2px
+    style T3 fill:#a29bfe,stroke:#333,stroke-width:2px
+    
+    %% Notes
+    classDef webhook stroke:#00b894,stroke-width:4px
+    classDef noSync stroke:#d63031,stroke-width:3px,stroke-dasharray: 5 5
+    class P5 webhook
+    class LL5 noSync
+
+%% LEGEND
+subgraph Legend["📝 KEY POINTS"]
+    L1[✅ Petland GENERATES XP/HP]
+    L2[✅ LL RECEIVES & DISPLAYS XP/HP]
+    L3[✅ Reviews happen IN Petland Playground]
+    L4[✅ One-way webhook: Petland → LL]
+    L5[❌ NO sync from LL → Petland]
+    L6[✅ Admin manual adjustments stay in LL]
+end
