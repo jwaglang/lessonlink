@@ -869,7 +869,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - **S-Portal:** Major redesign — permanent top bar (Book/Top Up), restructured sidebar, enhanced dashboard with credit/progress/rewards cards, Calendar Availability tab, Browse Tutors refactor. Top Up page built (Feb 24).
 - **AI APIs:** ✅ Live. DeepSeek primary with failover chain. `AI_USE_MOCK=false`.
 - **Email:** ✅ Resend domain verified. Sending operational from `notifications@updates.kiddoland.co`.
-- **Next:** Homework Generator build (Track 1) → Petland integration into LL (Track 2) → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
+- **Next:** Homework Generator build (Track 1) → Petland E2E testing + Google AI key setup (Track 2) → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
 - **Estimated sessions for A+B+C:** 8–10
 
 **Repository:** https://github.com/jwaglang/lessonlink
@@ -917,7 +917,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - ⚠️ **KTFT needs "Copy Level Only" button** — currently requires track selection to export, but track data is irrelevant for song worksheets. Stacked.
 - ⚠️ **YELLOW/ORANGE/GREEN workbook templates** need design — different activity types per level, not just harder content. Design project not started.
 - ⚠️ **E2E homework upload/grade flow** needs testing (blocked on v1 template updates for Song/Sentence Switcher)
-- ⚠️ **Petland integration pending** — currently separate Firebase project (`studio-690762243-81f19`). Same Next.js/Tailwind/shadcn stack as LL. Passport + Playground working. Plan: integrate as S-portal module (Stage 1), then platform shell restructure (Stage 2).
+- ✅ **Petland Stage 1 complete** — integrated into LL repo as `src/modules/petland/`. Student page at `/s-portal/petland`. Petland tab (Tab 5) on T-portal Learner Profile. Activation flow, feedback buttons, vocab CRUD all working. Firestore rules updated. Stage 2 (platform shell restructure) stacked.
 - ⚠️ **YELLOW/ORANGE/GREEN workbook activity design** — needed before generator can produce higher-level workbooks. Design session planned.
 
 ---
@@ -951,6 +951,6 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 4, 2026 (Q44)
+**Last Updated:** April 4, 2026 (Q44b)
 
-**Version:** Q44 (5.9) — Homework Generator spec complete, Track 1/Track 2 strategy set, Petland codebase examined for integration, Export Standard v1 complete for all templates
+**Version:** Q44b (6.0) — Petland Stage 1 integration complete (src/modules/petland/, S-portal page, T-portal tab), Firebase Storage added, Firestore rules updated
