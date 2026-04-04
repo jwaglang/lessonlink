@@ -36,16 +36,28 @@ service cloud.firestore {
     // STUDENTS
     // studentId (doc ID) = Auth UID
     match /students/{studentId} {
-    allow read: if isAdmin() || 
-                  isAssignedTeacher(studentId) || 
+    allow read: if isAdmin() ||
+                  isAssignedTeacher(studentId) ||
                   isOwner(studentId);
-    
-    allow create: if isAuthenticated() && 
+
+    allow create: if isAuthenticated() &&
                     studentId == request.auth.uid &&
                     request.resource.data.email == request.auth.token.email;
-       
+
     // ✅ FIX (ADD isOwner):
     allow update, delete: if isAdmin() || isTeacher() || isOwner(studentId);
+
+    // Petland profile — tutors write (activate, feedback, edit stats), learner reads+writes own (game wins, hatching)
+    match /petland/{docId} {
+      allow read: if isAdmin() || isTeacher() || isOwner(studentId);
+      allow write: if isAdmin() || isTeacher() || isOwner(studentId);
+    }
+
+    // Vocabulary — tutors write (CRUD), learner reads own (Memory Match)
+    match /vocabulary/{wordId} {
+      allow read: if isAdmin() || isTeacher() || isOwner(studentId);
+      allow write: if isAdmin() || isTeacher();
+    }
   }
 
     match /availability/{availId} {
