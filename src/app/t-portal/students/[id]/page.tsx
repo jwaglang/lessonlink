@@ -15,6 +15,7 @@ import SessionsTab from './components/sessions-tab';
 import PackagesTab from './components/packages-tab';
 import PaymentsTab from './components/payments-tab';
 import HomeworkTab from './components/homework-tab';
+import LearnerPetlandTab from '@/modules/petland/components/learner-petland-tab';
 
 export default function LearnerProfilePage() {
   const params = useParams();
@@ -95,6 +96,7 @@ export default function LearnerProfilePage() {
           <TabsTrigger value="homework">Homework</TabsTrigger>
           <TabsTrigger value="packages">Packages & Credits</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="petland">Petland</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -119,6 +121,10 @@ export default function LearnerProfilePage() {
 
         <TabsContent value="payments" className="mt-6">
           <PaymentsTab studentId={studentId} student={student} />
+        </TabsContent>
+
+        <TabsContent value="petland" className="mt-6">
+          <LearnerPetlandTab studentId={studentId} />
         </TabsContent>
       </Tabs>
     </div>

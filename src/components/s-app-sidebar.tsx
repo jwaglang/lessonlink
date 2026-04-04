@@ -32,6 +32,7 @@ import {
   CalendarClock,
   CreditCard,
   Wallet,
+  PawPrint,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { ThemeToggle } from './theme-toggle';
@@ -260,6 +261,16 @@ const StudentAppSidebar = () => {
               </SidebarMenuSub>
             )}
           </div>
+
+          {/* ── Petland (no subs) ── */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith('/s-portal/petland')} tooltip="Petland">
+              <Link href="/s-portal/petland" className="flex items-center gap-2">
+                <PawPrint className="h-4 w-4" />
+                <span>Petland</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
 
           {/* ── Tutors (hover → My Tutor, Feedback, Evaluations) ── */}
           <div

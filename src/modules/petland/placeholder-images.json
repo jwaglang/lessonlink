@@ -1,0 +1,70 @@
+{
+  "placeholderImages": [
+    {
+      "id": "pet-egg",
+      "description": "A mysterious and colorful pet egg.",
+      "imageUrl": "https://images.unsplash.com/photo-1649738633025-7c30fd33a806?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxlZ2clMjBwYXR0ZXJufGVufDB8fHx8MTc2ODEzNzc0MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "egg pattern"
+    },
+    {
+      "id": "pet-hatched",
+      "description": "A cute, newly hatched creature.",
+      "imageUrl": "https://images.unsplash.com/photo-1766850967261-8c6c92afb5f3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjdXRlJTIwbW9uc3RlcnxlbnwwfHx8fDE3NjgwOTA4NzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cute monster"
+    },
+    {
+      "id": "accessory-hat",
+      "description": "A stylish top hat for your pet.",
+      "imageUrl": "https://images.unsplash.com/photo-1594115957836-18618221c557?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx0b3AlMjBoYXR8ZW58MHx8fHwxNzY4MTM3NzQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "top hat"
+    },
+    {
+      "id": "accessory-scarf",
+      "description": "A cozy scarf to keep your pet warm.",
+      "imageUrl": "https://images.unsplash.com/photo-1581282241923-50649ab8bb91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxrbml0dGVkJTIwc2NhcmZ8ZW58MHx8fHwxNzY4MTM3NzQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "knitted scarf"
+    },
+    {
+      "id": "accessory-glasses",
+      "description": "Smart-looking glasses for your pet.",
+      "imageUrl": "https://images.unsplash.com/photo-1587572070491-0e5448a0cc43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxyb3VuZCUyMGdsYXNzZXN8ZW58MHx8fHwxNzY4MTIyNzY3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "round glasses"
+    },
+    {
+      "id": "brochure-paris",
+      "description": "A travel brochure for a trip to Paris.",
+      "imageUrl": "https://images.unsplash.com/photo-1604175287072-b5e71423060c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxFaWZmZWwlMjBUb3dlcnxlbnwwfHx8fDE3NjgxMzc3NDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "Eiffel Tower"
+    },
+    {
+      "id": "brochure-tokyo",
+      "description": "A travel brochure for a trip to Tokyo.",
+      "imageUrl": "https://images.unsplash.com/photo-1574812384608-1f5739ee745c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8VG9reW8lMjBjaXR5fGVufDB8fHx8MTc2ODEzNzc0MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "Tokyo city"
+    },
+    {
+      "id": "brochure-egypt",
+      "description": "A travel brochure for a trip to Egypt.",
+      "imageUrl": "https://images.unsplash.com/photo-1671225056008-5c4673ba3f10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxweXJhbWlkcyUyMGdpemF8ZW58MHx8fHwxNzY4MTM3NzQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pyramids giza"
+    },
+    {
+      "id": "ticket-paris",
+      "description": "A ticket to Paris.",
+      "imageUrl": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwbGFuZSUyMHRpY2tldHxlbnwwfHx8fDE3NjgxMzc3NDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plane ticket"
+    },
+    {
+      "id": "ticket-tokyo",
+      "description": "A ticket to Tokyo.",
+      "imageUrl": "https://images.unsplash.com/photo-1483450388369-9ed95738483c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwbGFuZSUyMHRpY2tldHxlbnwwfHx8fDE3NjgxMzc3NDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plane ticket"
+    },
+    {
+      "id": "ticket-egypt",
+      "description": "A ticket to Egypt.",
+      "imageUrl": "https://images.unsplash.com/photo-1549499090-d7ac0cec89f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGxhbmUlMjB0aWNrZXR8ZW58MHx8fHwxNzY4MTM3NzQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plane ticket"
+    }
+  ]
+}
