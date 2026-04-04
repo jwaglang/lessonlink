@@ -490,7 +490,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       <h1 className="text-4xl font-bold mb-6">Hi, {learnerName || 'Learner'}!</h1>
 
       <Tabs defaultValue="home" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="mb-6">
           <TabsTrigger value="home">
             <BookUser className="mr-2 h-4 w-4" />
             Passport

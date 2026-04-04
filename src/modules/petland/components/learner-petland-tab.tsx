@@ -57,6 +57,7 @@ import {
   Trash2,
   PlusCircle,
   PawPrint,
+  RotateCcw,
 } from 'lucide-react';
 
 // Custom SVG treasure chest icon
@@ -149,6 +150,23 @@ export default function LearnerPetlandTab({ studentId }: LearnerPetlandTabProps)
       toast({ title: 'Petland activated!', description: 'A new pet egg is waiting for this learner.' });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Activation failed' });
+    }
+  };
+
+  const handleResetPet = async () => {
+    try {
+      // Delete pet image from Storage if one exists
+      if (profile?.petImageUrl) {
+        await deleteObject(ref(storage, `pets/${studentId}/pet.png`)).catch(() => {});
+      }
+      await updateDoc(profileRef, {
+        petState: 'egg',
+        petName: '',
+        petImageUrl: null,
+      });
+      toast({ title: 'Pet reset', description: 'The learner can hatch a new pet.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Reset failed' });
     }
   };
 
@@ -289,22 +307,45 @@ export default function LearnerPetlandTab({ studentId }: LearnerPetlandTabProps)
             <PawPrint className="h-5 w-5" />
             Pet Status
           </CardTitle>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setEditForm({
-                xp: profile.xp,
-                hp: profile.hp,
-                petName: profile.petName,
-                petState: profile.petState,
-                dorks: { ...profile.dorks },
-              });
-              setIsEditStatsOpen(true);
-            }}
-          >
-            <Edit className="h-3 w-3 mr-1" /> Edit Stats
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEditForm({
+                  xp: profile.xp,
+                  hp: profile.hp,
+                  petName: profile.petName,
+                  petState: profile.petState,
+                  dorks: { ...profile.dorks },
+                });
+                setIsEditStatsOpen(true);
+              }}
+            >
+              <Edit className="h-3 w-3 mr-1" /> Edit Stats
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <RotateCcw className="h-3 w-3 mr-1" /> Reset Pet
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Reset this learner's pet?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will delete the current pet image and return the learner to egg state. They can hatch a new pet. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetPet} className="bg-destructive hover:bg-destructive/90">
+                    Yes, reset pet
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
           <div>

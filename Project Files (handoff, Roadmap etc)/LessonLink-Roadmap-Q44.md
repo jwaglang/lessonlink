@@ -869,7 +869,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - **S-Portal:** Major redesign — permanent top bar (Book/Top Up), restructured sidebar, enhanced dashboard with credit/progress/rewards cards, Calendar Availability tab, Browse Tutors refactor. Top Up page built (Feb 24).
 - **AI APIs:** ✅ Live. DeepSeek primary with failover chain. `AI_USE_MOCK=false`.
 - **Email:** ✅ Resend domain verified. Sending operational from `notifications@updates.kiddoland.co`.
-- **Next:** Homework Generator build (Track 1) → Petland E2E testing + Google AI key setup (Track 2) → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
+- **Next:** Homework Generator build (Track 1) → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
 - **Estimated sessions for A+B+C:** 8–10
 
 **Repository:** https://github.com/jwaglang/lessonlink
@@ -951,6 +951,6 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 4, 2026 (Q44b)
+**Last Updated:** April 4, 2026 (Q44c)
 
-**Version:** Q44b (6.0) — Petland Stage 1 integration complete (src/modules/petland/, S-portal page, T-portal tab), Firebase Storage added, Firestore rules updated
+**Version:** Q44c (6.1) — Petland fully working E2E (tab layout fixed, Reset Pet added, Google AI key live, pet hatching confirmed working)
