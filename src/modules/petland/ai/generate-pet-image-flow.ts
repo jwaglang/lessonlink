@@ -1,40 +1,39 @@
 'use server';
 
-import { ai } from '../ai/genkit';
-import { googleAI } from '@genkit-ai/google-genai';
-import { z } from 'zod';
+export type GeneratePetImageInput = string;
+export type GeneratePetImageOutput = string;
 
-const GeneratePetImageInputSchema = z.string();
-export type GeneratePetImageInput = z.infer<typeof GeneratePetImageInputSchema>;
+export async function generatePetImage(wish: GeneratePetImageInput): Promise<GeneratePetImageOutput> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
 
-const GeneratePetImageOutputSchema = z.string();
-export type GeneratePetImageOutput = z.infer<typeof GeneratePetImageOutputSchema>;
+  const prompt = `Studio Ghibli-style hand-drawn animation. A single adorable monster. Every detail below must be clearly visible and accurate: ${wish}. The color, texture, and any objects or actions mentioned must be prominently featured exactly as described. Clean anatomically correct design with the proper number of limbs. Centered composition, friendly expression, suitable for a children's game. Soft natural colors, clean lines.`;
 
-export async function generatePetImage(
-  wish: GeneratePetImageInput
-): Promise<GeneratePetImageOutput> {
-  return generatePetImageFlow(wish);
-}
-
-const generatePetImageFlow = ai.defineFlow(
-  {
-    name: 'generatePetImageFlow',
-    inputSchema: GeneratePetImageInputSchema,
-    outputSchema: GeneratePetImageOutputSchema,
-  },
-  async (wish) => {
-    const prompt = `A single, adorable, cartoon monster in a Studio Ghibli-style animation. The monster is inspired by the following description: "${wish}". The monster should be centered, have a friendly expression, and be suitable for a children's game. Style: high-quality digital art, vibrant colors, clean lines.`;
-
-    const result = await ai.generate({
-      model: googleAI.model('imagen-4.0-fast-generate-001'),
-      prompt,
-    });
-
-    if (!result.media?.url) {
-      console.error('Image generation failed. Full API response:', JSON.stringify(result, null, 2));
-      throw new Error('Image generation failed. No media URL returned.');
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: { sampleCount: 1 },
+      }),
     }
+  );
 
-    return result.media.url;
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[generatePetImage] API error:', error);
+    throw new Error(`Image generation failed: ${response.status}`);
   }
-);
+
+  const data = await response.json();
+  const prediction = data?.predictions?.[0];
+
+  if (!prediction?.bytesBase64Encoded) {
+    console.error('[generatePetImage] No image in response:', JSON.stringify(data, null, 2));
+    throw new Error('No image returned from API.');
+  }
+
+  return `data:${prediction.mimeType ?? 'image/png'};base64,${prediction.bytesBase64Encoded}`;
+}

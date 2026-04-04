@@ -414,6 +414,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       const url = await uploadBase64ToStorage(imageDataUri, `pets/${learnerId}/pet.png`);
       setPreviewImageUrl(url);
     } catch (e) {
+      console.error('[Hatch] Error:', e);
       toast({ variant: 'destructive', title: 'Hatch failed', description: 'Something went wrong. Try again.' });
     } finally {
       setIsHatching(false);

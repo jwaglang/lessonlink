@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:9002", "https://kiddoland.co", "https://www.kiddoland.co"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "X-Requested-With"]
+  }
+]
