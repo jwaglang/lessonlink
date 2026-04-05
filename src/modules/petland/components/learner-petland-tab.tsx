@@ -101,9 +101,10 @@ const DEFAULT_PROFILE: Omit<PetlandProfile, 'petName'> & { petName: string } = {
 
 interface LearnerPetlandTabProps {
   studentId: string;
+  latestSessionInstanceId?: string;
 }
 
-export default function LearnerPetlandTab({ studentId }: LearnerPetlandTabProps) {
+export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }: LearnerPetlandTabProps) {
   const { toast } = useToast();
   const [profile, setProfile] = useState<PetlandProfile | null>(null);
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
@@ -214,7 +215,9 @@ export default function LearnerPetlandTab({ studentId }: LearnerPetlandTabProps)
         level: Number(newLevel),
         imageUrl: previewIconUrl || '',
         type: Number(newLevel) > 3 ? 'cloze' : 'basic',
-        srsLevel: 0,
+        srsLevel: 1,
+        lastReviewDate: null,
+        sessionInstanceId: latestSessionInstanceId ?? null,
         questionPrompt: '',
         createdAt: new Date().toISOString(),
       });
@@ -670,7 +673,7 @@ export default function LearnerPetlandTab({ studentId }: LearnerPetlandTabProps)
               <Label>Pet State</Label>
               <Select
                 value={editForm.petState ?? 'egg'}
-                onValueChange={(v) => setEditForm((f) => ({ ...f, petState: v as 'egg' | 'hatched' }))}
+                onValueChange={(v) => setEditForm((f) => ({ ...f, petState: v as 'egg' | 'hatched' | 'dead' }))}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -678,6 +681,7 @@ export default function LearnerPetlandTab({ studentId }: LearnerPetlandTabProps)
                 <SelectContent>
                   <SelectItem value="egg">Egg</SelectItem>
                   <SelectItem value="hatched">Hatched</SelectItem>
+                  <SelectItem value="dead">Dead</SelectItem>
                 </SelectContent>
               </Select>
             </div>

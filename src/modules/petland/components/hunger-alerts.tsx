@@ -12,14 +12,14 @@ interface HungerAlertsProps {
 }
 
 const hungerThresholds: { level: number; message: string; icon: string; action: string }[] = [
-  { level: 80, message: "I could go for a peanut!", icon: '🥜', action: "Time for a tiny treat!" },
-  { level: 70, message: "Feeling a little peckish!", icon: '🥨', action: "How about a snack?" },
-  { level: 60, message: "Is that my tummy rumbling?", icon: '🍱', action: "Let's find some lunch!" },
-  { level: 50, message: "Uh oh... I'm getting dizzy!", icon: '😵‍💫', action: "Feed your pet soon!" },
-  { level: 40, message: "Okay, I'll eat anything!", icon: '🍕', action: "Quick! They are hungry!" },
-  { level: 30, message: "Must have food! Is it getting darker?", icon: '🌫️', action: "Danger! Very low energy!" },
-  { level: 20, message: "Huh?... Who turned off the lights?", icon: '🌑', action: "Critical! Your pet is fainting!" },
-  { level: 10, message: "... ", icon: '🏥', action: "Emergency! Your pet needs a vet!" },
+  { level: 80, message: "Psst... I'm a little hungry.", icon: '🥜', action: "Play a round to feed your pet!" },
+  { level: 70, message: "My tummy is making weird noises.", icon: '🥨', action: "Don't forget to review your words!" },
+  { level: 60, message: "Okay I'm properly hungry now.", icon: '🍱', action: "Your pet needs feeding today!" },
+  { level: 50, message: "I'm so hungry I can't think straight.", icon: '😵‍💫', action: "Play Memory Match — your pet is starving!" },
+  { level: 40, message: "I would eat a shoe right now. No joke.", icon: '🍕', action: "Your pet is very hungry. Feed them!" },
+  { level: 30, message: "Everything is spinning... is this what hungry feels like?", icon: '🌫️', action: "Critical! Your pet needs food NOW!" },
+  { level: 20, message: "I can't feel my legs. Tell my family I love them.", icon: '🌑', action: "Your pet is about to faint!" },
+  { level: 10, message: "......", icon: '🏥', action: "Your pet is dying. Feed them immediately!" },
 ];
 
 export function HungerAlerts({ profile, learnerId }: HungerAlertsProps) {

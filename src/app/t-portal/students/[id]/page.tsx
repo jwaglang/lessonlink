@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import type { Student } from '@/lib/types';
-import { getStudentById } from '@/lib/firestore';
+import type { Student, SessionInstance } from '@/lib/types';
+import { getStudentById, getSessionInstancesByStudentId } from '@/lib/firestore';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,18 @@ export default function LearnerProfilePage() {
 
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
+  const [latestSessionInstanceId, setLatestSessionInstanceId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     async function fetchStudent() {
       setLoading(true);
-      const data = await getStudentById(studentId);
+      const [data, instances] = await Promise.all([
+        getStudentById(studentId),
+        getSessionInstancesByStudentId(studentId),
+      ]);
       setStudent(data);
+      const latest = instances.find((s: SessionInstance) => s.status === 'completed');
+      setLatestSessionInstanceId(latest?.id);
       setLoading(false);
     }
     if (studentId) fetchStudent();
@@ -124,7 +130,7 @@ export default function LearnerProfilePage() {
         </TabsContent>
 
         <TabsContent value="petland" className="mt-6">
-          <LearnerPetlandTab studentId={studentId} />
+          <LearnerPetlandTab studentId={studentId} latestSessionInstanceId={latestSessionInstanceId} />
         </TabsContent>
       </Tabs>
     </div>

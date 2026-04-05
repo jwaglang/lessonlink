@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import type { PetlandProfile, Vocabulary } from '../types';
 import { PlaceHolderImages } from '../placeholder-images';
 import { mockShopItems, mockBrochures } from '../data';
-import { getTodayDateString } from '../utils';
+import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD } from '../utils';
 import { FeedbackOverlay } from './feedback-overlay';
 import { HungerAlerts } from './hunger-alerts';
 import { generatePetImage } from '../ai/generate-pet-image-flow';
@@ -16,6 +16,7 @@ import {
   onSnapshot,
   updateDoc,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -63,10 +64,10 @@ async function uploadBase64ToStorage(base64Data: string, path: string): Promise<
 
 function MemoryGame({
   vocabulary,
-  onGameWin,
+  onGameComplete,
 }: {
   vocabulary: Vocabulary[];
-  onGameWin: (xpGained: number, hpGained: number) => void;
+  onGameComplete: (vocabIds: string[]) => void;
 }) {
   const [cards, setCards] = useState<
     { id: string; content: string; type: 'word' | 'target'; pairId: string; imageUrl?: string }[]
@@ -115,10 +116,10 @@ function MemoryGame({
 
   useEffect(() => {
     if (cards.length > 0 && solved.length === cards.length / 2 && !gameWon) {
-      onGameWin(solved.length * 5, 10);
+      onGameComplete(solved);
       setGameWon(true);
     }
-  }, [solved, cards, onGameWin, gameWon]);
+  }, [solved, cards, onGameComplete, gameWon]);
 
   const isFlipped = (index: number) =>
     flipped.includes(index) || solved.includes(cards[index]?.pairId ?? '');
@@ -216,6 +217,151 @@ function MemoryGame({
   );
 }
 
+// --- FAT PET TRIGGER ---
+// Mounts only when the L hits the blocked Playground screen. Fires once on mount.
+
+function FatPetTrigger({
+  profile,
+  learnerId,
+  profileRef,
+}: {
+  profile: PetlandProfile;
+  learnerId: string;
+  profileRef: ReturnType<typeof doc>;
+}) {
+  useEffect(() => {
+    if (
+      profile.petState !== 'hatched' ||
+      profile.fatPetImageUrl ||
+      !profile.petWish ||
+      profile.lastChallengeDate !== getTodayDateString()
+    ) return;
+
+    const fatWish = `${profile.petWish}, but extremely chubby and round, belly bulging out, looking embarrassed and sheepish, same colors and features`;
+    generatePetImage(fatWish)
+      .then((imageDataUri) => uploadBase64ToStorage(imageDataUri, `pets/${learnerId}/fat-pet.png`))
+      .then((url) => updateDoc(profileRef, { fatPetImageUrl: url, isSick: true }))
+      .catch(console.error);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally fires once on mount
+
+  return null;
+}
+
+// --- FLASHCARD REVIEW ---
+
+function FlashcardReview({
+  vocabulary,
+  onComplete,
+}: {
+  vocabulary: Vocabulary[];
+  onComplete: (results: { vocabId: string; knew: boolean }[]) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [results, setResults] = useState<{ vocabId: string; knew: boolean }[]>([]);
+  const [done, setDone] = useState(false);
+
+  const current = vocabulary[index];
+
+  const handleAnswer = (knew: boolean) => {
+    const updated = [...results, { vocabId: current.id, knew }];
+    if (index + 1 >= vocabulary.length) {
+      setResults(updated);
+      setDone(true);
+      onComplete(updated);
+    } else {
+      setResults(updated);
+      setIndex(index + 1);
+      setRevealed(false);
+      setHintsUsed(0);
+    }
+  };
+
+  if (vocabulary.length === 0) return null;
+
+  if (done) {
+    const knewCount = results.filter((r) => r.knew).length;
+    return (
+      <Card>
+        <CardContent className="py-10 text-center space-y-2">
+          <p className="text-2xl font-bold">Review complete!</p>
+          <p className="text-muted-foreground">
+            {knewCount} / {results.length} words known
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-primary">Flashcard Review</CardTitle>
+          <span className="text-sm text-muted-foreground font-medium">{index + 1} / {vocabulary.length}</span>
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center gap-6 py-4">
+        {/* Question — sentence with blank */}
+        <div className="w-full max-w-sm rounded-2xl border-2 border-primary bg-primary/5 p-8 text-center">
+          <p className="text-2xl font-headline font-bold text-primary">
+            {current.type === 'cloze' ? (current.sentence?.replace(current.word, '___') || current.sentence) : current.sentence}
+          </p>
+        </div>
+
+        {/* Hint display + Answer/Hint buttons */}
+        {!revealed ? (
+          <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+            {hintsUsed > 0 && (
+              <p className="text-xl font-headline font-bold tracking-widest text-primary">
+                {current.word.split('').map((char, i) => (i < hintsUsed ? char : '_')).join(' ')}
+              </p>
+            )}
+            <div className="flex gap-2 w-full">
+              <Button variant="outline" className="flex-1" onClick={() => setRevealed(true)}>
+                Answer
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={hintsUsed >= current.word.length}
+                onClick={() => setHintsUsed((h) => h + 1)}
+              >
+                Hint {hintsUsed > 0 ? `(${hintsUsed}/${current.word.length})` : ''}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="w-full max-w-sm rounded-2xl border bg-muted/40 p-6 text-center space-y-2">
+              {current.imageUrl && (
+                <img src={current.imageUrl} className="w-16 h-16 object-contain mx-auto mb-2" alt="" />
+              )}
+              <p className="text-2xl font-headline font-bold">{current.word}</p>
+            </div>
+            <div className="flex gap-4 w-full max-w-sm">
+              <Button
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold"
+                onClick={() => handleAnswer(true)}
+              >
+                ✓ Knew it
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 font-bold"
+                onClick={() => handleAnswer(false)}
+              >
+                ✗ Didn&apos;t know
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // --- HATCH PET ---
 
 function HatchPet({ onHatch, isHatching }: { onHatch: (wish: string) => void; isHatching: boolean }) {
@@ -266,21 +412,67 @@ function PetStatus({
   onReject,
   onHatch,
   isHatching,
+  onBuyEgg,
 }: {
   profile: PetlandProfile;
   previewImageUrl: string | null;
   onAccept: () => void;
   onReject: () => void;
   onHatch: (wish: string) => void;
+  onBuyEgg: () => void;
   isHatching: boolean;
 }) {
   const eggImage = PlaceHolderImages.find((img) => img.id === 'pet-egg');
   const defaultHatchedImage = PlaceHolderImages.find((img) => img.id === 'pet-hatched');
   const petLevel = Math.floor((profile.xp || 0) / 1000) + 1;
 
+  if (profile.petState === 'dead') {
+    return (
+      <Card className="w-full border-2 border-gray-300">
+        <CardHeader className="text-center">
+          <div className="flex items-center justify-center gap-2">
+            <BookUser className="h-6 w-6 text-gray-400" />
+            <CardTitle className="text-3xl text-gray-400">Passport</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-4 py-8">
+          <div className="relative w-48 h-48">
+            <img
+              src={profile.petImageUrl || defaultHatchedImage?.imageUrl}
+              className="w-full h-full rounded-2xl object-cover grayscale opacity-50"
+              alt="pet"
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-7xl">💀</div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-500">{profile.petName || 'Your Pet'} has passed away</h2>
+          <p className="text-sm text-muted-foreground text-center max-w-xs">
+            Buy a new egg to start over. You&apos;ll need to hatch it too.
+          </p>
+          <div className="flex flex-col items-center gap-1 w-full max-w-xs">
+            <Button
+              className="w-full"
+              disabled={profile.xp < 500}
+              onClick={onBuyEgg}
+            >
+              Buy New Egg — 500 XP
+            </Button>
+            {profile.xp < 500 && (
+              <p className="text-xs text-muted-foreground">
+                You need {500 - profile.xp} more XP
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">Hatching costs an additional 100 XP</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const imageUrl =
     profile.petState === 'hatched'
-      ? profile.petImageUrl || defaultHatchedImage?.imageUrl
+      ? (profile.isSick && profile.fatPetImageUrl)
+        ? profile.fatPetImageUrl
+        : profile.petImageUrl || defaultHatchedImage?.imageUrl
       : eggImage?.imageUrl;
 
   return (
@@ -409,8 +601,12 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isNamingPet, setIsNamingPet] = useState(false);
   const [petNameInput, setPetNameInput] = useState('');
+  const [matchCompleted, setMatchCompleted] = useState(false);
+  const [isRecoveryHatch, setIsRecoveryHatch] = useState(false);
+  const [pendingWish, setPendingWish] = useState('');
 
   const profileRef = doc(db, 'students', learnerId, 'petland', 'profile');
+  const hasAppliedDecayRef = useRef(false);
 
   // Live subscribe to profile
   useEffect(() => {
@@ -433,6 +629,21 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       .catch(() => {}); // no image in storage yet — silently ignore
   }, [profile?.petState, profile?.petImageUrl, learnerId]);
 
+  // HP decay — runs once when profile first loads
+  useEffect(() => {
+    if (!profile || hasAppliedDecayRef.current || profile.petState === 'dead') return;
+    hasAppliedDecayRef.current = true;
+    const { newHp, missedIntervals } = calculateHpDecay(profile.lastHpUpdate, profile.hp);
+    if (missedIntervals === 0) return;
+    const updates: Partial<PetlandProfile> = {
+      hp: newHp,
+      lastHpUpdate: new Date().toISOString(),
+    };
+    if (newHp === 0) updates.petState = 'dead';
+    updateDoc(profileRef, updates).catch(console.error);
+  }, [profile]);
+
+
   // Live subscribe to vocabulary
   useEffect(() => {
     const vocabRef = collection(db, 'students', learnerId, 'vocabulary');
@@ -443,22 +654,76 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     return () => unsub();
   }, [learnerId]);
 
-  const handleGameWin = useCallback(
-    (xp: number, hp: number) => {
+  const handleGameComplete = useCallback(
+    async (vocabIds: string[]) => {
       if (!profile) return;
       const today = getTodayDateString();
-      updateDoc(profileRef, {
+      const xp = vocabIds.length * XP_PER_MATCH;
+      const isFirstRoundToday = profile.lastChallengeDate !== today;
+      const hpGain = isFirstRoundToday ? 10 : 0;
+
+      const profileUpdate: Partial<PetlandProfile> = {
         xp: profile.xp + xp,
-        hp: Math.min(profile.maxHp, profile.hp + hp),
         lastChallengeDate: today,
-      }).catch(console.error);
-      toast({ title: 'Great job!', description: `You earned ${xp} XP and ${hp} HP!` });
+        isSick: false,
+      };
+      if (hpGain > 0) {
+        profileUpdate.hp = Math.min(profile.maxHp, profile.hp + hpGain);
+        profileUpdate.lastHpUpdate = new Date().toISOString();
+      }
+
+      // Stamp lastReviewDate on each word — exposure only, no srsLevel change
+      const batch = writeBatch(db);
+      for (const vocabId of vocabIds) {
+        batch.update(doc(db, 'students', learnerId, 'vocabulary', vocabId), {
+          lastReviewDate: today,
+        });
+      }
+      await batch.commit().catch(console.error);
+      await updateDoc(profileRef, profileUpdate).catch(console.error);
+
+      setMatchCompleted(true);
+      toast({
+        title: 'Great job!',
+        description: hpGain > 0
+          ? `You earned ${xp} XP and ${hpGain} HP!`
+          : `You earned ${xp} XP! (HP only awarded once per day)`,
+      });
     },
     [profile, learnerId]
   );
 
+  const handleFlashcardComplete = useCallback(
+    async (results: { vocabId: string; knew: boolean }[]) => {
+      if (!profile) return;
+      const today = getTodayDateString();
+      const xp = results.length * XP_PER_FLASHCARD;
+
+      const batch = writeBatch(db);
+      for (const result of results) {
+        const word = vocabulary.find((v) => v.id === result.vocabId);
+        if (!word) continue;
+        const newSrsLevel = result.knew ? Math.min(5, (word.srsLevel || 1) + 1) : 1;
+        batch.update(doc(db, 'students', learnerId, 'vocabulary', result.vocabId), {
+          srsLevel: newSrsLevel,
+          lastReviewDate: today,
+        });
+      }
+      await batch.commit().catch(console.error);
+      await updateDoc(profileRef, { xp: profile.xp + xp }).catch(console.error);
+
+      const knewCount = results.filter((r) => r.knew).length;
+      toast({
+        title: 'Review done!',
+        description: `${knewCount}/${results.length} known · +${xp} XP`,
+      });
+    },
+    [profile, vocabulary, learnerId]
+  );
+
   const handleHatch = async (wish: string) => {
     setIsHatching(true);
+    setPendingWish(wish);
     try {
       const imageDataUri = await generatePetImage(wish);
       const url = await uploadBase64ToStorage(imageDataUri, `pets/${learnerId}/pet.png`);
@@ -486,16 +751,45 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   };
 
   const handleNamePet = () => {
-    if (!previewImageUrl || !petNameInput) return;
-    updateDoc(profileRef, {
+    if (!previewImageUrl || !petNameInput || !profile) return;
+    const updates: Partial<PetlandProfile> = {
       petState: 'hatched',
       petName: petNameInput.trim(),
       petImageUrl: previewImageUrl,
-    }).catch(console.error);
+      petWish: pendingWish,
+    };
+    if (isRecoveryHatch) {
+      updates.xp = Math.max(0, profile.xp - 100);
+    }
+    updateDoc(profileRef, updates).catch(console.error);
     setPreviewImageUrl(null);
     setIsNamingPet(false);
     setPetNameInput('');
+    setIsRecoveryHatch(false);
   };
+
+  const handleBuyEgg = async () => {
+    if (!profile || profile.xp < 500) return;
+    await updateDoc(profileRef, {
+      xp: profile.xp - 500,
+      petState: 'egg',
+      petName: '',
+      petImageUrl: null,
+      fatPetImageUrl: null,
+      isSick: false,
+      hp: 100,
+      lastHpUpdate: new Date().toISOString(),
+    }).catch(console.error);
+    deleteObject(ref(storage, `pets/${learnerId}/pet.png`)).catch(() => {});
+    deleteObject(ref(storage, `pets/${learnerId}/fat-pet.png`)).catch(() => {});
+    setIsRecoveryHatch(true);
+  };
+
+  const today = getTodayDateString();
+  // Memory Match: new words only (never reviewed)
+  const unreviewedVocab = vocabulary.filter((w) => !w.lastReviewDate);
+  // Flashcard: words seen before that are Leitner-due today
+  const flashcardVocab = vocabulary.filter((w) => w.lastReviewDate && isWordDue(w, today));
 
   if (profileLoading) {
     return (
@@ -568,12 +862,36 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             previewImageUrl={previewImageUrl}
             onAccept={handleAcceptPet}
             onReject={handleRejectPet}
+            onBuyEgg={handleBuyEgg}
           />
         </TabsContent>
 
         <TabsContent value="play">
-          <MemoryGame vocabulary={vocabulary} onGameWin={handleGameWin} />
-        </TabsContent>
+          {vocabulary.length === 0 ? (
+            // No vocab at all
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground">
+                Ask your teacher to add some words to your list!
+              </CardContent>
+            </Card>
+          ) : unreviewedVocab.length > 0 && !matchCompleted ? (
+            // Round 1 — new words exist, show Memory Match
+            <MemoryGame vocabulary={unreviewedVocab} onGameComplete={handleGameComplete} />
+          ) : flashcardVocab.length > 0 ? (
+            // Leitner-due words — show Flashcard Review
+            <FlashcardReview vocabulary={flashcardVocab} onComplete={handleFlashcardComplete} />
+          ) : (
+            // Nothing due — L is trying to play when blocked. Trigger fat pet if applicable.
+            <>
+              <FatPetTrigger profile={profile} learnerId={learnerId} profileRef={profileRef} />
+              <Card>
+                <CardContent className="py-10 text-center text-muted-foreground">
+                  Your pet is full! Come back when your words are due for review.
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent> {/* end play */}
 
         <TabsContent value="shop">
           <Card>

@@ -1,4 +1,4 @@
-import type { Dorks } from './types';
+import type { Dorks, Vocabulary } from './types';
 
 export function getTodayDateString(): string {
   const today = new Date();
@@ -35,4 +35,39 @@ export function subtractDorks(current: Dorks, copperToSubtract: number): Dorks {
 
 export function convertXpToDorks(xp: number): number {
   return xp;
+}
+
+// XP awarded per vocab word
+export const XP_PER_MATCH = 5;   // Memory Match — one matched pair
+export const XP_PER_FLASHCARD = 2; // Flashcard review — one self-assessed word
+
+// Leitner box review intervals in days (index = srsLevel 1–5)
+export const LEITNER_INTERVALS: Record<number, number> = {
+  1: 1,
+  2: 2,
+  3: 4,
+  4: 7,
+  5: 14,
+};
+
+// Returns true if the word is due for review today
+export function isWordDue(word: Vocabulary, today: string): boolean {
+  if (!word.lastReviewDate) return true; // never reviewed — always due
+  const level = Math.min(Math.max(word.srsLevel || 1, 1), 5);
+  const interval = LEITNER_INTERVALS[level];
+  const due = new Date(word.lastReviewDate);
+  due.setDate(due.getDate() + interval);
+  return new Date(today) >= due;
+}
+
+// Calculates HP lost since lastHpUpdate (10 HP per missed 24h interval)
+export function calculateHpDecay(
+  lastHpUpdate: string,
+  currentHp: number
+): { newHp: number; missedIntervals: number } {
+  const lastUpdate = new Date(lastHpUpdate).getTime();
+  const now = Date.now();
+  const missedIntervals = Math.floor((now - lastUpdate) / (24 * 60 * 60 * 1000));
+  const newHp = Math.max(0, currentHp - missedIntervals * 10);
+  return { newHp, missedIntervals };
 }

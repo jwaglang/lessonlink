@@ -1,4 +1,4 @@
-export type PetState = 'egg' | 'hatched';
+export type PetState = 'egg' | 'hatched' | 'dead';
 
 export type FeedbackType = 'wow' | 'brainfart' | 'treasure';
 
@@ -26,6 +26,8 @@ export interface PetlandProfile {
     timestamp: string;
   };
   lastHpAlertLevel?: number;
+  petWish?: string;          // original wish text used to generate the pet
+  fatPetImageUrl?: string;   // AI-generated chubby version, shown when isSick
 }
 
 export interface Vocabulary {
@@ -37,6 +39,8 @@ export interface Vocabulary {
   imageUrl: string;
   type: 'basic' | 'cloze';
   srsLevel: number;
+  lastReviewDate?: string | null;    // YYYY-MM-DD, null/undefined = never reviewed
+  sessionInstanceId?: string | null; // which session this word came from
 }
 
 export interface ShopItem {
