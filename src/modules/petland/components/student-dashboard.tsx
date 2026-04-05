@@ -8,7 +8,14 @@ import { mockShopItems, mockBrochures } from '../data';
 import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD } from '../utils';
 import { FeedbackOverlay } from './feedback-overlay';
 import { HungerAlerts } from './hunger-alerts';
-import { generatePetImage } from '../ai/generate-pet-image-flow';
+import { generatePetImage, editPetImage } from '../ai/generate-pet-image-flow';
+
+const FAT_PROMPT =
+  'Modify this creature to be extremely chubby and round, belly bulging out, gobbling junk food, looking embarrassed and sheepish at getting caught. Keep the exact same creature — same colors, features, species — just make it fat.';
+const THIN_PROMPT =
+  'Modify this creature to be noticeably skinny and underfed, ribs showing, looking hungry and sad. Keep the exact same creature — same colors, features, species — just make it thin.';
+const STARVING_PROMPT =
+  'Modify this creature to be extremely emaciated, skeletal, desperate and pleading, near death. Keep the exact same creature — same colors, features, species — just make it starving.';
 import { db, storage } from '@/lib/firebase';
 import {
   doc,
@@ -217,35 +224,6 @@ function MemoryGame({
   );
 }
 
-// --- FAT PET TRIGGER ---
-// Mounts only when the L hits the blocked Playground screen. Fires once on mount.
-
-function FatPetTrigger({
-  profile,
-  learnerId,
-  profileRef,
-}: {
-  profile: PetlandProfile;
-  learnerId: string;
-  profileRef: ReturnType<typeof doc>;
-}) {
-  useEffect(() => {
-    if (
-      profile.petState !== 'hatched' ||
-      profile.fatPetImageUrl ||
-      !profile.petWish ||
-      profile.lastChallengeDate !== getTodayDateString()
-    ) return;
-
-    const fatWish = `${profile.petWish}, but extremely chubby and round, belly bulging out, looking embarrassed and sheepish, same colors and features`;
-    generatePetImage(fatWish)
-      .then((imageDataUri) => uploadBase64ToStorage(imageDataUri, `pets/${learnerId}/fat-pet.png`))
-      .then((url) => updateDoc(profileRef, { fatPetImageUrl: url, isSick: true }))
-      .catch(console.error);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally fires once on mount
-
-  return null;
-}
 
 // --- FLASHCARD REVIEW ---
 
@@ -470,9 +448,13 @@ function PetStatus({
 
   const imageUrl =
     profile.petState === 'hatched'
-      ? (profile.isSick && profile.fatPetImageUrl)
+      ? profile.isSick && profile.fatPetImageUrl
         ? profile.fatPetImageUrl
-        : profile.petImageUrl || defaultHatchedImage?.imageUrl
+        : profile.hp < 20 && profile.starvingPetImageUrl
+          ? profile.starvingPetImageUrl
+          : profile.hp < 50 && profile.thinPetImageUrl
+            ? profile.thinPetImageUrl
+            : profile.petImageUrl || defaultHatchedImage?.imageUrl
       : eggImage?.imageUrl;
 
   return (
@@ -571,6 +553,28 @@ function PetStatus({
   );
 }
 
+// --- DEV HP SETTER (development only) ---
+
+function DevHpSetter({ hp, onSet }: { hp: number; onSet: (hp: number) => void }) {
+  const [value, setValue] = useState(String(hp));
+  return (
+    <div className="mt-4 p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 flex items-center gap-3">
+      <span className="text-xs font-bold text-yellow-700 uppercase tracking-wide">DEV</span>
+      <Input
+        type="number"
+        className="w-24 h-7 text-sm"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        min={0}
+        max={100}
+      />
+      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSet(Math.max(0, Math.min(100, Number(value))))}>
+        Set HP
+      </Button>
+    </div>
+  );
+}
+
 // --- MAIN DASHBOARD ---
 
 interface StudentDashboardProps {
@@ -604,6 +608,8 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const [matchCompleted, setMatchCompleted] = useState(false);
   const [isRecoveryHatch, setIsRecoveryHatch] = useState(false);
   const [pendingWish, setPendingWish] = useState('');
+  const [showFatConfirm, setShowFatConfirm] = useState(false);
+  const [isFatGenerating, setIsFatGenerating] = useState(false);
 
   const profileRef = doc(db, 'students', learnerId, 'petland', 'profile');
   const hasAppliedDecayRef = useRef(false);
@@ -633,14 +639,30 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   useEffect(() => {
     if (!profile || hasAppliedDecayRef.current || profile.petState === 'dead') return;
     hasAppliedDecayRef.current = true;
+
     const { newHp, missedIntervals } = calculateHpDecay(profile.lastHpUpdate, profile.hp);
-    if (missedIntervals === 0) return;
-    const updates: Partial<PetlandProfile> = {
-      hp: newHp,
-      lastHpUpdate: new Date().toISOString(),
-    };
-    if (newHp === 0) updates.petState = 'dead';
-    updateDoc(profileRef, updates).catch(console.error);
+
+    if (missedIntervals > 0) {
+      const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString() };
+      if (newHp === 0) updates.petState = 'dead';
+      updateDoc(profileRef, updates).catch(console.error);
+    }
+
+    // Generate variant images based on effective HP (after decay)
+    if (profile.petState === 'hatched' && profile.petImageUrl) {
+      const effectiveHp = missedIntervals > 0 ? newHp : profile.hp;
+      if (effectiveHp < 20 && !profile.starvingPetImageUrl) {
+        editPetImage(profile.petImageUrl, STARVING_PROMPT)
+          .then((b64) => uploadBase64ToStorage(b64, `pets/${learnerId}/starving-pet.png`))
+          .then((url) => updateDoc(profileRef, { starvingPetImageUrl: url }))
+          .catch(console.error);
+      } else if (effectiveHp < 50 && !profile.thinPetImageUrl) {
+        editPetImage(profile.petImageUrl, THIN_PROMPT)
+          .then((b64) => uploadBase64ToStorage(b64, `pets/${learnerId}/thin-pet.png`))
+          .then((url) => updateDoc(profileRef, { thinPetImageUrl: url }))
+          .catch(console.error);
+      }
+    }
   }, [profile]);
 
 
@@ -768,6 +790,25 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     setIsRecoveryHatch(false);
   };
 
+  const handleGenerateFatPet = async () => {
+    if (!profile?.petImageUrl) return;
+    setShowFatConfirm(false);
+    setIsFatGenerating(true);
+    try {
+      if (!profile.fatPetImageUrl) {
+        const b64 = await editPetImage(profile.petImageUrl, FAT_PROMPT);
+        const url = await uploadBase64ToStorage(b64, `pets/${learnerId}/fat-pet.png`);
+        await updateDoc(profileRef, { fatPetImageUrl: url, isSick: true });
+      } else {
+        await updateDoc(profileRef, { isSick: true });
+      }
+    } catch (e) {
+      console.error('[FatPet]', e);
+      toast({ variant: 'destructive', title: 'Generation failed', description: 'Try again in a moment.' });
+    }
+    setIsFatGenerating(false);
+  };
+
   const handleBuyEgg = async () => {
     if (!profile || profile.xp < 500) return;
     await updateDoc(profileRef, {
@@ -776,12 +817,17 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       petName: '',
       petImageUrl: null,
       fatPetImageUrl: null,
+      thinPetImageUrl: null,
+      starvingPetImageUrl: null,
+      petWish: null,
       isSick: false,
       hp: 100,
       lastHpUpdate: new Date().toISOString(),
     }).catch(console.error);
     deleteObject(ref(storage, `pets/${learnerId}/pet.png`)).catch(() => {});
     deleteObject(ref(storage, `pets/${learnerId}/fat-pet.png`)).catch(() => {});
+    deleteObject(ref(storage, `pets/${learnerId}/thin-pet.png`)).catch(() => {});
+    deleteObject(ref(storage, `pets/${learnerId}/starving-pet.png`)).catch(() => {});
     setIsRecoveryHatch(true);
   };
 
@@ -811,6 +857,21 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     <div className="relative">
       <FeedbackOverlay profile={profile} />
       <HungerAlerts profile={profile} learnerId={learnerId} />
+
+      <Dialog open={showFatConfirm} onOpenChange={setShowFatConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Play anyway?</DialogTitle>
+            <DialogDescription>
+              Your pet has already eaten today and nothing is due for review. Playing anyway will make your pet overfull and a little embarrassed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFatConfirm(false)}>Cancel</Button>
+            <Button onClick={handleGenerateFatPet}>Play anyway</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isNamingPet} onOpenChange={setIsNamingPet}>
         <DialogContent>
@@ -864,6 +925,9 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             onReject={handleRejectPet}
             onBuyEgg={handleBuyEgg}
           />
+          {process.env.NODE_ENV === 'development' && (
+            <DevHpSetter hp={profile.hp} onSet={(hp) => updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() }).catch(console.error)} />
+          )}
         </TabsContent>
 
         <TabsContent value="play">
@@ -880,16 +944,31 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
           ) : flashcardVocab.length > 0 ? (
             // Leitner-due words — show Flashcard Review
             <FlashcardReview vocabulary={flashcardVocab} onComplete={handleFlashcardComplete} />
+          ) : profile.isSick && profile.fatPetImageUrl ? (
+            // Fat pet is showing — display image + message
+            <Card>
+              <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
+                <img
+                  src={profile.fatPetImageUrl}
+                  className="w-full max-w-sm aspect-square rounded-2xl object-cover border-4 border-primary/30"
+                  alt="fat pet"
+                />
+                <p className="text-muted-foreground">Your pet is full! Come back when your words are due for review.</p>
+              </CardContent>
+            </Card>
           ) : (
-            // Nothing due — L is trying to play when blocked. Trigger fat pet if applicable.
-            <>
-              <FatPetTrigger profile={profile} learnerId={learnerId} profileRef={profileRef} />
-              <Card>
-                <CardContent className="py-10 text-center text-muted-foreground">
-                  Your pet is full! Come back when your words are due for review.
-                </CardContent>
-              </Card>
-            </>
+            // Nothing due — show Play button
+            <Card>
+              <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
+                <p className="text-muted-foreground">Nothing due right now. Your pet is happy!</p>
+                <Button
+                  onClick={() => setShowFatConfirm(true)}
+                  disabled={isFatGenerating || !profile.petImageUrl}
+                >
+                  {isFatGenerating ? <><Loader2 className="animate-spin mr-2 h-4 w-4" /> Generating...</> : 'Play anyway'}
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </TabsContent> {/* end play */}
 

@@ -3,6 +3,46 @@
 export type GeneratePetImageInput = string;
 export type GeneratePetImageOutput = string;
 
+export async function editPetImage(petImageUrl: string, editPrompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
+
+  const imageResponse = await fetch(petImageUrl);
+  if (!imageResponse.ok) throw new Error(`Failed to fetch original pet image: ${imageResponse.status}`);
+  const arrayBuffer = await imageResponse.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString('base64');
+  const mimeType = imageResponse.headers.get('content-type') || 'image/png';
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ inlineData: { mimeType, data: base64 } }, { text: editPrompt }] }],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[editPetImage] API error:', error);
+    throw new Error(`Image editing failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts as { inlineData?: { mimeType?: string; data?: string } }[] | undefined;
+  const imagePart = parts?.find((p) => p.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    console.error('[editPetImage] No image in response:', JSON.stringify(data, null, 2));
+    throw new Error('No image returned from editing API.');
+  }
+
+  return `data:${imagePart.inlineData.mimeType ?? 'image/png'};base64,${imagePart.inlineData.data}`;
+}
+
 export async function generatePetImage(wish: GeneratePetImageInput): Promise<GeneratePetImageOutput> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');

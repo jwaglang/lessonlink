@@ -156,14 +156,18 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
 
   const handleResetPet = async () => {
     try {
-      // Delete pet image from Storage if one exists
-      if (profile?.petImageUrl) {
-        await deleteObject(ref(storage, `pets/${studentId}/pet.png`)).catch(() => {});
-      }
+      deleteObject(ref(storage, `pets/${studentId}/pet.png`)).catch(() => {});
+      deleteObject(ref(storage, `pets/${studentId}/fat-pet.png`)).catch(() => {});
+      deleteObject(ref(storage, `pets/${studentId}/thin-pet.png`)).catch(() => {});
+      deleteObject(ref(storage, `pets/${studentId}/starving-pet.png`)).catch(() => {});
       await updateDoc(profileRef, {
         petState: 'egg',
         petName: '',
         petImageUrl: null,
+        fatPetImageUrl: null,
+        thinPetImageUrl: null,
+        starvingPetImageUrl: null,
+        petWish: null,
       });
       toast({ title: 'Pet reset', description: 'The learner can hatch a new pet.' });
     } catch (e) {

@@ -26,8 +26,10 @@ export interface PetlandProfile {
     timestamp: string;
   };
   lastHpAlertLevel?: number;
-  petWish?: string;          // original wish text used to generate the pet
-  fatPetImageUrl?: string;   // AI-generated chubby version, shown when isSick
+  petWish?: string;             // original wish text used to generate the pet
+  fatPetImageUrl?: string;      // AI-generated chubby version, shown when isSick
+  thinPetImageUrl?: string;     // AI-generated skinny version, shown when hp < 50
+  starvingPetImageUrl?: string; // AI-generated skeletal version, shown when hp < 20
 }
 
 export interface Vocabulary {
