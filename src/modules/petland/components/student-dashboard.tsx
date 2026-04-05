@@ -80,7 +80,7 @@ function MemoryGame({
       setCards([]);
       return;
     }
-    const gameVocab = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 6);
+    const gameVocab = [...vocabulary];
     const gameCards = gameVocab.flatMap((v) => [
       { id: `${v.id}-w`, content: v.word, type: 'word' as const, pairId: v.id },
       {
@@ -138,32 +138,44 @@ function MemoryGame({
         <CardTitle>Playground: Memory Match!</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-4 gap-4">
-          {cards.map((card, index) => (
-            <div
-              key={card.id}
-              className="aspect-square cursor-pointer"
-              onClick={() => !isFlipped(index) && flipped.length < 2 && setFlipped((p) => [...p, index])}
-            >
-              <div
-                className={cn(
-                  'w-full h-full rounded-lg flex items-center justify-center p-2 transition-all border-2',
-                  isFlipped(index) ? 'bg-white border-primary shadow-lg' : 'bg-primary border-transparent'
-                )}
-              >
-                {isFlipped(index) ? (
-                  card.imageUrl ? (
-                    <img src={card.imageUrl} className="w-full h-full object-contain" alt="icon" />
-                  ) : (
-                    <span className="font-bold text-sm text-slate-700">{card.content}</span>
-                  )
-                ) : (
-                  <Bone className="h-8 w-8 text-white" />
-                )}
-              </div>
+        {(() => {
+          const cols = Math.ceil(Math.sqrt(cards.length));
+          return (
+            <div className="space-y-2">
+              {Array.from({ length: Math.ceil(cards.length / cols) }, (_, row) => (
+                <div key={row} className="flex gap-2">
+                  {cards.slice(row * cols, row * cols + cols).map((card) => {
+                    const index = cards.indexOf(card);
+                    return (
+                      <div
+                        key={card.id}
+                        className="w-48 h-48 flex-none cursor-pointer"
+                        onClick={() => !isFlipped(index) && flipped.length < 2 && setFlipped((p) => [...p, index])}
+                      >
+                        <div
+                          className={cn(
+                            'w-full h-full rounded-lg flex items-center justify-center p-2 transition-all border-2',
+                            isFlipped(index) ? 'bg-white border-primary shadow-lg' : 'bg-primary border-transparent'
+                          )}
+                        >
+                          {isFlipped(index) ? (
+                            card.imageUrl ? (
+                              <img src={card.imageUrl} className="w-full h-full object-contain" alt="icon" />
+                            ) : (
+                              <span className="font-bold text-sm text-slate-700">{card.content}</span>
+                            )
+                          ) : (
+                            <Bone className="h-8 w-8 text-white" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
         {gameWon && (
           <div className="text-center mt-6">
             <Button onClick={resetGame}>Play Again</Button>
@@ -252,22 +264,22 @@ function PetStatus({
       </CardHeader>
       <CardContent className="grid md:grid-cols-2 gap-6 items-start">
         <div className="flex flex-col items-center gap-2">
-          <div className="relative w-48 h-48">
+          <div className="relative w-full aspect-square max-w-sm">
             {previewImageUrl ? (
               <img
                 src={previewImageUrl}
-                className="rounded-full w-48 h-48 border-4 border-dashed border-primary mx-auto object-cover"
+                className="w-full h-full border-4 border-dashed border-primary rounded-2xl object-cover"
                 alt="preview"
               />
             ) : (
               <img
                 src={imageUrl}
-                className="rounded-full w-48 h-48 border-4 border-primary/50 object-cover"
+                className="w-full h-full border-4 border-primary/50 rounded-2xl object-cover"
                 alt="pet"
               />
             )}
             {isHatching && (
-              <div className="absolute inset-0 bg-slate-900/50 rounded-full flex items-center justify-center">
+              <div className="absolute inset-0 bg-slate-900/50 rounded-2xl flex items-center justify-center">
                 <Loader2 className="h-12 w-12 text-white animate-spin" />
               </div>
             )}
@@ -382,6 +394,14 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     });
     return () => unsub();
   }, [learnerId]);
+
+  // If hatched but petImageUrl is missing, recover it from Storage
+  useEffect(() => {
+    if (profile?.petState !== 'hatched' || profile?.petImageUrl) return;
+    getDownloadURL(ref(storage, `pets/${learnerId}/pet.png`))
+      .then((url) => updateDoc(profileRef, { petImageUrl: url }))
+      .catch(() => {}); // no image in storage yet — silently ignore
+  }, [profile?.petState, profile?.petImageUrl, learnerId]);
 
   // Live subscribe to vocabulary
   useEffect(() => {
