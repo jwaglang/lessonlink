@@ -92,7 +92,7 @@ const DEFAULT_PROFILE: Omit<PetlandProfile, 'petName'> & { petName: string } = {
   dorks: { gold: 0, silver: 0, copper: 0 },
   lastHpUpdate: new Date().toISOString(),
   lastChallengeDate: '',
-  isSick: false,
+  isFat: false,
   petState: 'egg',
   petName: '',
   inventory: [],
@@ -168,6 +168,7 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
         thinPetImageUrl: null,
         starvingPetImageUrl: null,
         petWish: null,
+        isFat: false,
       });
       toast({ title: 'Pet reset', description: 'The learner can hatch a new pet.' });
     } catch (e) {

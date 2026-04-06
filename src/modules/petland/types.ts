@@ -15,7 +15,7 @@ export interface PetlandProfile {
   dorks: Dorks;
   lastHpUpdate: string;        // ISO 8601 timestamp
   lastChallengeDate: string;   // YYYY-MM-DD
-  isSick: boolean;
+  isFat?: boolean;              // true when overfed; clears automatically on next HP decay
   petState: PetState;
   petName: string;
   petImageUrl?: string;
@@ -27,7 +27,7 @@ export interface PetlandProfile {
   };
   lastHpAlertLevel?: number;
   petWish?: string;             // original wish text used to generate the pet
-  fatPetImageUrl?: string;      // AI-generated chubby version, shown when isSick
+  fatPetImageUrl?: string;      // AI-generated chubby version, shown when isFat
   thinPetImageUrl?: string;     // AI-generated skinny version, shown when hp < 50
   starvingPetImageUrl?: string; // AI-generated skeletal version, shown when hp < 20
 }

@@ -53,10 +53,11 @@ service cloud.firestore {
       allow write: if isAdmin() || isTeacher() || isOwner(studentId);
     }
 
-    // Vocabulary — tutors write (CRUD), learner reads own (Memory Match)
+    // Vocabulary — tutors write (CRUD), learner updates own (lastReviewDate, srsLevel from games)
     match /vocabulary/{wordId} {
       allow read: if isAdmin() || isTeacher() || isOwner(studentId);
-      allow write: if isAdmin() || isTeacher();
+      allow create, delete: if isAdmin() || isTeacher();
+      allow update: if isAdmin() || isTeacher() || isOwner(studentId);
     }
   }
 

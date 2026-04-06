@@ -446,9 +446,11 @@ function PetStatus({
     );
   }
 
+  console.log('[PetStatus] isFat:', profile.isFat, 'fatPetImageUrl:', !!profile.fatPetImageUrl);
+
   const imageUrl =
     profile.petState === 'hatched'
-      ? profile.isSick && profile.fatPetImageUrl
+      ? profile.isFat && profile.fatPetImageUrl
         ? profile.fatPetImageUrl
         : profile.hp < 20 && profile.starvingPetImageUrl
           ? profile.starvingPetImageUrl
@@ -555,10 +557,10 @@ function PetStatus({
 
 // --- DEV HP SETTER (development only) ---
 
-function DevHpSetter({ hp, onSet }: { hp: number; onSet: (hp: number) => void }) {
+function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void }) {
   const [value, setValue] = useState(String(hp));
   return (
-    <div className="mt-4 p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 flex items-center gap-3">
+    <div className="mt-4 p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 flex items-center gap-3 flex-wrap">
       <span className="text-xs font-bold text-yellow-700 uppercase tracking-wide">DEV</span>
       <Input
         type="number"
@@ -571,6 +573,17 @@ function DevHpSetter({ hp, onSet }: { hp: number; onSet: (hp: number) => void })
       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSet(Math.max(0, Math.min(100, Number(value))))}>
         Set HP
       </Button>
+      <Button size="sm" variant="outline" className="h-7 text-xs border-blue-400 text-blue-600 hover:bg-blue-50" onClick={onFakeMatch}>
+        Fake Match
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-xs border-orange-400 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
+        Simulate Decay (-10 HP, clears fat)
+      </Button>
+      {isFat && (
+        <Button size="sm" variant="outline" className="h-7 text-xs border-red-400 text-red-600 hover:bg-red-50" onClick={onClearFat}>
+          Clear Fat (isFat=false)
+        </Button>
+      )}
     </div>
   );
 }
@@ -589,7 +602,7 @@ const DEFAULT_PROFILE: PetlandProfile = {
   dorks: { gold: 0, silver: 0, copper: 0 },
   lastHpUpdate: new Date().toISOString(),
   lastChallengeDate: '',
-  isSick: false,
+  isFat: false,
   petState: 'egg',
   petName: '',
   inventory: [],
@@ -618,7 +631,9 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   useEffect(() => {
     const unsub = onSnapshot(profileRef, (snap) => {
       if (snap.exists()) {
-        setProfile(snap.data() as PetlandProfile);
+        const data = snap.data() as PetlandProfile;
+        console.log('[onSnapshot] isFat:', data.isFat, 'fatPetImageUrl:', !!data.fatPetImageUrl);
+        setProfile(data);
       } else {
         setProfile(null);
       }
@@ -643,7 +658,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     const { newHp, missedIntervals } = calculateHpDecay(profile.lastHpUpdate, profile.hp);
 
     if (missedIntervals > 0) {
-      const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString() };
+      const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString(), isFat: false };
       if (newHp === 0) updates.petState = 'dead';
       updateDoc(profileRef, updates).catch(console.error);
     }
@@ -687,7 +702,6 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       const profileUpdate: Partial<PetlandProfile> = {
         xp: profile.xp + xp,
         lastChallengeDate: today,
-        isSick: false,
       };
       if (hpGain > 0) {
         profileUpdate.hp = Math.min(profile.maxHp, profile.hp + hpGain);
@@ -795,16 +809,18 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     setShowFatConfirm(false);
     setIsFatGenerating(true);
     try {
+      console.log('[FatPet] learnerId:', learnerId, 'fatPetImageUrl:', !!profile.fatPetImageUrl);
       if (!profile.fatPetImageUrl) {
         const b64 = await editPetImage(profile.petImageUrl, FAT_PROMPT);
         const url = await uploadBase64ToStorage(b64, `pets/${learnerId}/fat-pet.png`);
-        await updateDoc(profileRef, { fatPetImageUrl: url, isSick: true });
+        await updateDoc(profileRef, { fatPetImageUrl: url, isFat: true });
       } else {
-        await updateDoc(profileRef, { isSick: true });
+        console.log('[FatPet] writing isFat: true to', profileRef.path);
+        await updateDoc(profileRef, { isFat: true });
+        console.log('[FatPet] write succeeded');
       }
     } catch (e) {
-      console.error('[FatPet]', e);
-      toast({ variant: 'destructive', title: 'Generation failed', description: 'Try again in a moment.' });
+      console.log('[FatPet] FAILED:', e);
     }
     setIsFatGenerating(false);
   };
@@ -820,7 +836,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       thinPetImageUrl: null,
       starvingPetImageUrl: null,
       petWish: null,
-      isSick: false,
+      isFat: false,
       hp: 100,
       lastHpUpdate: new Date().toISOString(),
     }).catch(console.error);
@@ -926,7 +942,19 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             onBuyEgg={handleBuyEgg}
           />
           {process.env.NODE_ENV === 'development' && (
-            <DevHpSetter hp={profile.hp} onSet={(hp) => updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() }).catch(console.error)} />
+            <DevHpSetter
+              hp={profile.hp}
+              isFat={!!profile.isFat}
+              onSet={(hp) => updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() }).catch(console.error)}
+              onClearFat={() => updateDoc(profileRef, { isFat: false }).catch(console.error)}
+              onFakeMatch={() => handleGameComplete(vocabulary.slice(0, 3).map((v) => v.id))}
+              onSimulateDecay={() => {
+                const newHp = Math.max(0, profile.hp - 10);
+                const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString(), isFat: false };
+                if (newHp === 0) updates.petState = 'dead';
+                updateDoc(profileRef, updates).catch(console.error);
+              }}
+            />
           )}
         </TabsContent>
 
@@ -944,8 +972,8 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
           ) : flashcardVocab.length > 0 ? (
             // Leitner-due words — show Flashcard Review
             <FlashcardReview vocabulary={flashcardVocab} onComplete={handleFlashcardComplete} />
-          ) : profile.isSick && profile.fatPetImageUrl ? (
-            // Fat pet is showing — display image + message
+          ) : profile.isFat && profile.fatPetImageUrl ? (
+            // Fat pet — overfed, come back later
             <Card>
               <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
                 <img
@@ -957,7 +985,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
               </CardContent>
             </Card>
           ) : (
-            // Nothing due — show Play button
+            // Nothing due — show Play anyway button
             <Card>
               <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
                 <p className="text-muted-foreground">Nothing due right now. Your pet is happy!</p>
