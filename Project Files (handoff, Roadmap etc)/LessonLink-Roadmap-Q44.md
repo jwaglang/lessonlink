@@ -919,7 +919,8 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - ⚠️ **E2E homework upload/grade flow** needs testing (blocked on v1 template updates for Song/Sentence Switcher)
 - ✅ **Petland Stage 1 complete** — integrated into LL repo as `src/modules/petland/`. Student page at `/s-portal/petland`. Petland tab (Tab 5) on T-portal Learner Profile. Activation flow, feedback buttons, vocab CRUD all working. Firestore rules updated. Stage 2 (platform shell restructure) stacked.
 - ✅ **Petland SRS complete (Q46)** — Leitner 5-box system. Memory Match (exposure, stamps `lastReviewDate`) → Flashcard Review (assessment, drives `srsLevel`). HP decay on login. Death + recovery flow (500 XP egg + 100 XP hatch). `petWish` stored at hatch.
-- ✅ **Petland body condition variants (Q47)** — Three AI-generated variant images via `gemini-2.5-flash-image` (Nano Banana). Fat pet: user-triggered confirm dialog when nothing is due → `editPetImage` → `fatPetImageUrl` + `isSick: true`. Thin (HP < 50): generated on login → `thinPetImageUrl`. Starving (HP < 20): generated on login → `starvingPetImageUrl`. All cached — generated once. Image priority: dead > fat > starving > thin > healthy. ⚠️ Fat pet permissions bug open — see Q47 handoff.
+- ✅ **Petland body condition variants (Q47)** — Three AI-generated variant images via `gemini-2.5-flash-image`. Fat (user-triggered), thin (HP < 50), starving (HP < 20). All cached — generated once. Image priority: dead > fat > starving > thin > healthy.
+- ✅ **Petland body condition redesign (Q48)** — Removed `isSick`. Replaced with `isFat` (boolean). Fat clears automatically on next login when HP decay fires. Thin/starving remain pure HP thresholds (no flags). Firestore vocabulary update rule fixed — learners can now write `lastReviewDate`/`srsLevel` (was teacher-only, causing permissions error on every game complete). Dev panel expanded: Fake Match + Simulate Decay buttons. ⚠️ Firestore rules need `firebase deploy --only firestore:rules` to take effect in production. Testing pass required.
 - ✅ **Petland Playground SRS complete (Q46)** — Full Leitner 5-box system. Memory Match = exposure (stamps `lastReviewDate`, awards XP + HP daily). Flashcard Review = assessment (self-reported Knew it / Didn't know it, drives srsLevel). Daily HP guard. HP decay on login (client-side). Death state + recovery flow (500 XP egg + 100 XP hatch). Fat pet generation via Imagen when overfeeding detected. HungerAlerts with personality copy. `sessionInstanceId` stamped on vocab docs. XP constants in utils.ts. Needs testing pass before next build.
 - ⚠️ **YELLOW/ORANGE/GREEN workbook activity design** — needed before generator can produce higher-level workbooks. Design session planned.
 
@@ -954,6 +955,6 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 6, 2026 (Q47)
+**Last Updated:** April 6, 2026 (Q48)
 
-**Version:** Q47 (6.3) — Petland body condition variants built (fat, thin, starving via gemini-2.5-flash-image). Fat pet permissions bug open. Testing pass required before next build.
+**Version:** Q48 (6.4) — Petland body condition redesign complete. `isSick` removed, `isFat` introduced. Firestore vocabulary write rule fixed (root cause of persistent permissions error). Dev tools expanded. Testing pass + `firebase deploy --only firestore:rules` required before next build.
