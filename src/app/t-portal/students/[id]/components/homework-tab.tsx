@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Student, HomeworkAssignment } from '@/lib/types';
 import { getHomeworkByStudent, updateHomeworkAssignment, updateProgressWithHomeworkStats } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,6 +26,7 @@ import {
   Loader2,
   FileText,
   Star,
+  PenLine,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -51,6 +53,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function HomeworkTab({ studentId, student }: HomeworkTabProps) {
+  const router = useRouter();
   const [homework, setHomework] = useState<HomeworkAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -101,6 +104,13 @@ export default function HomeworkTab({ studentId, student }: HomeworkTabProps) {
         <StatCard icon={<CheckCircle className="h-4 w-4 text-green-600" />} label="Graded" value={gradedCount} />
         <StatCard icon={<Clock className="h-4 w-4 text-amber-600" />} label="Pending" value={pendingCount} />
         <StatCard icon={<Star className="h-4 w-4 text-purple-600" />} label="Avg Score" value={avgScore} suffix="%" />
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => router.push(`/t-portal/students/${studentId}/create-homework`)}>
+          <PenLine className="mr-2 h-4 w-4" /> Create Homework
+        </Button>
       </div>
 
       {/* Filter */}
