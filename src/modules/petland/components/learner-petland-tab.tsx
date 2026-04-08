@@ -14,7 +14,8 @@ import {
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
-import { generatePetImage } from '../ai/generate-pet-image-flow';
+import { generateVocabIcon } from '../ai/generate-pet-image-flow';
+import { generateSentence } from '../ai/generate-sentence';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -114,8 +115,16 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
   const [newWord, setNewWord] = useState('');
   const [newSentence, setNewSentence] = useState('');
   const [newLevel, setNewLevel] = useState(1);
+  const [newCreatedDate, setNewCreatedDate] = useState<string>(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [previewIconUrl, setPreviewIconUrl] = useState<string | null>(null);
   const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
+  const [isGeneratingSentence, setIsGeneratingSentence] = useState(false);
 
   // Edit vocab
   const [isEditVocabOpen, setIsEditVocabOpen] = useState(false);
@@ -196,18 +205,42 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
     if (!wordForPrompt) return;
     setIsGeneratingIcon(true);
     try {
-      const aiPrompt = `A simple icon of ${wordForPrompt} on white background.`;
-      const imageDataUri = await generatePetImage(aiPrompt);
+      const imageDataUri = await generateVocabIcon(wordForPrompt);
       const url = await uploadBase64ToStorage(imageDataUri, `vocabulary/icons/${crypto.randomUUID().slice(0, 8)}.png`);
       if (isEditVocabOpen && editingVocab) {
         setEditingVocab((v) => ({ ...v, imageUrl: url }));
       } else {
         setPreviewIconUrl(url);
       }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      const isTooManyRequests = errorMsg.includes('429');
+      console.error('[handleGenerateIcon] Error:', err);
+      toast({ 
+        variant: 'destructive', 
+        title: isTooManyRequests ? 'Rate limited' : 'AI busy',
+        description: isTooManyRequests ? 'Please wait a moment and try again.' : 'Try again in a moment.' 
+      });
+    }
+    setIsGeneratingIcon(false);
+  };
+
+  const handleGenerateSentence = async () => {
+    const wordForPrompt = isEditVocabOpen ? editingVocab?.word : newWord;
+    const levelForPrompt = isEditVocabOpen ? (editingVocab?.level ?? 1) : newLevel;
+    if (!wordForPrompt) return;
+    setIsGeneratingSentence(true);
+    try {
+      const sentence = await generateSentence(wordForPrompt, levelForPrompt);
+      if (isEditVocabOpen && editingVocab) {
+        setEditingVocab((v) => ({ ...v, sentence }));
+      } else {
+        setNewSentence(sentence);
+      }
     } catch {
       toast({ variant: 'destructive', title: 'AI busy', description: 'Try again in a moment.' });
     }
-    setIsGeneratingIcon(false);
+    setIsGeneratingSentence(false);
   };
 
   const handleAddWord = async (e: React.FormEvent) => {
@@ -224,12 +257,19 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
         lastReviewDate: null,
         sessionInstanceId: latestSessionInstanceId ?? null,
         questionPrompt: '',
+        createdDate: newCreatedDate,
         createdAt: new Date().toISOString(),
       });
       setNewWord('');
       setNewSentence('');
       setNewLevel(1);
       setPreviewIconUrl(null);
+      // Reset date to today
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      setNewCreatedDate(`${year}-${month}-${day}`);
       toast({ title: 'Word saved!' });
     } catch {
       toast({ variant: 'destructive', title: 'Failed to save word' });
@@ -246,6 +286,7 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
         sentence: editingVocab.sentence,
         level: Number(editingVocab.level),
         imageUrl: editingVocab.imageUrl || '',
+        createdDate: editingVocab.createdDate,
       });
       toast({ title: 'Word updated!' });
       setIsEditVocabOpen(false);
@@ -466,12 +507,24 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
               )}
               <div>
                 <Label>Sentence</Label>
-                <Input
-                  value={newSentence}
-                  onChange={(e) => setNewSentence(e.target.value)}
-                  placeholder="The apple is red."
-                  className="mt-1"
-                />
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    value={newSentence}
+                    onChange={(e) => setNewSentence(e.target.value)}
+                    placeholder="The apple is red."
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleGenerateSentence}
+                    disabled={isGeneratingSentence || !newWord}
+                    size="icon"
+                    variant="outline"
+                    title="Generate sentence with AI"
+                  >
+                    {isGeneratingSentence ? <Loader2 className="animate-spin h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
               <div>
                 <Label>Level</Label>
@@ -483,6 +536,30 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
                   className="mt-1 w-24"
                 />
               </div>
+              <div>
+                <Label>Created Date</Label>
+                <Input
+                  type="date"
+                  value={newCreatedDate}
+                  onChange={(e) => setNewCreatedDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              {newWord && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Card Preview</Label>
+                  <div className="w-32 h-32 rounded-lg flex items-center justify-center p-2 bg-white border-2 border-primary shadow-lg mx-auto">
+                    {previewIconUrl ? (
+                      <img src={previewIconUrl} className="w-full h-full object-contain" alt="card preview" />
+                    ) : (
+                      <span className="font-bold text-center leading-tight text-slate-700 text-sm">{newWord}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {new Date(newCreatedDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                </div>
+              )}
               <Button type="submit" className="w-full">
                 <PlusCircle className="mr-2 h-4 w-4" /> Save Word
               </Button>
@@ -584,11 +661,23 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
             )}
             <div>
               <Label>Sentence</Label>
-              <Input
-                value={editingVocab?.sentence ?? ''}
-                onChange={(e) => setEditingVocab((v) => ({ ...v, sentence: e.target.value }))}
-                className="mt-1"
-              />
+              <div className="flex gap-2 mt-1">
+                <Input
+                  value={editingVocab?.sentence ?? ''}
+                  onChange={(e) => setEditingVocab((v) => ({ ...v, sentence: e.target.value }))}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  onClick={handleGenerateSentence}
+                  disabled={isGeneratingSentence || !editingVocab?.word}
+                  size="icon"
+                  variant="outline"
+                  title="Generate sentence with AI"
+                >
+                  {isGeneratingSentence ? <Loader2 className="animate-spin h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <div>
               <Label>Level</Label>
@@ -599,6 +688,32 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
                 className="mt-1 w-24"
               />
             </div>
+            <div>
+              <Label>Created Date</Label>
+              <Input
+                type="date"
+                value={editingVocab?.createdDate ?? ''}
+                onChange={(e) => setEditingVocab((v) => ({ ...v, createdDate: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            {editingVocab?.word && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Card Preview</Label>
+                <div className="w-32 h-32 rounded-lg flex items-center justify-center p-2 bg-white border-2 border-primary shadow-lg mx-auto">
+                  {editingVocab.imageUrl ? (
+                    <img src={editingVocab.imageUrl} className="w-full h-full object-contain" alt="card preview" />
+                  ) : (
+                    <span className="font-bold text-center leading-tight text-slate-700 text-sm">{editingVocab.word}</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {editingVocab.createdDate
+                    ? new Date(editingVocab.createdDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : 'No date'}
+                </p>
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditVocabOpen(false)}>
                 Cancel

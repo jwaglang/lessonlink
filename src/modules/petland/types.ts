@@ -43,6 +43,7 @@ export interface Vocabulary {
   srsLevel: number;
   lastReviewDate?: string | null;    // YYYY-MM-DD, null/undefined = never reviewed
   sessionInstanceId?: string | null; // which session this word came from
+  createdDate?: string;              // YYYY-MM-DD, when this card was created (searchable)
 }
 
 export interface ShopItem {

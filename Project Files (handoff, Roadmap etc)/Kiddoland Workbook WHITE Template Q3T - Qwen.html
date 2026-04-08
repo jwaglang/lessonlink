@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESL Elementary Workbook - Template</title>
+  <style>
+    /* ===== DESIGN SYSTEM: CANDY SHOP THEME ===== */
+    :root {
+      /* Soft Pastel Colors */
+      --candy-pink: #FFD6E8;
+      --candy-yellow: #FFF9C4;
+      --candy-mint: #C8E6C9;
+      --candy-lilac: #E1BEE7;
+      --candy-peach: #FFE0B2;
+      --candy-blue: #BBDEFB;
+      
+      /* Slightly Deeper Pastels (for contrast) */
+      --pastel-pink: #F8BBD0;
+      --pastel-yellow: #FFF59D;
+      --pastel-mint: #A5D6A7;
+      --pastel-lilac: #CE93D8;
+      --pastel-blue: #90CAF9;
+      --vibrant-pink: #F06292;
+      
+      /* Neutrals */
+      --white: #FFFFFF;
+      --cream: #FFF8E1;
+      --text-dark: #5D4E6D;
+      --text-medium: #8E7C99;
+      --shadow: rgba(93, 78, 109, 0.15);
+      
+      /* Spacing */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 20px;
+      --space-lg: 32px;
+      --space-xl: 48px;
+      
+      /* Border Radius */
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 30px;
+      --radius-pill: 50px;
+      
+      /* Shadows */
+      --shadow-sm: 0 4px 8px var(--shadow);
+      --shadow-md: 0 8px 16px var(--shadow);
+      --shadow-lg: 0 12px 24px var(--shadow);
+    }
+
+    /* ===== RESET & BASE ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif;
+      background: linear-gradient(135deg, var(--candy-pink) 0%, var(--candy-yellow) 25%, var(--candy-mint) 50%, var(--candy-lilac) 75%, var(--candy-peach) 100%);
+      background-attachment: fixed;
+      color: var(--text-dark);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    
+    /* ===== HEADER ===== */
+    header {
+      background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-lilac));
+      color: var(--text-dark);
+      padding: var(--space-sm) var(--space-md);
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    header h1 {
+      font-size: 2.5rem;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+      margin-bottom: var(--space-xs);
+      animation: bounce 0.6s ease;
+      letter-spacing: 1px;
+    }
+    
+    #studentInfo {
+      font-size: 1rem;
+      margin-bottom: var(--space-xs);
+      opacity: 0.95;
+    }
+    
+    .progress-bar {
+      max-width: 600px;
+      margin: var(--space-xs) auto 0;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pastel-mint), var(--pastel-blue));
+      width: 0%;
+      transition: width 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      box-shadow: 0 0 8px rgba(165, 214, 167, 0.4);
+    }
+    
+    /* ===== TEACHER MODE TOGGLE ===== */
+    .teacher-mode-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: var(--white);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+    
+    .teacher-mode-toggle.hidden {
+      display: none;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: var(--candy-lilac);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .toggle-switch.active {
+      background: var(--pastel-mint);
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: var(--white);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .toggle-switch.active::after {
+      transform: translateX(24px);
+    }
+    
+    /* ===== TEACHER PANEL ===== */
+    .teacher-panel {
+      background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+      border: 3px dashed var(--vibrant-pink);
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      margin: var(--space-md) 0;
+      display: none;
+    }
+    
+    body.teacher-mode .teacher-panel {
+      display: block;
+    }
+    
+    .teacher-panel h4 {
+      color: var(--vibrant-pink);
+      margin-bottom: var(--space-sm);
+      font-size: 1.1rem;
+    }
+    
+    .teacher-panel p {
+      font-size: 0.95rem;
+      color: var(--text-dark);
+      margin-bottom: var(--space-sm);
+      text-align: left;
+    }
+    
+    .recording-status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-pill);
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+    
+    .recording-status.recording {
+      background: #FFCDD2;
+      color: #C62828;
+      animation: pulse 1s infinite;
+    }
+    
+    .recording-status.ready {
+      background: var(--pastel-mint);
+      color: #2E7D32;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    
+    /* ===== GENERATE BUTTON ===== */
+    .generate-student-version {
+      position: fixed;
+      bottom: 140px;
+      right: 20px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #4CAF50, #8BC34A);
+      color: white;
+      padding: var(--space-md) var(--space-lg);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-lg);
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      display: none;
+      transition: all 0.3s ease;
+    }
+    
+    .generate-student-version:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+    
+    body.teacher-mode .generate-student-version {
+      display: block;
+    }
+    
+    /* ===== AUDIO PLAYER STYLING ===== */
+    .audio-player-container {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin: var(--space-sm) 0;
+    }
+    
+    .play-audio-btn {
+      background: linear-gradient(135deg, var(--pastel-blue), var(--pastel-mint));
+      border: none;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
+    }
+    
+    .play-audio-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .play-audio-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* ===== MAIN CONTENT ===== */
+    main {
+      padding: var(--space-md) var(--space-md);
+      padding-bottom: 140px;
+      max-width: 1000px;
+      margin: 0 auto;
+      min-height: calc(100vh - 180px);
+    }
+    
+    .screen {
+      display: none;
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      box-shadow: var(--shadow-lg);
+      min-height: auto;
+      max-height: calc(100vh - 220px);
+      overflow-y: auto;
+      animation: slideIn 0.4s ease;
+    }
+    
+    .screen.active {
+      display: block;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .screen h2 {
+      color: var(--pastel-pink);
+      font-size: 1.5rem;
+      margin-bottom: var(--space-sm);
+      text-align: center;
+      text-shadow: 1px 1px 2px rgba(248, 187, 208, 0.3);
+    }
+    
+    .screen p {
+      font-size: 1rem;
+      color: var(--text-medium);
+      margin-bottom: var(--space-sm);
+      text-align: center;
+    }
+    
+    /* ===== BUTTONS ===== */
+    button {
+      font-family: inherit;
+      font-size: 1.2rem;
+      font-weight: bold;
+      padding: var(--space-md) var(--space-lg);
+      border: none;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-lilac));
+      color: var(--text-dark);
+      box-shadow: var(--shadow-md);
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      text-shadow: none;
+    }
+    
+    button:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    button:active {
+      transform: translateY(-2px) scale(1.02);
+      animation: buttonBounce 0.3s ease;
+    }
+    
+    @keyframes buttonBounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* ===== INPUTS ===== */
+    input, select {
+      font-family: inherit;
+      font-size: 1.2rem;
+      padding: var(--space-md);
+      margin: var(--space-sm);
+      border: 3px solid var(--candy-lilac);
+      border-radius: var(--radius-md);
+      background: var(--cream);
+      color: var(--text-dark);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--pastel-pink);
+      box-shadow: 0 0 0 4px rgba(248, 187, 208, 0.3);
+      transform: scale(1.02);
+    }
+    
+    label {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--text-dark);
+      display: block;
+      margin: var(--space-md) 0;
+    }
+    
+    /* ===== FLASHCARDS (3D FLIP) ===== */
+    #flashcardContainer {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+      max-width: 800px;
+      margin: var(--space-md) auto;
+    }
+    
+    .flashcard-wrapper {
+      perspective: 1000px;
+    }
+    
+    .flashcard {
+      width: 100%;
+      aspect-ratio: 1;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      cursor: pointer;
+    }
+    
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+    
+    .flashcard-front,
+    .flashcard-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: var(--shadow-md);
+      padding: var(--space-sm);
+      text-align: center;
+      overflow: hidden;
+      word-wrap: break-word;
+    }
+    
+    .flashcard-front {
+      background: linear-gradient(135deg, var(--candy-yellow), var(--candy-peach));
+      color: var(--text-dark);
+      font-size: clamp(0.7rem, 3vw, 1.3rem);
+    }
+    
+    .flashcard-back {
+      background: linear-gradient(135deg, var(--candy-mint), var(--candy-lilac));
+      color: var(--text-dark);
+      transform: rotateY(180deg);
+      font-size: 3.5rem;
+    }
+    
+    /* ===== MEMORY GAME CARDS ===== */
+    #memoryGameContainer {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-sm);
+      max-width: 600px;
+      margin: var(--space-md) auto;
+    }
+    
+    .memory-card {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, var(--candy-pink), var(--candy-yellow));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(0.6rem, 2.5vw, 1rem);
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all 0.3s ease;
+      position: relative;
+      transform-style: preserve-3d;
+      overflow: hidden;
+      padding: var(--space-xs);
+      text-align: center;
+      word-break: break-word;
+    }
+    
+    .memory-card:hover {
+      transform: translateY(-5px) scale(1.05);
+    }
+    
+    .memory-card.flipped {
+      background: var(--white);
+      border: 3px solid var(--pastel-pink);
+    }
+    
+    .memory-card.matched {
+      background: linear-gradient(135deg, var(--pastel-mint), var(--pastel-yellow));
+      animation: matchPulse 0.6s ease;
+    }
+    
+    @keyframes matchPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    .memory-card.flipped.has-emoji {
+      font-size: 2rem;
+    }
+    
+    .letter-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .letter-btn:hover {
+      transform: translateY(-3px) scale(1.1);
+      background: var(--candy-mint);
+    }
+    
+    /* ===== CLICKABLE WORDS ===== */
+    .clickable-word {
+      cursor: pointer;
+      padding: 2px 4px;
+      margin: 0 2px;
+      display: inline-block;
+      border-radius: var(--radius-sm);
+      transition: all 0.3s ease;
+      font-size: 1.3rem;
+      font-weight: bold;
+      background: transparent;
+    }
+    
+    .clickable-word:hover {
+      transform: translateY(-2px);
+    }
+    
+    .level-0 { color: #D32F2F; }
+    .level-1 { color: #F9A825; }
+    .level-2 { color: #388E3C; }
+    
+    /* ===== WORD BOXES & CARDS ===== */
+    .word-box {
+      display: inline-block;
+      padding: var(--space-md) var(--space-lg);
+      margin: var(--space-sm);
+      border: 3px solid var(--vibrant-pink);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      background: var(--white);
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    .word-box:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: var(--shadow-md);
+      background: var(--candy-yellow);
+    }
+    
+    .word-box.selected {
+      background: var(--pastel-mint);
+      color: var(--text-dark);
+      border-color: var(--pastel-mint);
+    }
+    
+    /* ===== CANVAS ===== */
+    #drawingCanvas {
+      border: 4px solid var(--candy-lilac);
+      border-radius: var(--radius-md);
+      cursor: crosshair;
+      background: var(--white);
+      box-shadow: var(--shadow-md);
+      display: block;
+      margin: var(--space-md) auto;
+      max-width: 100%;
+    }
+    
+    /* ===== FOOTER NAVIGATION ===== */
+    footer {
+      background: linear-gradient(135deg, var(--candy-mint), var(--candy-lilac));
+      padding: var(--space-md) var(--space-sm);
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      box-shadow: 0 -4px 16px var(--shadow);
+      z-index: 100;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .activity-btn {
+      width: 70px;
+      height: 70px;
+      padding: var(--space-xs);
+      font-size: 1.2rem;
+      background: var(--white);
+      color: var(--text-dark);
+      border: 3px solid var(--pastel-pink);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      position: relative;
+      overflow: visible;
+    }
+    
+    .activity-btn:hover {
+      background: var(--candy-yellow);
+      border-color: var(--pastel-yellow);
+    }
+    
+    .activity-btn.completed::after {
+      content: "✓";
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--pastel-mint);
+      color: var(--text-dark);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: var(--shadow-md);
+      animation: checkmarkPop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    @keyframes checkmarkPop {
+      0% { transform: scale(0) rotate(-180deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+    
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      header h1 { font-size: 1.8rem; }
+      .screen { padding: var(--space-md); }
+      .screen h2 { font-size: 1.5rem; }
+      #memoryGameContainer { grid-template-columns: repeat(3, 1fr); }
+      .activity-btn { width: 70px; height: 70px; font-size: 1.2rem; }
+      .flashcard { width: 150px; height: 150px; }
+      .teacher-mode-toggle { top: auto; bottom: 150px; right: 10px; font-size: 0.8rem; padding: var(--space-xs) var(--space-sm); }
+      .generate-student-version { bottom: 200px; right: 10px; font-size: 0.9rem; padding: var(--space-sm) var(--space-md); }
+    }
+    
+    @media (max-width: 480px) {
+      #memoryGameContainer { grid-template-columns: repeat(2, 1fr); }
+      .nav-buttons { gap: 6px; padding: 0 8px; }
+      .activity-btn { width: 65px; height: 65px; font-size: 1.1rem; }
+      header h1 { font-size: 1.5rem; }
+      .screen h2 { font-size: 1.3rem; }
+      button { padding: var(--space-sm) var(--space-md); font-size: 1.1rem; }
+      #flashcardContainer { grid-template-columns: repeat(3, 1fr); }
+    }
+    
+    @media (max-width: 380px) {
+      .nav-buttons { gap: 4px; padding: 0 4px; }
+      .activity-btn { width: 60px; height: 60px; font-size: 1rem; padding: 6px; }
+      .activity-btn.completed::after { width: 22px; height: 22px; font-size: 0.9rem; top: -5px; right: -5px; }
+      #memoryGameContainer { grid-template-columns: repeat(2, 1fr); }
+      #flashcardContainer { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TEACHER MODE TOGGLE -->
+  <div class="teacher-mode-toggle" id="teacherModeToggle">
+    <span>👩‍🏫 Teacher Mode</span>
+    <div class="toggle-switch" id="toggleSwitch" onclick="toggleTeacherMode()"></div>
+  </div>
+  
+  <!-- GENERATE STUDENT VERSION BUTTON -->
+  <button class="generate-student-version" onclick="generateStudentVersion()">
+    📦 Generate Student Version
+  </button>
+
+  <header>
+    <h1 id="headerTitle">🐛 My English Workbook 🦋</h1>
+    <div id="studentInfo" style="display:none;">
+      <span id="studentName"></span> | Progress: <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressBar"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- WELCOME SCREEN -->
+    <div id="welcome" class="screen active">
+      <h2>Welcome to Your Homework! 📚</h2>
+      <p>Let's learn together!</p>
+      
+      <label>Your Name: <input type="text" id="nameInput" placeholder="Enter your name"></label>
+      <label>Today's Date: <input type="date" id="startDate"></label>
+      
+      <button onclick="startWorkbook()">Start My Workbook!</button>
+      <button onclick="resetWorkbook()" style="margin-left: 20px; background: #FFCDD2; color: #C62828;">
+        Reset Workbook 🔄
+      </button>
+    </div>
+
+    <!-- ACTIVITY 1: FLASHCARDS -->
+    <div id="activity1" class="screen">
+      <h2>1. Flipper 🎴</h2>
+      <p>Flip each card to see the picture!</p>
+      <div id="flashcardContainer"></div>
+      <button onclick="markComplete(1)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 2: READING PASSAGE -->
+    <div id="activity2" class="screen">
+      <h2>2. Traffic Light Reading 🚦</h2>
+      <p>Click on words: 🔴 Red (don't know) → 🟡 Yellow (learning) → 🟢 Green (I know it!)</p>
+      <p><strong>Goal: Get all words GREEN!</strong></p>
+      <div id="readingPassage" style="line-height: 2.5; font-size: 1.2rem; text-align: left; margin: var(--space-lg) 0;"></div>
+      <button onclick="markComplete(2)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 3: MEMORY GAME -->
+    <div id="activity3" class="screen">
+      <h2>3. Flipper Connector 🧠</h2>
+      <p>Find the pairs! Flip two cards at a time.</p>
+      <div id="memoryGameContainer"></div>
+      <p style="font-size: 1.5rem; font-weight: bold; margin-top: var(--space-lg);">Matches found: <span id="matchCount">0</span> / 8</p>
+      <button onclick="markComplete(3)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 4: MINIMAL PAIRS -->
+    <div id="activity4" class="screen">
+      <h2>4. Shipshaper 👂</h2>
+      <p>Which sound do you hear? Click the correct one!</p>
+      <div id="minimalPairsContainer"></div>
+      <button onclick="markComplete(4)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 5: SPELLING GAME -->
+    <div id="activity5" class="screen">
+      <h2>5. 🔤 Spell It Out! ✨</h2>
+      <p>Click the letters in the right order to spell the word!</p>
+      <div id="spellingGameContainer"></div>
+      <button onclick="markComplete(5)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 6: MATCHING GAME -->
+    <div id="activity6" class="screen">
+      <h2>6. A Nice Pair 🍐</h2>
+      <p>Click one from each column. Find the matching pairs!</p>
+      <div id="matchingGameContainer" style="display: flex; gap: var(--space-xl); justify-content: center; margin: var(--space-lg) 0; flex-wrap: wrap;"></div>
+      <p style="font-size: 1.5rem; font-weight: bold; margin-top: var(--space-lg);">Correct matches: <span id="correctMatches">0</span> / 8</p>
+      <button onclick="markComplete(6)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 7: LISTENING -->
+    <div id="activity7" class="screen">
+      <h2>7. Riddle Me This 🤷</h2>
+      <p>Listen and solve the riddles!</p>
+      <div id="listeningContainer"></div>
+      <button onclick="markComplete(7)">Mark as Done ✓</button>
+    </div>
+
+    <!-- ACTIVITY 8: FINAL TASK -->
+    <div id="activity8" class="screen">
+      <h2>8. Your Special Project! 🎨🎤</h2>
+      <p><strong>Task:</strong> Draw your favorite bug and tell us about it!</p>
+      
+      <div>
+        <h3 style="color: var(--pastel-pink); margin: var(--space-lg) 0;">Step 1: Draw Here</h3>
+        <div style="margin-bottom: var(--space-sm);">
+          <span style="font-weight: bold; margin-right: var(--space-sm);">Pick a color:</span>
+          <button onclick="setDrawColor('#D32F2F')" style="background: #D32F2F; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Red"></button>
+          <button onclick="setDrawColor('#F57C00')" style="background: #F57C00; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Orange"></button>
+          <button onclick="setDrawColor('#F9A825')" style="background: #F9A825; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Yellow"></button>
+          <button onclick="setDrawColor('#388E3C')" style="background: #388E3C; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Green"></button>
+          <button onclick="setDrawColor('#1976D2')" style="background: #1976D2; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Blue"></button>
+          <button onclick="setDrawColor('#7B1FA2')" style="background: #7B1FA2; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Purple"></button>
+          <button onclick="setDrawColor('#E91E63')" style="background: #E91E63; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Pink"></button>
+          <button onclick="setDrawColor('#795548')" style="background: #795548; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Brown"></button>
+          <button onclick="setDrawColor('#000000')" style="background: #000000; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; margin: 2px;" title="Black"></button>
+        </div>
+        <canvas id="drawingCanvas" width="600" height="400"></canvas><br>
+        <button onclick="clearCanvas()">Clear Drawing 🗑️</button>
+        <button onclick="downloadDrawing()" style="margin-left: var(--space-sm);">Download Drawing 💾</button>
+      </div>
+      
+      <div style="margin-top: var(--space-xl);">
+        <h3 style="color: var(--pastel-pink); margin: var(--space-lg) 0;">Step 2: Record Yourself</h3>
+        <p>Tell us 3 sentences about your bug!</p>
+        <button id="recordBtn" onclick="startRecording()">🎤 Start Recording</button>
+        <button id="stopBtn" onclick="stopRecording()" disabled>⏹️ Stop</button>
+        <button onclick="downloadRecording()" style="margin-left: var(--space-sm);">Download Recording 💾</button>
+        <audio id="audioPlayback" controls style="display:none; margin-top: var(--space-md); width: 100%; max-width: 400px;"></audio>
+      </div>
+      
+      <button onclick="markComplete(8)" style="margin-top: var(--space-xl);">Mark as Done ✓</button>
+    </div>
+
+    <!-- COMPLETION SCREEN -->
+    <div id="completion" class="screen">
+      <h2>🎉 Congratulations! 🎉</h2>
+      <h3 style="color: var(--pastel-mint); font-size: 1.8rem; margin: var(--space-lg) 0;">You finished your homework!</h3>
+      
+      <div style="background: var(--cream); padding: var(--space-lg); border-radius: var(--radius-md); margin: var(--space-lg) 0;">
+        <p style="font-size: 1.3rem;"><strong>Name:</strong> <span id="finalName"></span></p>
+        <p style="font-size: 1.3rem;"><strong>Started:</strong> <span id="finalStartDate"></span></p>
+        <p style="font-size: 1.3rem;"><strong>Finished:</strong> <span id="finalEndDate"></span></p>
+        <p style="font-size: 1.3rem;"><strong>Activities Completed:</strong> <span id="finalProgress">0</span> / 8</p>
+      </div>
+      
+      <button onclick="showScreen('activity1')">Review Activities 🔍</button>
+    </div>
+  </main>
+
+  <footer>
+    <div class="nav-buttons">
+      <button class="activity-btn" onclick="showScreen('activity1')">1<br>📇</button>
+      <button class="activity-btn" onclick="showScreen('activity2')">2<br>📖</button>
+      <button class="activity-btn" onclick="showScreen('activity3')">3<br>🧠</button>
+      <button class="activity-btn" onclick="showScreen('activity4')">4<br>👂</button>
+      <button class="activity-btn" onclick="showScreen('activity5')">5<br>✏️</button>
+      <button class="activity-btn" onclick="showScreen('activity6')">6<br>🔗</button>
+      <button class="activity-btn" onclick="showScreen('activity7')">7<br>🔊</button>
+      <button class="activity-btn" onclick="showScreen('activity8')">8<br>🎨</button>
+    </div>
+    <div class="data-buttons" style="position: fixed; bottom: 20px; right: 20px; display: flex; gap: 8px; z-index: 1000;">
+      <button onclick="exportSessionData()" title="Save Current Data" style="font-size: 1.5rem; padding: 8px 12px; border-radius: 50%; cursor: pointer; background: var(--candy-mint); border: 2px solid var(--pastel-mint);">📤</button>
+      <button onclick="importSessionData()" title="Load Previous Data" style="font-size: 1.5rem; padding: 8px 12px; border-radius: 50%; cursor: pointer; background: var(--candy-yellow); border: 2px solid var(--pastel-yellow);">📥</button>
+    </div>
+  </footer>
+
+  <script>
+// ===== TEACHER MODE & AUDIO STORAGE =====
+let isTeacherMode = false;
+let isStudentVersion = false;
+
+const embeddedAudio = {
+  minimalPairs: {},
+  listening: {},
+  reading: null
+};
+
+function checkIfStudentVersion() {
+  return false;
+}
+
+function initTeacherMode() {
+  isStudentVersion = checkIfStudentVersion();
+  
+  if (isStudentVersion) {
+    document.getElementById('teacherModeToggle').classList.add('hidden');
+    document.querySelector('.generate-student-version').style.display = 'none';
+  } else {
+    console.log('👩‍🏫 Teacher Mode: Controls visible');
+  }
+  
+  showScreen('welcome');
+  document.getElementById('startDate').valueAsDate = new Date();
+}
+
+function toggleTeacherMode() {
+  isTeacherMode = !isTeacherMode;
+  document.getElementById('toggleSwitch').classList.toggle('active', isTeacherMode);
+  document.body.classList.toggle('teacher-mode', isTeacherMode);
+  
+  if (currentMinimalPair >= 0) showMinimalPair(currentMinimalPair);
+  if (currentListeningQ >= 0) showListeningQuestion(currentListeningQ);
+}
+
+// ===== AUDIO UTILITIES =====
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function base64ToBlob(base64) {
+  const parts = base64.split(';base64,');
+  const contentType = parts[0].split(':')[1];
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+  
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  
+  return new Blob([uInt8Array], { type: contentType });
+}
+
+function handleAudioUpload(file, category, index = null) {
+  return new Promise((resolve, reject) => {
+    if (!file) { reject('No file selected'); return; }
+    if (!file.type.startsWith('audio/')) {
+      alert('⚠️ Please select an audio file (MP3, WAV, etc.)');
+      reject('Invalid file type');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const base64 = e.target.result;
+      if (index !== null) {
+        embeddedAudio[category][index] = base64;
+      } else {
+        embeddedAudio[category] = base64;
+      }
+      console.log(`✅ Audio uploaded for ${category}${index !== null ? '[' + index + ']' : ''}`);
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function uploadMinimalPairAudio(index) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'audio/*';
+  input.onchange = async (e) => {
+    try {
+      await handleAudioUpload(e.target.files[0], 'minimalPairs', index);
+      showMinimalPair(index);
+    } catch (err) { console.error('Upload error:', err); }
+  };
+  input.click();
+}
+
+function uploadListeningAudio(index) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'audio/*';
+  input.onchange = async (e) => {
+    try {
+      await handleAudioUpload(e.target.files[0], 'listening', index);
+      showListeningQuestion(index);
+    } catch (err) { console.error('Upload error:', err); }
+  };
+  input.click();
+}
+
+function uploadReadingAudio() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'audio/*';
+  input.onchange = async (e) => {
+    try {
+      await handleAudioUpload(e.target.files[0], 'reading');
+      renderReadingPassage();
+    } catch (err) { console.error('Upload error:', err); }
+  };
+  input.click();
+}
+
+function playEmbeddedAudio(category, index) {
+  const base64Data = embeddedAudio[category][index];
+  if (!base64Data) { console.warn(`No audio found for ${category}[${index}]`); return; }
+  const audio = new Audio(base64Data);
+  audio.play();
+}
+
+// ===== GENERATE STUDENT VERSION =====
+async function generateStudentVersion() {
+  const minimalPairCount = Object.keys(embeddedAudio.minimalPairs).length;
+  const listeningCount = Object.keys(embeddedAudio.listening).length;
+  const hasReadingAudio = embeddedAudio.reading ? 1 : 0;
+  
+  if (minimalPairCount === 0 && listeningCount === 0 && !hasReadingAudio) {
+    alert('⚠️ No audio recordings found!\n\nPlease record audio for the listening activities before generating the student version.');
+    return;
+  }
+  
+  const btn = document.querySelector('.generate-student-version');
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Generating...';
+  btn.disabled = true;
+  
+  try {
+    let html = document.documentElement.outerHTML;
+    
+    html = html.replace(/class="screen active"/g, 'class="screen"');
+    html = html.replace('id="welcome" class="screen"', 'id="welcome" class="screen active"');
+    
+    const checkFuncOriginal = `function checkIfStudentVersion() {
+  return false;
+}`;
+    const checkFuncStudent = `function checkIfStudentVersion() {
+  return true;
+}`;
+    html = html.replace(checkFuncOriginal, checkFuncStudent);
+    
+    const audioData = `const embeddedAudio = ${JSON.stringify(embeddedAudio, null, 2)};`;
+    html = html.replace(/const embeddedAudio = \{[\s\S]*?\};/, audioData);
+    
+    html = html.replace(/<div class="teacher-mode-toggle"[^>]*>[\s\S]*?<\/div>/, '');
+    html = html.replace(/<button class="generate-student-version"[^>]*>[\s\S]*?<\/button>/, '');
+    
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${(today.getMonth()+1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    a.download = `Student_Workbook_${dateStr}.html`;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    alert(`✅ Student version generated!\n\nAudio recordings included:\n- Reading Passage: ${hasReadingAudio}\n- Minimal Pairs: ${minimalPairCount}\n- Listening: ${listeningCount}\n\nFile has been downloaded.`);
+    
+  } catch (error) {
+    console.error('❌ Error generating student version:', error);
+    alert('❌ Error generating student version. Please try again.\n\nError: ' + error.message);
+  }
+  
+  btn.textContent = originalText;
+  btn.disabled = false;
+}
+
+// ===== SOUND EFFECTS =====
+let audioContext = null;
+
+function getAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioContext;
+}
+
+function playClickSound() {
+  const ctx = getAudioContext();
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  oscillator.frequency.value = 800;
+  oscillator.type = 'sine';
+  gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + 0.1);
+}
+
+function playCorrectSound() {
+  const ctx = getAudioContext();
+  const oscillator1 = ctx.createOscillator();
+  const oscillator2 = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  oscillator1.connect(gainNode);
+  oscillator2.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  oscillator1.frequency.value = 523.25;
+  oscillator2.frequency.value = 659.25;
+  oscillator1.type = 'sine';
+  oscillator2.type = 'sine';
+  gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+  oscillator1.start(ctx.currentTime);
+  oscillator2.start(ctx.currentTime);
+  oscillator1.stop(ctx.currentTime + 0.3);
+  oscillator2.stop(ctx.currentTime + 0.3);
+}
+
+function playCompleteSound() {
+  const ctx = getAudioContext();
+  const times = [0, 0.15, 0.3];
+  const freqs = [523.25, 659.25, 783.99];
+  times.forEach((time, i) => {
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.frequency.value = freqs[i];
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime + time);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + time + 0.2);
+    oscillator.start(ctx.currentTime + time);
+    oscillator.stop(ctx.currentTime + time + 0.2);
+  });
+}
+
+function playWrongSound() {
+  const ctx = getAudioContext();
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  oscillator.frequency.value = 200;
+  oscillator.type = 'sawtooth';
+  gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + 0.2);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.tagName === 'BUTTON' || e.target.classList.contains('clickable-word')) {
+    playClickSound();
+  }
+});
+
+function getAudioMimeType() {
+  const types = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav'];
+  for (let type of types) {
+    if (MediaRecorder.isTypeSupported(type)) { return type; }
+  }
+  return 'audio/webm';
+}
+
+// ===== LESSON DATA =====
+const lessonData = {
+  title: "[TOPIC]",
+  level: "CEFR A1",
+  flashcards: [
+    { word: "[word1]", image: "[emoji1]" },
+    { word: "[word2]", image: "[emoji2]" },
+    { word: "[word3]", image: "[emoji3]" },
+    { word: "[word4]", image: "[emoji4]" },
+    { word: "[word5]", image: "[emoji5]" },
+    { word: "[word6]", image: "[emoji6]" },
+    { word: "[word7]", image: "[emoji7]" },
+    { word: "[word8]", image: "[emoji8]" }
+  ],
+  readingText: "[Write a short passage or poem using all 8 vocabulary words.]",
+  memoryPairs: [
+    { word: "[word1]", match: "[emoji1]" },
+    { word: "[word2]", match: "[emoji2]" },
+    { word: "[word3]", match: "[emoji3]" },
+    { word: "[word4]", match: "[emoji4]" },
+    { word: "[word5]", match: "[emoji5]" },
+    { word: "[word6]", match: "[emoji6]" },
+    { word: "[word7]", match: "[emoji7]" },
+    { word: "[word8]", match: "[emoji8]" }
+  ],
+  minimalPairs: [
+    { word1: "[word_a]", word2: "[word_b]", audioText: "[word_a]", correct: 0 },
+    { word1: "[word_c]", word2: "[word_d]", audioText: "[word_d]", correct: 1 },
+    { word1: "[word_e]", word2: "[word_f]", audioText: "[word_e]", correct: 0 },
+    { word1: "[word_g]", word2: "[word_h]", audioText: "[word_h]", correct: 1 }
+  ],
+  fillInBlanks: [
+    { text: "A ___ [does something].", answer: "[word1]" },
+    { text: "The ___ [does something].", answer: "[word2]" },
+    { text: "A ___ [does something].", answer: "[word3]" },
+    { text: "The ___ [does something].", answer: "[word4]" },
+    { text: "A ___ [does something].", answer: "[word5]" },
+    { text: "The ___ [does something].", answer: "[word6]" },
+    { text: "A ___ [does something].", answer: "[word7]" },
+    { text: "The ___ [does something].", answer: "[word8]" }
+  ],
+  wordBank: ["[word1]", "[word2]", "[word3]", "[word4]", "[word5]", "[word6]", "[word7]", "[word8]"],
+  matchingPairs: [
+    { left: "[word1]", right: "[description/fact about word1]" },
+    { left: "[word2]", right: "[description/fact about word2]" },
+    { left: "[word3]", right: "[description/fact about word3]" },
+    { left: "[word4]", right: "[description/fact about word4]" },
+    { left: "[word5]", right: "[description/fact about word5]" },
+    { left: "[word6]", right: "[description/fact about word6]" },
+    { left: "[word7]", right: "[description/fact about word7]" },
+    { left: "[word8]", right: "[description/fact about word8]" }
+  ],
+  listeningQuestions: [
+    { audioText: "[Riddle clues for word1/2. End with 'What am I?']", question: "What is this?", options: ["[word1]", "[word2]", "[word3]", "[word4]"], correct: 0 },
+    { audioText: "[Riddle clues for word3/4. End with 'What am I?']", question: "What is this?", options: ["[word5]", "[word6]", "[word3]", "[word4]"], correct: 2 },
+    { audioText: "[Riddle clues for word5/6. End with 'What am I?']", question: "What is this?", options: ["[word1]", "[word6]", "[word7]", "[word8]"], correct: 1 },
+    { audioText: "[Riddle clues for word7/8. End with 'What am I?']", question: "What is this?", options: ["[word2]", "[word4]", "[word7]", "[word8]"], correct: 3 }
+  ],
+  finalTask: "Draw your favorite [topic item] and record yourself saying 3 sentences about it."
+};
+
+// ===== GLOBAL STATE =====
+let studentData = {
+  name: '',
+  startDate: '',
+  endDate: '',
+  completedActivities: []
+};
+
+let wordLevels = {};
+
+// === PROMPT 1 TASK A: Add practice time tracker variables ===
+let practiceStartTime = null;
+let practiceSessions = [];
+
+let currentMinimalPair = 0;
+let currentListeningQ = 0;
+let matchedPairs = 0;
+let flippedCards = [];
+let correctMatches = 0;
+let selectedLeft = null;
+let selectedRight = null;
+let currentSpellingIndex = 0;
+let currentSpelling = '';
+let spellingCompleted = [];
+let isDrawing = false;
+let currentDrawColor = '#5D4E6D';
+let mediaRecorder;
+let audioChunks = [];
+let recordedAudioBlob = null;
+let readingMediaRecorder;
+let readingAudioChunks = [];
+let mpMediaRecorder;
+let mpAudioChunks = [];
+let currentMpIndex = null;
+let listenMediaRecorder;
+let listenAudioChunks = [];
+let currentListenIndex = null;
+
+document.getElementById('startDate').valueAsDate = new Date();
+
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('📚 Workbook loading...');
+  initTeacherMode();
+  document.getElementById('startDate').valueAsDate = new Date();
+  console.log('Student version?', isStudentVersion);
+  console.log('Current screen:', document.querySelector('.screen.active').id);
+});
+
+function initializeLesson() {
+  document.getElementById('headerTitle').textContent = `[EMOJI] ${lessonData.title} [EMOJI]`;
+  renderFlashcards();
+  renderReadingPassage();
+  renderMemoryGame();
+  renderMinimalPairs();
+  renderFillInBlanks();
+  renderMatchingGame();
+  renderListeningExercise();
+  renderFinalTask();
+}
+
+// ===== ACTIVITY 1: FLASHCARDS =====
+function renderFlashcards() {
+  const container = document.getElementById('flashcardContainer');
+  container.innerHTML = '';
+  
+  lessonData.flashcards.forEach((card, index) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flashcard-wrapper';
+    
+    const flashcard = document.createElement('div');
+    flashcard.className = 'flashcard';
+    flashcard.setAttribute('role', 'button');
+    flashcard.setAttribute('tabindex', '0');
+    flashcard.setAttribute('aria-label', `Flashcard for ${card.word}. Click to flip.`);
+    flashcard.innerHTML = `
+      <div class="flashcard-front">${card.word}</div>
+      <div class="flashcard-back">${card.image}</div>
+    `;
+    
+    flashcard.addEventListener('click', function() {
+      playClickSound();
+      this.classList.add('flipped');
+      setTimeout(() => { this.classList.remove('flipped'); }, 1500);
+    });
+    
+    flashcard.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
+    });
+
+    wrapper.appendChild(flashcard);
+    container.appendChild(wrapper);
+  });
+}
+
+// ===== ACTIVITY 2: READING PASSAGE =====
+function renderReadingPassage() {
+  const container = document.getElementById('readingPassage');
+  const words = lessonData.readingText.split(' ');
+  const hasAudio = embeddedAudio.reading;
+  
+  const teacherPanel = `
+    <div class="teacher-panel">
+      <h4>👩‍🏫 Teacher Recording Panel</h4>
+      <p>Record yourself reading the passage aloud:</p>
+      <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+        <button onclick="startReadingRecording()" id="readingRecordBtn" style="font-size: 1rem;">🎤 Record</button>
+        <button onclick="stopReadingRecording()" id="readingStopBtn" style="font-size: 1rem;" disabled>⏹️ Stop</button>
+        <button onclick="uploadReadingAudio()" style="font-size: 1rem;">📁 Upload</button>
+        <button onclick="redoReadingRecording()" style="font-size: 1rem;">🔄 Re-do</button>
+      </div>
+      ${hasAudio ? `
+        <div style="margin-top: var(--space-sm);">
+          <span class="recording-status ready">✓ Audio Ready</span>
+          <p style="margin-top: var(--space-xs); margin-bottom: var(--space-xs);">Preview:</p>
+          <audio controls src="${embeddedAudio.reading}" style="width: 100%; max-width: 400px;"></audio>
+        </div>
+      ` : `
+        <span class="recording-status" style="background: var(--candy-yellow); margin-top: var(--space-sm); display: inline-block;">⚠️ No audio yet</span>
+      `}
+    </div>
+  `;
+  
+  const studentPlayer = hasAudio ? `
+    <div class="audio-player-container" style="justify-content: center; margin-bottom: var(--space-md); flex-direction: column; align-items: center;">
+      <p style="margin-bottom: var(--space-xs); font-weight: bold;">🔊 Listen to the Passage:</p>
+      <audio controls src="${embeddedAudio.reading}" style="width: 100%; max-width: 400px;"></audio>
+    </div>
+  ` : (isStudentVersion ? `
+    <p style="color: #E57373; font-style: italic;">⚠️ Audio not available</p>
+  ` : '');
+  
+  container.innerHTML = (isStudentVersion ? '' : teacherPanel) + studentPlayer;
+  
+  const wordContainer = document.createElement('div');
+  wordContainer.style.cssText = 'line-height: 2.5; font-size: 1.2rem; text-align: left; margin-top: var(--space-md);';
+  
+  const normalizeWord = (word) => word.toLowerCase().replace(/[^a-z]/g, '');
+  
+  words.forEach((word, index) => {
+    const span = document.createElement('span');
+    const normalizedWord = normalizeWord(word);
+    span.className = 'clickable-word level-0';
+    span.textContent = word;
+    span.dataset.index = index;
+    span.dataset.word = normalizedWord;
+    span.setAttribute('role', 'button');
+    span.setAttribute('tabindex', '0');
+    span.setAttribute('aria-label', `Word: ${word}. Click to change your knowledge level. Current level: don't know`);
+    
+    wordLevels[index] = 0;
+    
+    span.addEventListener('click', function() {
+      const clickedWord = this.dataset.word;
+      const firstInstance = wordContainer.querySelector(`[data-word="${clickedWord}"]`);
+      const currentLevel = parseInt(firstInstance.className.match(/level-(\d)/)[1]);
+      const newLevel = (currentLevel + 1) % 3;
+      
+      const allInstances = wordContainer.querySelectorAll(`[data-word="${clickedWord}"]`);
+      const levels = ["don't know", "learning", "know it"];
+      
+      allInstances.forEach(instance => {
+        const idx = instance.dataset.index;
+        wordLevels[idx] = newLevel;
+        instance.className = `clickable-word level-${newLevel}`;
+        instance.setAttribute('aria-label', `Word: ${instance.textContent}. Current level: ${levels[newLevel]}`);
+      });
+      
+      if (newLevel === 2) { playCorrectSound(); }
+    });
+
+    wordContainer.appendChild(span);
+    wordContainer.appendChild(document.createTextNode(' '));
+  });
+  
+  container.appendChild(wordContainer);
+}
+
+function startReadingRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    readingMediaRecorder = new MediaRecorder(stream);
+    readingAudioChunks = [];
+    
+    readingMediaRecorder.ondataavailable = (e) => { readingAudioChunks.push(e.data); };
+    
+    readingMediaRecorder.onstop = async () => {
+      const blob = new Blob(readingAudioChunks, { type: getAudioMimeType() });
+      const base64 = await blobToBase64(blob);
+      embeddedAudio.reading = base64;
+      renderReadingPassage();
+      console.log('✅ Reading passage audio saved');
+    };
+    
+    readingMediaRecorder.start();
+    document.getElementById('readingRecordBtn').disabled = true;
+    document.getElementById('readingStopBtn').disabled = false;
+    document.getElementById('readingRecordBtn').textContent = '🔴 Recording...';
+  }).catch((err) => {
+    alert('⚠️ Could not access microphone!\n\nError: ' + err.message);
+    console.error('Microphone error:', err);
+  });
+}
+
+function stopReadingRecording() {
+  if (readingMediaRecorder && readingMediaRecorder.state !== 'inactive') {
+    readingMediaRecorder.stop();
+    readingMediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+}
+
+function redoReadingRecording() {
+  embeddedAudio.reading = null;
+  renderReadingPassage();
+}
+
+// ===== ACTIVITY 3: MEMORY GAME =====
+function renderMemoryGame() {
+  const container = document.getElementById('memoryGameContainer');
+  container.innerHTML = '';
+  
+  let memoryCards = [];
+  lessonData.memoryPairs.forEach(pair => {
+    memoryCards.push({ content: pair.word, type: 'word', pairId: pair.word });
+    memoryCards.push({ content: pair.match, type: 'emoji', pairId: pair.word });
+  });
+  
+  memoryCards = memoryCards.sort(() => Math.random() - 0.5);
+  
+  memoryCards.forEach((card, index) => {
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'memory-card';
+    cardDiv.textContent = '?';
+    cardDiv.setAttribute('role', 'button');
+    cardDiv.setAttribute('tabindex', '0');
+    cardDiv.setAttribute('aria-label', `Memory card ${index + 1}. Click to reveal.`);
+    cardDiv.dataset.index = index;
+    cardDiv.dataset.pairId = card.pairId;
+    cardDiv.dataset.content = card.content;
+    
+    cardDiv.addEventListener('click', handleMemoryCardClick);
+    container.appendChild(cardDiv);
+  });
+}
+
+function handleMemoryCardClick(e) {
+  const card = e.target;
+  
+  if (card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length === 2) {
+    return;
+  }
+  
+  playClickSound();
+  card.classList.add('flipped');
+  
+  const content = card.dataset.content;
+  card.innerHTML = content;
+  
+  const isEmoji = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(content);
+  const isSVG = content.startsWith('<svg');
+  if (isEmoji || isSVG) { card.classList.add('has-emoji'); }
+  
+  flippedCards.push(card);
+  
+  if (flippedCards.length === 2) {
+    setTimeout(checkMemoryMatch, 800);
+  }
+}
+
+function checkMemoryMatch() {
+  const [card1, card2] = flippedCards;
+  
+  if (card1.dataset.pairId === card2.dataset.pairId) {
+    playCorrectSound();
+    card1.classList.add('matched');
+    card2.classList.add('matched');
+    matchedPairs++;
+    document.getElementById('matchCount').textContent = matchedPairs;
+  } else {
+    playWrongSound();
+    card1.classList.remove('flipped');
+    card2.classList.remove('flipped');
+    card1.textContent = '?';
+    card2.textContent = '?';
+  }
+  
+  flippedCards = [];
+}
+
+// ===== ACTIVITY 4: MINIMAL PAIRS =====
+function renderMinimalPairs() {
+  showMinimalPair(0);
+}
+
+function showMinimalPair(index) {
+  currentMinimalPair = index;
+  
+  if (index >= lessonData.minimalPairs.length) {
+    document.getElementById('minimalPairsContainer').innerHTML = '<p style="font-size: 1.5rem; color: var(--pastel-mint); font-weight: bold;">Great job! You finished all the sounds! 🎉</p>';
+    return;
+  }
+  
+  const pair = lessonData.minimalPairs[index];
+  const container = document.getElementById('minimalPairsContainer');
+  const hasAudio = embeddedAudio.minimalPairs[index];
+  
+  const teacherPanel = `
+    <div class="teacher-panel">
+      <h4>👩‍🏫 Teacher Recording Panel</h4>
+      <p>Record yourself saying: "<strong>${pair.audioText}</strong>"</p>
+      <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+        <button onclick="startMinimalPairRecording(${index})" id="mpRecordBtn${index}" style="font-size: 1rem;">🎤 Record</button>
+        <button onclick="stopMinimalPairRecording()" id="mpStopBtn${index}" style="font-size: 1rem;" disabled>⏹️ Stop</button>
+        <button onclick="uploadMinimalPairAudio(${index})" style="font-size: 1rem;">📁 Upload</button>
+        <button onclick="redoMinimalPairRecording(${index})" style="font-size: 1rem;">🔄 Re-do</button>
+        ${index < lessonData.minimalPairs.length - 1 ? `<button onclick="showMinimalPair(${index + 1})" style="font-size: 1rem; margin-left: auto;">Next ➡️</button>` : ''}
+      </div>
+      ${hasAudio ? `
+        <div style="margin-top: var(--space-sm);">
+          <span class="recording-status ready">✓ Audio Ready</span>
+          <p style="margin-top: var(--space-xs); margin-bottom: var(--space-xs);">Preview:</p>
+          <audio controls src="${embeddedAudio.minimalPairs[index]}" style="width: 100%; max-width: 400px;"></audio>
+        </div>
+      ` : `
+        <span class="recording-status" style="background: var(--candy-yellow); margin-top: var(--space-sm); display: inline-block;">⚠️ No audio yet</span>
+      `}
+    </div>
+  `;
+  
+  const studentPlayer = hasAudio ? `
+    <div class="audio-player-container" style="justify-content: center; margin-bottom: var(--space-md); flex-direction: column; align-items: center;">
+      <p style="margin-bottom: var(--space-xs); font-weight: bold;">🔊 Listen:</p>
+      <audio controls src="${embeddedAudio.minimalPairs[index]}" style="width: 100%; max-width: 400px;"></audio>
+    </div>
+  ` : (!isStudentVersion ? '' : `
+    <p style="color: #E57373; font-style: italic;">⚠️ Audio not available</p>
+  `);
+  
+  container.innerHTML = `
+    <div style="margin: var(--space-md) 0;">
+      ${isStudentVersion ? '' : teacherPanel}
+      ${studentPlayer}
+      <p style="font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-sm);">Question ${index + 1} of ${lessonData.minimalPairs.length}</p>
+      <div style="display: flex; gap: var(--space-lg); justify-content: center; margin-top: var(--space-md);">
+        <button class="word-box" onclick="checkMinimalPair(0, ${pair.correct}, ${index})" style="font-size: 1.5rem;">${pair.word1}</button>
+        <button class="word-box" onclick="checkMinimalPair(1, ${pair.correct}, ${index})" style="font-size: 1.5rem;">${pair.word2}</button>
+      </div>
+      <div id="minimalFeedback" style="margin-top: var(--space-md); font-size: 1.2rem; font-weight: bold;"></div>
+      <div style="display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg);">
+        ${index > 0 ? `<button onclick="showMinimalPair(${index - 1})" style="font-size: 1rem;">⬅️ Back</button>` : ''}
+        ${index < lessonData.minimalPairs.length - 1 ? `<button onclick="showMinimalPair(${index + 1})" style="font-size: 1rem;">Next ➡️</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function startMinimalPairRecording(index) {
+  currentMpIndex = index;
+  
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    mpMediaRecorder = new MediaRecorder(stream);
+    mpAudioChunks = [];
+    
+    mpMediaRecorder.ondataavailable = (e) => { mpAudioChunks.push(e.data); };
+    
+    mpMediaRecorder.onstop = async () => {
+      const blob = new Blob(mpAudioChunks, { type: getAudioMimeType() });
+      const base64 = await blobToBase64(blob);
+      embeddedAudio.minimalPairs[currentMpIndex] = base64;
+      showMinimalPair(currentMpIndex);
+    };
+    
+    mpMediaRecorder.start();
+    
+    const recordBtn = document.getElementById(`mpRecordBtn${index}`);
+    const stopBtn = document.getElementById(`mpStopBtn${index}`);
+    if (recordBtn) {
+      recordBtn.disabled = true;
+      recordBtn.textContent = '🔴 Recording...';
+    }
+    if (stopBtn) stopBtn.disabled = false;
+  }).catch((err) => {
+    alert('⚠️ Could not access microphone! Please check browser permissions.');
+  });
+}
+
+function stopMinimalPairRecording() {
+  if (mpMediaRecorder && mpMediaRecorder.state !== 'inactive') {
+    mpMediaRecorder.stop();
+    mpMediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+}
+
+function redoMinimalPairRecording(index) {
+  delete embeddedAudio.minimalPairs[index];
+  showMinimalPair(index);
+}
+
+function checkMinimalPair(selected, correct, index) {
+  const feedback = document.getElementById('minimalFeedback');
+  
+  if (selected === correct) {
+    playCorrectSound();
+    feedback.style.color = 'var(--pastel-mint)';
+    feedback.textContent = '✓ Correct!';
+    setTimeout(() => { showMinimalPair(index + 1); }, 1500);
+  } else {
+    playWrongSound();
+    feedback.style.color = '#E57373';
+    feedback.textContent = '✗ Try again!';
+  }
+}
+
+// ===== ACTIVITY 5: SPELLING GAME =====
+function renderFillInBlanks() {
+  showSpellingQuestion(0);
+}
+
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function showSpellingQuestion(index) {
+  currentSpellingIndex = index;
+  currentSpelling = '';
+  
+  const container = document.getElementById('spellingGameContainer');
+  
+  if (index >= lessonData.fillInBlanks.length) {
+    container.innerHTML = '<p style="font-size: 1.5rem; color: var(--pastel-mint); font-weight: bold;">Amazing! You spelled all the words! 🎉</p>';
+    return;
+  }
+  
+  const item = lessonData.fillInBlanks[index];
+  const answer = item.answer;
+  const letters = shuffleArray(answer.split(''));
+  
+  container.innerHTML = `
+    <div style="margin: var(--space-md) 0;">
+      <p style="font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-sm);">Word ${index + 1} of ${lessonData.fillInBlanks.length}</p>
+      <div style="background: var(--cream); padding: var(--space-md); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+        <p style="font-size: 1.3rem; margin: 0;">${item.text.replace('___', '<span id="spellingBlank" style="display: inline-block; min-width: 100px; border-bottom: 3px solid var(--pastel-pink); font-weight: bold; color: var(--text-dark);"></span>')}</p>
+      </div>
+      <div style="margin: var(--space-lg) 0;">
+        <p style="font-weight: bold; margin-bottom: var(--space-sm);">Your spelling:</p>
+        <div id="spellingResult" style="font-size: 2rem; font-weight: bold; min-height: 50px; letter-spacing: 4px; color: var(--text-dark);"></div>
+      </div>
+      <div style="margin: var(--space-md) 0;">
+        <p style="font-weight: bold; margin-bottom: var(--space-sm);">Click the letters:</p>
+        <div id="letterButtons" style="display: flex; flex-wrap: wrap; gap: var(--space-sm); justify-content: center;">
+          ${letters.map((letter, i) => `
+            <button class="word-box letter-btn" onclick="clickLetter('${letter}', this)" style="font-size: 1.5rem; min-width: 50px; padding: var(--space-sm) var(--space-md);">${letter}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg);">
+        <button onclick="redoSpelling()" style="font-size: 1rem;">🔄 Re-do</button>
+        ${index > 0 ? `<button onclick="showSpellingQuestion(${index - 1})" style="font-size: 1rem;">⬅️ Back</button>` : ''}
+        ${index < lessonData.fillInBlanks.length - 1 ? `<button onclick="showSpellingQuestion(${index + 1})" style="font-size: 1rem;">Next ➡️</button>` : ''}
+      </div>
+      <div id="spellingFeedback" style="margin-top: var(--space-md); font-size: 1.2rem; font-weight: bold;"></div>
+    </div>
+  `;
+}
+
+function clickLetter(letter, btn) {
+  const item = lessonData.fillInBlanks[currentSpellingIndex];
+  const answer = item.answer;
+  
+  currentSpelling += letter;
+  document.getElementById('spellingResult').textContent = currentSpelling;
+  btn.style.visibility = 'hidden';
+  
+  if (currentSpelling.length === answer.length) {
+    const feedback = document.getElementById('spellingFeedback');
+    
+    if (currentSpelling === answer) {
+      playCorrectSound();
+      feedback.style.color = 'var(--pastel-mint)';
+      feedback.textContent = '✓ Correct! Great spelling!';
+      document.getElementById('spellingBlank').textContent = answer;
+      document.getElementById('spellingBlank').style.color = 'var(--pastel-mint)';
+      document.getElementById('spellingBlank').style.borderColor = 'var(--pastel-mint)';
+      
+      if (!spellingCompleted.includes(currentSpellingIndex)) {
+        spellingCompleted.push(currentSpellingIndex);
+      }
+      
+      setTimeout(() => {
+        if (currentSpellingIndex < lessonData.fillInBlanks.length - 1) {
+          showSpellingQuestion(currentSpellingIndex + 1);
+        }
+      }, 1500);
+    } else {
+      playWrongSound();
+      feedback.style.color = '#E57373';
+      feedback.textContent = '✗ Not quite! Try again.';
+      setTimeout(() => { redoSpelling(); }, 1000);
+    }
+  }
+}
+
+function redoSpelling() {
+  showSpellingQuestion(currentSpellingIndex);
+}
+
+// ===== ACTIVITY 6: MATCHING GAME =====
+function renderMatchingGame() {
+  const container = document.getElementById('matchingGameContainer');
+  container.innerHTML = '';
+  
+  const leftColumn = document.createElement('div');
+  leftColumn.style.cssText = 'display: flex; flex-direction: column; gap: var(--space-sm);';
+  
+  const rightColumn = document.createElement('div');
+  rightColumn.style.cssText = 'display: flex; flex-direction: column; gap: var(--space-sm);';
+  
+  const shuffledRight = [...lessonData.matchingPairs].sort(() => Math.random() - 0.5);
+  
+  lessonData.matchingPairs.forEach((pair, index) => {
+    const leftBtn = document.createElement('button');
+    leftBtn.className = 'word-box';
+    leftBtn.textContent = pair.left;
+    leftBtn.dataset.pair = pair.left;
+    leftBtn.onclick = () => selectLeftMatch(leftBtn);
+    leftColumn.appendChild(leftBtn);
+  });
+  
+  shuffledRight.forEach((pair, index) => {
+    const rightBtn = document.createElement('button');
+    rightBtn.className = 'word-box';
+    rightBtn.textContent = pair.right;
+    rightBtn.dataset.pair = pair.left;
+    rightBtn.onclick = () => selectRightMatch(rightBtn);
+    rightColumn.appendChild(rightBtn);
+  });
+  
+  container.appendChild(leftColumn);
+  container.appendChild(rightColumn);
+}
+
+function selectLeftMatch(element) {
+  if (selectedLeft) selectedLeft.classList.remove('selected');
+  selectedLeft = element;
+  element.classList.add('selected');
+  checkMatch();
+}
+
+function selectRightMatch(element) {
+  if (selectedRight) selectedRight.classList.remove('selected');
+  selectedRight = element;
+  element.classList.add('selected');
+  checkMatch();
+}
+
+function checkMatch() {
+  if (selectedLeft && selectedRight) {
+    if (selectedLeft.dataset.pair === selectedRight.dataset.pair) {
+      playCorrectSound();
+      selectedLeft.style.background = 'var(--pastel-mint)';
+      selectedRight.style.background = 'var(--pastel-mint)';
+      selectedLeft.disabled = true;
+      selectedRight.disabled = true;
+      correctMatches++;
+      document.getElementById('correctMatches').textContent = correctMatches;
+    } else {
+      playWrongSound();
+    }
+    selectedLeft.classList.remove('selected');
+    selectedRight.classList.remove('selected');
+    selectedLeft = null;
+    selectedRight = null;
+  }
+}
+
+// ===== ACTIVITY 7: LISTENING EXERCISE =====
+function renderListeningExercise() {
+  showListeningQuestion(0);
+}
+
+function showListeningQuestion(index) {
+  currentListeningQ = index;
+  
+  if (index >= lessonData.listeningQuestions.length) {
+    document.getElementById('listeningContainer').innerHTML = '<p style="font-size: 1.5rem; color: var(--pastel-mint); font-weight: bold;">Perfect! You answered all the questions! 🎉</p>';
+    return;
+  }
+  
+  const q = lessonData.listeningQuestions[index];
+  const container = document.getElementById('listeningContainer');
+  const hasAudio = embeddedAudio.listening[index];
+  
+  const teacherPanel = `
+    <div class="teacher-panel">
+      <h4>👩‍🏫 Teacher Recording Panel</h4>
+      <p>Record this riddle:</p>
+      <p style="font-style: italic; background: var(--white); padding: var(--space-sm); border-radius: var(--radius-sm);">"${q.audioText}"</p>
+      <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; margin-top: var(--space-sm);">
+        <button onclick="startListeningRecording(${index})" id="listenRecordBtn${index}" style="font-size: 1rem;">🎤 Record</button>
+        <button onclick="stopListeningRecording()" id="listenStopBtn${index}" style="font-size: 1rem;" disabled>⏹️ Stop</button>
+        <button onclick="uploadListeningAudio(${index})" style="font-size: 1rem;">📁 Upload</button>
+        <button onclick="redoListeningRecording(${index})" style="font-size: 1rem;">🔄 Re-do</button>
+        ${index < lessonData.listeningQuestions.length - 1 ? `<button onclick="showListeningQuestion(${index + 1})" style="font-size: 1rem; margin-left: auto;">Next ➡️</button>` : ''}
+      </div>
+      ${hasAudio ? `
+        <div style="margin-top: var(--space-sm);">
+          <span class="recording-status ready">✓ Audio Ready</span>
+          <p style="margin-top: var(--space-xs); margin-bottom: var(--space-xs);">Preview:</p>
+          <audio controls src="${embeddedAudio.listening[index]}" style="width: 100%; max-width: 400px;"></audio>
+        </div>
+      ` : `
+        <span class="recording-status" style="background: var(--candy-yellow); margin-top: var(--space-sm); display: inline-block;">⚠️ No audio yet</span>
+      `}
+    </div>
+  `;
+  
+  const studentPlayer = hasAudio ? `
+    <div class="audio-player-container" style="justify-content: center; margin-bottom: var(--space-md); flex-direction: column; align-items: center;">
+      <p style="margin-bottom: var(--space-xs); font-weight: bold;">🔊 Listen to the Riddle:</p>
+      <audio controls src="${embeddedAudio.listening[index]}" style="width: 100%; max-width: 400px;"></audio>
+    </div>
+  ` : (!isStudentVersion ? '' : `
+    <p style="color: #E57373; font-style: italic;">⚠️ Audio not available</p>
+  `);
+  
+  container.innerHTML = `
+    <div style="margin: var(--space-md) 0;">
+      ${isStudentVersion ? '' : teacherPanel}
+      ${studentPlayer}
+      <p style="font-size: 1rem; color: var(--text-medium); margin-bottom: var(--space-sm);">Question ${index + 1} of ${lessonData.listeningQuestions.length}</p>
+      <p style="font-size: 1.2rem; font-weight: bold; margin: var(--space-md) 0;">${q.question}</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); max-width: 450px; margin: 0 auto;">
+        ${q.options.map((opt, i) => `
+          <button class="word-box" onclick="checkListeningAnswer(${i}, ${q.correct}, ${index})" style="font-size: 1.2rem;">${opt}</button>
+        `).join('')}
+      </div>
+      <div id="listeningFeedback" style="margin-top: var(--space-md); font-size: 1.2rem; font-weight: bold;"></div>
+      <div style="display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg);">
+        ${index > 0 ? `<button onclick="showListeningQuestion(${index - 1})" style="font-size: 1rem;">⬅️ Back</button>` : ''}
+        ${index < lessonData.listeningQuestions.length - 1 ? `<button onclick="showListeningQuestion(${index + 1})" style="font-size: 1rem;">Next ➡️</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function startListeningRecording(index) {
+  currentListenIndex = index;
+  
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    listenMediaRecorder = new MediaRecorder(stream);
+    listenAudioChunks = [];
+    
+    listenMediaRecorder.ondataavailable = (e) => { listenAudioChunks.push(e.data); };
+    
+    listenMediaRecorder.onstop = async () => {
+      const blob = new Blob(listenAudioChunks, { type: getAudioMimeType() });
+      const base64 = await blobToBase64(blob);
+      embeddedAudio.listening[currentListenIndex] = base64;
+      showListeningQuestion(currentListenIndex);
+    };
+    
+    listenMediaRecorder.start();
+    
+    const recordBtn = document.getElementById(`listenRecordBtn${index}`);
+    const stopBtn = document.getElementById(`listenStopBtn${index}`);
+    if (recordBtn) {
+      recordBtn.disabled = true;
+      recordBtn.textContent = '🔴 Recording...';
+    }
+    if (stopBtn) stopBtn.disabled = false;
+  }).catch((err) => {
+    alert('⚠️ Could not access microphone! Please check browser permissions.');
+  });
+}
+
+function stopListeningRecording() {
+  if (listenMediaRecorder && listenMediaRecorder.state !== 'inactive') {
+    listenMediaRecorder.stop();
+    listenMediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+}
+
+function redoListeningRecording(index) {
+  delete embeddedAudio.listening[index];
+  showListeningQuestion(index);
+}
+
+function checkListeningAnswer(selected, correct, index) {
+  const feedback = document.getElementById('listeningFeedback');
+  
+  if (selected === correct) {
+    playCorrectSound();
+    feedback.style.color = 'var(--pastel-mint)';
+    feedback.textContent = '✓ Correct!';
+    setTimeout(() => { showListeningQuestion(index + 1); }, 1500);
+  } else {
+    playWrongSound();
+    feedback.style.color = '#E57373';
+    feedback.textContent = '✗ Try again!';
+  }
+}
+
+// ===== ACTIVITY 8: FINAL TASK =====
+function renderFinalTask() {
+  const taskText = document.querySelector('#activity8 p strong').nextSibling;
+  taskText.textContent = lessonData.finalTask;
+}
+
+// ===== RESET FUNCTION =====
+function resetWorkbook() {
+  studentData = {
+    name: '',
+    startDate: '',
+    endDate: '',
+    completedActivities: []
+  };
+  
+  document.getElementById('progressPercent').textContent = '0%';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('studentInfo').style.display = 'none';
+  
+  document.querySelectorAll('.activity-btn.completed').forEach(btn => {
+    btn.classList.remove('completed');
+  });
+  
+  matchedPairs = 0;
+  document.getElementById('matchCount').textContent = '0';
+  
+  correctMatches = 0;
+  document.getElementById('correctMatches').textContent = '0';
+  
+  wordLevels = {};
+  
+  document.querySelectorAll('.memory-card').forEach(card => {
+    card.classList.remove('flipped', 'matched');
+    card.textContent = '?';
+  });
+  
+  clearCanvas();
+  
+  if (recordedAudioBlob) {
+    recordedAudioBlob = null;
+    const audio = document.getElementById('audioPlayback');
+    audio.src = '';
+    audio.style.display = 'none';
+  }
+  
+  showScreen('welcome');
+  document.getElementById('nameInput').value = '';
+  document.getElementById('startDate').valueAsDate = new Date();
+  
+  flippedCards = [];
+  selectedLeft = null;
+  selectedRight = null;
+  
+  console.log('✅ Workbook reset to initial state');
+}
+
+function startWorkbook() {
+  const name = document.getElementById('nameInput').value.trim();
+  const startDate = document.getElementById('startDate').value;
+  
+  if (!name) {
+    alert('Please enter your name!');
+    return;
+  }
+  
+  studentData.name = name;
+  studentData.startDate = startDate;
+  
+  document.getElementById('studentName').textContent = name;
+  document.getElementById('studentInfo').style.display = 'block';
+  
+  initializeLesson();
+  
+  showScreen('activity1');
+  
+  // === PROMPT 1 TASK A: Start timer in startWorkbook() ===
+  practiceStartTime = new Date().toISOString();
+}
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+function markComplete(activityNum) {
+  if (!studentData.completedActivities.includes(activityNum)) {
+    studentData.completedActivities.push(activityNum);
+    
+    const btn = document.querySelectorAll('.activity-btn')[activityNum - 1];
+    btn.classList.add('completed');
+    
+    playCompleteSound();
+    updateProgress();
+    
+    if (studentData.completedActivities.length === 8) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      studentData.endDate = `${year}-${month}-${day}`;
+      showCompletionScreen();
+    }
+  }
+}
+
+function updateProgress() {
+  const percent = (studentData.completedActivities.length / 8) * 100;
+  document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+  document.getElementById('progressBar').style.width = percent + '%';
+}
+
+function showCompletionScreen() {
+  document.getElementById('finalName').textContent = studentData.name;
+  document.getElementById('finalStartDate').textContent = studentData.startDate;
+  document.getElementById('finalEndDate').textContent = studentData.endDate;
+  document.getElementById('finalProgress').textContent = studentData.completedActivities.length;
+  showScreen('completion');
+}
+
+// ===== DRAWING CANVAS =====
+const canvas = document.getElementById('drawingCanvas');
+const ctx = canvas.getContext('2d');
+
+function setDrawColor(color) {
+  currentDrawColor = color;
+}
+
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+
+canvas.addEventListener('touchstart', handleTouchStart);
+canvas.addEventListener('touchmove', handleTouchMove);
+canvas.addEventListener('touchend', stopDrawing);
+
+function startDrawing(e) {
+  isDrawing = true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX, e.offsetY);
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = currentDrawColor;
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.stroke();
+}
+
+function stopDrawing() {
+  isDrawing = false;
+}
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  isDrawing = true;
+  ctx.beginPath();
+  ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+}
+
+function handleTouchMove(e) {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = currentDrawColor;
+  ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+  ctx.stroke();
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById('drawingCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function downloadDrawing() {
+  const canvas = document.getElementById('drawingCanvas');
+  
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  tempCtx.fillStyle = '#FFFFFF';
+  tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+  tempCtx.drawImage(canvas, 0, 0);
+  
+  const link = document.createElement('a');
+  link.download = `${studentData.name || 'student'}_drawing_${Date.now()}.png`;
+  link.href = tempCanvas.toDataURL('image/png');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ===== AUDIO RECORDING (Activity 8) =====
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
+    
+    mediaRecorder.onstop = () => {
+      recordedAudioBlob = new Blob(audioChunks, { type: getAudioMimeType() });
+      const audioUrl = URL.createObjectURL(recordedAudioBlob);
+      const audio = document.getElementById('audioPlayback');
+      audio.src = audioUrl;
+      audio.style.display = 'block';
+    };
+    
+    mediaRecorder.start();
+    document.getElementById('recordBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    document.getElementById('recordBtn').textContent = '🔴 Recording...';
+  } catch (err) {
+    alert('⚠️ Could not access microphone!\n\nError: ' + err.message);
+    console.error('Microphone error:', err);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    document.getElementById('recordBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    document.getElementById('recordBtn').textContent = '🎤 Start Recording';
+  }
+}
+
+function downloadRecording() {
+  if (!recordedAudioBlob) {
+    alert('⚠️ Please record audio first!');
+    return;
+  }
+  
+  const url = URL.createObjectURL(recordedAudioBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${studentData.name || 'student'}_recording_${Date.now()}.webm`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ===== EXPORT/IMPORT SESSION DATA =====
+// === PROMPT 1 TASK B: Update exportSessionData() to Export Standard v1 ===
+function exportSessionData() {
+  // Close the current practice session
+  const now = new Date().toISOString();
+  if (practiceStartTime) {
+    const startMs = new Date(practiceStartTime).getTime();
+    const endMs = new Date(now).getTime();
+    const activeMinutes = Math.round((endMs - startMs) / 60000);
+    if (activeMinutes > 0) {
+      practiceSessions.push({
+        startTime: practiceStartTime,
+        endTime: now,
+        activeMinutes: activeMinutes
+      });
+    }
+    practiceStartTime = null;
+  }
+  const totalPracticeMinutes = practiceSessions.reduce(
+    (sum, s) => sum + s.activeMinutes, 0
+  );
+  const sessionData = {
+    // === Kiddoland Export Standard v1 ===
+    kiddolandExport: true,
+    exportVersion: '1.0',
+    toolType: 'workbook',
+    exportDate: now,
+    lessonTitle: lessonData.title,
+    studentName: studentData.name,
+    totalActivities: 8,
+    completedActivities: studentData.completedActivities,
+    practiceSessions: practiceSessions,
+    totalPracticeMinutes: totalPracticeMinutes,
+    // === Tool-specific fields ===
+    wordLevels: wordLevels,
+    studentData: studentData,
+    // === Legacy compat ===
+    version: '1.0'
+  };
+  
+  const dataStr = JSON.stringify(sessionData, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${lessonData.title.replace(/\s+/g, '_')}_session_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  console.log('✅ Session data exported');
+  alert('✅ Session data saved! Keep this file safe to restore your progress later.');
+}
+
+// === PROMPT 1 TASK C: Restore Sessions in importSessionData() ===
+function importSessionData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const sessionData = JSON.parse(text);
+      
+      if (!sessionData.version || !sessionData.lessonTitle) {
+        throw new Error('Invalid session file format');
+      }
+      
+      if (sessionData.lessonTitle !== lessonData.title) {
+        if (!confirm(`Warning: This session was saved for "${sessionData.lessonTitle}" but you're loading it into "${lessonData.title}". Continue anyway?`)) {
+          return;
+        }
+      }
+      
+      if (sessionData.studentData) {
+        Object.assign(studentData, sessionData.studentData);
+        if (studentData.name) {
+          document.getElementById('nameInput').value = studentData.name;
+        }
+      }
+      
+      if (sessionData.embeddedAudio) {
+        Object.assign(embeddedAudio, sessionData.embeddedAudio);
+      }
+      
+      if (sessionData.wordLevels) {
+        Object.assign(wordLevels, sessionData.wordLevels);
+      }
+      
+      // === PROMPT 1 TASK C: Restore practiceSessions ===
+      if (sessionData.practiceSessions) practiceSessions = sessionData.practiceSessions;
+      practiceStartTime = new Date().toISOString();
+      
+      updateProgress();
+      
+      console.log('✅ Session data imported');
+      alert('✅ Session data loaded! Your progress and audio recordings have been restored.');
+      
+    } catch (err) {
+      console.error('Import error:', err);
+      alert('❌ Error loading session file. Please make sure you selected the correct file.');
+    }
+  };
+  
+  input.click();
+}
+
+console.log('✅ Workbook loaded with Teacher Mode audio embedding support');
+console.log('✅ Export Standard v1 with Practice Time Tracker enabled');
+  </script>
+</body>
+</html>

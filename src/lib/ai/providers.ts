@@ -80,6 +80,7 @@ export const TASK_FAILOVER: Record<string, string[]> = {
   parent_report: ['deepseek', 'minimax', 'claude'],
   translation: ['deepseek', 'minimax', 'kimi'],
   session_feedback: ['deepseek', 'minimax', 'claude'],
+  vocabulary_sentence: ['deepseek', 'minimax', 'claude'],
 };
 
 // Legacy mapping (kept for reference, failover chains take priority)

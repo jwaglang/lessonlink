@@ -909,8 +909,6 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
         </DialogContent>
       </Dialog>
 
-      <h1 className="text-4xl font-bold mb-6">Hi, {learnerName || 'Learner'}!</h1>
-
       <Tabs defaultValue="home" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="home">
