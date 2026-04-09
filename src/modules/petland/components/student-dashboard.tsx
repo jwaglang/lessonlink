@@ -1012,7 +1012,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   };
 
   const today = getTodayDateString();
-  // Memory Match: new words only (never reviewed)
+  // Memory Match: new words only (never reviewed, requires 4+ for game to work)
   const unreviewedVocab = vocabulary.filter((w) => !w.lastReviewDate);
   // Flashcard: words seen before that are Leitner-due today
   const flashcardVocab = vocabulary.filter((w) => w.lastReviewDate && isWordDue(w, today));
@@ -1123,19 +1123,26 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
         <TabsContent value="play">
           {vocabulary.length === 0 ? (
             // No vocab at all
+            <>
             <Card>
               <CardContent className="py-10 text-center text-muted-foreground">
                 Ask your teacher to add some words to your list!
               </CardContent>
             </Card>
-          ) : unreviewedVocab.length > 0 && !matchCompleted ? (
-            // Round 1 — new words exist, show Memory Match
+            </>
+          ) : unreviewedVocab.length >= 4 && !matchCompleted ? (
+            // Round 1 — new words exist (requires 4+ for game to work), show Memory Match
+            <>
             <MemoryGame vocabulary={unreviewedVocab} onGameComplete={handleGameComplete} />
+            </>
           ) : flashcardVocab.length > 0 ? (
             // Leitner-due words — show Flashcard Review
+            <>
             <FlashcardReview vocabulary={flashcardVocab} onComplete={handleFlashcardComplete} />
+            </>
           ) : profile.isFat && profile.fatPetImageUrl ? (
             // Fat pet — overfed, come back later
+            <>
             <Card>
               <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
                 <img
@@ -1146,8 +1153,10 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                 <p className="text-muted-foreground">Your pet is full! Come back when your words are due for review.</p>
               </CardContent>
             </Card>
+            </>
           ) : (
             // Nothing due — show Play anyway button
+            <>
             <Card>
               <CardContent className="py-10 flex flex-col items-center gap-4 text-center">
                 <p className="text-muted-foreground">Nothing due right now. Your pet is happy!</p>
@@ -1159,6 +1168,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                 </Button>
               </CardContent>
             </Card>
+            </>
           )}
         </TabsContent> {/* end play */}
 
