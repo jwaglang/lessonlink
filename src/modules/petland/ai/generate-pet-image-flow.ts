@@ -1,7 +1,49 @@
 'use server';
 
+import retry from 'async-retry';
+
 export type GeneratePetImageInput = string;
 export type GeneratePetImageOutput = string;
+
+// Helper function to add delay between API calls
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Wrapper for API calls with retry logic for rate limiting
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 2
+): Promise<Response> {
+  return retry(
+    async () => {
+      console.log(`[fetchWithRetry] Attempting API call...`);
+      const response = await fetch(url, options);
+      
+      // Log the full response for debugging
+      console.log(`[fetchWithRetry] Response status: ${response.status}`);
+      
+      // Handle rate limiting with exponential backoff
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('retry-after');
+        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 4000;
+        const errorBody = await response.text();
+        console.log(`[fetchWithRetry] 429 Rate Limited. Error body:`, errorBody);
+        console.log(`[fetchWithRetry] Waiting ${waitTime}ms before retry...`);
+        await delay(waitTime);
+        throw new Error(`Rate limited. Retry after ${waitTime}ms`);
+      }
+      
+      return response;
+    },
+    {
+      retries: maxRetries,
+      minTimeout: 3000,
+      maxTimeout: 8000,
+      randomize: true,
+      factor: 1.5,
+    }
+  );
+}
 
 export async function editPetImage(petImageUrl: string, editPrompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -13,7 +55,7 @@ export async function editPetImage(petImageUrl: string, editPrompt: string): Pro
   const base64 = Buffer.from(arrayBuffer).toString('base64');
   const mimeType = imageResponse.headers.get('content-type') || 'image/png';
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
     {
       method: 'POST',
@@ -57,7 +99,7 @@ export async function removeTextFromImage(imageDataUri: string): Promise<string>
   const editPrompt =
     'Remove all text, letters, words, numbers, labels, and written symbols from this image. Keep all the visual content, colors, shapes, and artistic elements intact. Preserve the original composition and meaning.';
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
     {
       method: 'POST',
@@ -93,7 +135,7 @@ export async function generatePetImage(wish: GeneratePetImageInput): Promise<Gen
 
   const prompt = `Studio Ghibli-style hand-drawn animation. A single adorable monster. Every detail below must be clearly visible and accurate: ${wish}. The color, texture, and any objects or actions mentioned must be prominently featured exactly as described. Clean anatomically correct design with the proper number of limbs. Centered composition, friendly expression, suitable for a children's game. Soft natural colors, clean lines.`;
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
     {
       method: 'POST',
@@ -128,7 +170,7 @@ export async function generateVocabIcon(word: string): Promise<string> {
 
   const prompt = `A playful, colorful flashcard icon representing the concept of "${word}". Interpret the meaning and context provided. Kiddoland style: rounded soft shapes, warm color palette (reds, yellows, blues, greens), witty and expressive. Solid filled colors with subtle soft shading. White or light background. Centered single subject. Stylized and abstract with personality, not minimalist. Visually interesting for young learners. Context: This is for a vocabulary flashcard icon - the word meaning itself goes on the card elsewhere, so this image must be completely text-free. Do not include any letters, numbers, or written symbols.`;
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
     {
       method: 'POST',
@@ -156,12 +198,6 @@ export async function generateVocabIcon(word: string): Promise<string> {
 
   const imageDataUri = `data:${prediction.mimeType ?? 'image/png'};base64,${prediction.bytesBase64Encoded}`;
 
-  // Clean up any text that might have been generated
-  try {
-    const cleanedImage = await removeTextFromImage(imageDataUri);
-    return cleanedImage;
-  } catch (err) {
-    console.warn('[generateVocabIcon] Text removal failed, returning original image:', err);
-    return imageDataUri;
-  }
+  // Skip text removal for now - the prompt already asks for text-free images
+  return imageDataUri;
 }

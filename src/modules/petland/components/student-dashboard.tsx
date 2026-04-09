@@ -82,6 +82,10 @@ function MemoryGame({
   const [flipped, setFlipped] = useState<number[]>([]);
   const [solved, setSolved] = useState<string[]>([]);
   const [gameWon, setGameWon] = useState(false);
+  const [round, setRound] = useState(1); // Round 1 = learning, Round 2+ = gameplay
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [timerActive, setTimerActive] = useState(false);
+  const [learningCardFlipped, setLearningCardFlipped] = useState<number | null>(null);
 
   const resetGame = useCallback(() => {
     if (vocabulary.length < 4) {
@@ -89,47 +93,81 @@ function MemoryGame({
       return;
     }
     const gameVocab = [...vocabulary];
-    const gameCards = gameVocab.flatMap((v) => [
-      { id: `${v.id}-w`, content: v.word, type: 'word' as const, pairId: v.id },
-      {
-        id: `${v.id}-t`,
-        content: v.type === 'cloze' ? (v.sentence?.replace(v.word, '___') || '???') : v.sentence,
+    
+    if (round === 1) {
+      // Learning round: just image -> word pairs, not shuffled yet
+      const learningCards = gameVocab.map((v) => ({
+        id: v.id,
+        content: v.word,
         imageUrl: v.imageUrl,
-        type: 'target' as const,
+        type: 'learning' as const,
         pairId: v.id,
-      },
-    ]);
-    setCards(gameCards.sort(() => Math.random() - 0.5));
-    setFlipped([]);
-    setSolved([]);
+      }));
+      setCards(learningCards);
+      setFlipped([]);
+      setLearningCardFlipped(null);
+      setTimeLeft(60);
+      setTimerActive(true);
+    } else {
+      // Gameplay round: image/word matching
+      const gameCards = gameVocab.flatMap((v) => [
+        { id: `${v.id}-w`, content: v.word, type: 'word' as const, pairId: v.id },
+        {
+          id: `${v.id}-t`,
+          content: v.type === 'cloze' ? (v.sentence?.replace(v.word, '___') || '???') : v.sentence,
+          imageUrl: v.imageUrl,
+          type: 'target' as const,
+          pairId: v.id,
+        },
+      ]);
+      setCards(gameCards.sort(() => Math.random() - 0.5));
+      setFlipped([]);
+      setSolved([]);
+    }
     setGameWon(false);
-  }, [vocabulary]);
+  }, [vocabulary, round]);
 
   useEffect(() => {
     resetGame();
   }, [resetGame]);
 
+  // Timer for learning round
   useEffect(() => {
-    if (flipped.length === 2) {
+    if (round === 1 && timerActive && timeLeft > 0) {
+      const interval = setInterval(() => {
+        setTimeLeft((t) => t - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else if (round === 1 && timeLeft === 0) {
+      setTimerActive(false);
+    }
+  }, [round, timerActive, timeLeft]);
+
+  useEffect(() => {
+    if (round === 2 && flipped.length === 2) {
       const [first, second] = flipped;
-      if (cards[first].pairId === cards[second].pairId) {
+      if (cards[first]?.pairId === cards[second]?.pairId) {
         setSolved((prev) => [...prev, cards[first].pairId]);
         setFlipped([]);
       } else {
         setTimeout(() => setFlipped([]), 1000);
       }
     }
-  }, [flipped, cards]);
+  }, [flipped, cards, round]);
 
   useEffect(() => {
-    if (cards.length > 0 && solved.length === cards.length / 2 && !gameWon) {
+    if (round === 2 && cards.length > 0 && solved.length === cards.length / 2 && !gameWon) {
       onGameComplete(solved);
       setGameWon(true);
     }
-  }, [solved, cards, onGameComplete, gameWon]);
+  }, [solved, cards, onGameComplete, gameWon, round]);
 
-  const isFlipped = (index: number) =>
-    flipped.includes(index) || solved.includes(cards[index]?.pairId ?? '');
+  const isFlipped = (index: number) => {
+    if (round === 1) {
+      return learningCardFlipped === index;
+    }
+    return flipped.includes(index) || solved.includes(cards[index]?.pairId ?? '');
+  };
 
   if (cards.length === 0)
     return (
@@ -140,10 +178,136 @@ function MemoryGame({
       </Card>
     );
 
+  // ===== ROUND 1: LEARNING ROUND =====
+  if (round === 1) {
+    const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Round 1: Learn the Cards</CardTitle>
+          <CardDescription>Click on each image to see the word. Take your time!</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Timer Display */}
+          <div className="flex flex-col items-center gap-3 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+            <p className="text-xs font-semibold text-blue-700 uppercase">Time Remaining</p>
+            <div className="text-4xl font-bold font-mono text-blue-600 tracking-wider">
+              {formatTime(timeLeft)}
+            </div>
+            <div className="flex gap-2">
+              {!timerActive ? (
+                <Button onClick={() => setTimerActive(true)} size="sm" className="min-w-20">
+                  Start
+                </Button>
+              ) : (
+                <Button onClick={() => setTimerActive(false)} variant="outline" size="sm" className="min-w-20">
+                  Pause
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  setTimeLeft(60);
+                  setTimerActive(false);
+                  setLearningCardFlipped(null);
+                }}
+                variant="outline"
+                size="sm"
+                className="min-w-20"
+              >
+                Reset
+              </Button>
+            </div>
+          </div>
+
+          {/* Card Grid with Flip Animation */}
+          <style>{`
+            .flip-container {
+              perspective: 1000px;
+              width: 100%;
+              height: 100%;
+            }
+            .flip-inner {
+              position: relative;
+              width: 100%;
+              height: 100%;
+              transition: transform 0.6s;
+              transform-style: preserve-3d;
+            }
+            .flip-inner.flipped {
+              transform: rotateY(180deg);
+            }
+            .flip-front, .flip-back {
+              backface-visibility: hidden;
+              position: absolute;
+              width: 100%;
+              height: 100%;
+              top: 0;
+              left: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 0.5rem;
+              border: 2px solid;
+              padding: 0.5rem;
+            }
+            .flip-back {
+              transform: rotateY(180deg);
+            }
+          `}</style>
+
+          <div className="grid grid-cols-4 gap-2 max-w-2xl">
+            {cards.map((card, index) => (
+              <div
+                key={card.id}
+                className="aspect-square cursor-pointer flip-container"
+                onClick={() => setLearningCardFlipped(learningCardFlipped === index ? null : index)}
+              >
+                <div className={`flip-inner ${isFlipped(index) ? 'flipped' : ''}`}>
+                  {/* Front - Image */}
+                  <div className="flip-front bg-blue-100 border-blue-300">
+                    {card.imageUrl ? (
+                      <img src={card.imageUrl} className="w-full h-full object-contain" alt="vocab icon" />
+                    ) : (
+                      <span className="text-4xl">🖼</span>
+                    )}
+                  </div>
+
+                  {/* Back - Word */}
+                  <div className="flip-back bg-white border-primary shadow-lg">
+                    <span className="font-headline font-bold text-base text-center leading-tight text-slate-700 px-2">
+                      {card.content}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Next Round Button */}
+          <div className="text-center pt-2">
+            {!timerActive && timeLeft === 0 ? (
+              <Button onClick={() => setRound(2)} size="lg" className="px-8">
+                Next Round →
+              </Button>
+            ) : timerActive ? (
+              <p className="text-sm text-muted-foreground">⏱️ Timer running... Learn the cards!</p>
+            ) : timeLeft < 60 ? (
+              <p className="text-sm text-muted-foreground">Ready! Click "Start" to begin the timer.</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Click "Start" to begin learning!</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ===== ROUND 2+: MEMORY MATCH GAMEPLAY =====
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Playground: Memory Match!</CardTitle>
+        <CardTitle>Round 2: Memory Match!</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-4 gap-2 max-w-2xl">

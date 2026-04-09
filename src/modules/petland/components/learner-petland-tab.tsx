@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
-import { generateVocabIcon } from '../ai/generate-pet-image-flow';
+import { generateVocabIcon, removeTextFromImage } from '../ai/generate-pet-image-flow';
 import { generateSentence } from '../ai/generate-sentence';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { Button } from '@/components/ui/button';
@@ -125,6 +125,7 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
   const [previewIconUrl, setPreviewIconUrl] = useState<string | null>(null);
   const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
   const [isGeneratingSentence, setIsGeneratingSentence] = useState(false);
+  const [isRemovingText, setIsRemovingText] = useState(false);
 
   // Edit vocab
   const [isEditVocabOpen, setIsEditVocabOpen] = useState(false);
@@ -241,6 +242,46 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
       toast({ variant: 'destructive', title: 'AI busy', description: 'Try again in a moment.' });
     }
     setIsGeneratingSentence(false);
+  };
+
+  const handleRemoveTextFromIcon = async () => {
+    const imageUrl = isEditVocabOpen ? editingVocab?.imageUrl : previewIconUrl;
+    if (!imageUrl) return;
+    setIsRemovingText(true);
+    try {
+      // imageUrl might be a storage URL or data URL
+      let imageDataUri = imageUrl;
+      
+      // If it's a storage URL, fetch and convert to data URL
+      if (imageUrl.startsWith('http')) {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        imageDataUri = await new Promise((resolve) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+      
+      const cleanedImage = await removeTextFromImage(imageDataUri);
+      const url = await uploadBase64ToStorage(cleanedImage, `vocabulary/icons/${crypto.randomUUID().slice(0, 8)}.png`);
+      
+      if (isEditVocabOpen && editingVocab) {
+        setEditingVocab((v) => ({ ...v, imageUrl: url }));
+      } else {
+        setPreviewIconUrl(url);
+      }
+      
+      toast({ variant: 'default', title: 'Text removed', description: 'Icon has been cleaned.' });
+    } catch (err) {
+      console.error('[handleRemoveTextFromIcon] Error:', err);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Failed to remove text',
+        description: err instanceof Error ? err.message : 'Try again later.' 
+      });
+    }
+    setIsRemovingText(false);
   };
 
   const handleAddWord = async (e: React.FormEvent) => {
@@ -499,11 +540,24 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
                 </div>
               </div>
               {previewIconUrl && (
-                <img
-                  src={previewIconUrl}
-                  className="w-24 h-24 rounded-lg mx-auto border object-contain bg-white"
-                  alt="AI icon"
-                />
+                <div className="flex flex-col items-center gap-2">
+                  <img
+                    src={previewIconUrl}
+                    className="w-24 h-24 rounded-lg border object-contain bg-white"
+                    alt="AI icon"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleRemoveTextFromIcon}
+                    disabled={isRemovingText}
+                    size="sm"
+                    variant="outline"
+                    title="Remove text from icon (if visible)"
+                  >
+                    {isRemovingText ? <Loader2 className="animate-spin h-3 w-3 mr-1" /> : <Wand2 className="h-3 w-3 mr-1" />}
+                    Remove Text
+                  </Button>
+                </div>
               )}
               <div>
                 <Label>Sentence</Label>
@@ -653,11 +707,24 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
               </div>
             </div>
             {editingVocab?.imageUrl && (
-              <img
-                src={editingVocab.imageUrl}
-                className="w-24 h-24 rounded-lg mx-auto border object-contain bg-white"
-                alt="icon"
-              />
+              <div className="flex flex-col items-center gap-2">
+                <img
+                  src={editingVocab.imageUrl}
+                  className="w-24 h-24 rounded-lg border object-contain bg-white"
+                  alt="icon"
+                />
+                <Button
+                  type="button"
+                  onClick={handleRemoveTextFromIcon}
+                  disabled={isRemovingText}
+                  size="sm"
+                  variant="outline"
+                  title="Remove text from icon (if visible)"
+                >
+                  {isRemovingText ? <Loader2 className="animate-spin h-3 w-3 mr-1" /> : <Wand2 className="h-3 w-3 mr-1" />}
+                  Remove Text
+                </Button>
+              </div>
             )}
             <div>
               <Label>Sentence</Label>
