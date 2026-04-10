@@ -24,6 +24,8 @@ import {
   updateDoc,
   setDoc,
   writeBatch,
+  getDocs,
+  deleteField,
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
@@ -107,7 +109,7 @@ function MemoryGame({
       setFlipped([]);
       setLearningCardFlipped(null);
       setTimeLeft(60);
-      setTimerActive(true);
+      setTimerActive(false);
     } else {
       // Gameplay round: image/word matching
       const gameCards = gameVocab.flatMap((v) => [
@@ -138,10 +140,103 @@ function MemoryGame({
         setTimeLeft((t) => t - 1);
       }, 1000);
       return () => clearInterval(interval);
-    } else if (round === 1 && timeLeft === 0) {
+    } else if (round === 1 && timeLeft === 0 && timerActive) {
       setTimerActive(false);
+      playBellSound();
     }
   }, [round, timerActive, timeLeft]);
+
+  const playBellSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const now = audioContext.currentTime;
+      
+      // Create a bell/chime sound using oscillators
+      const osc1 = audioContext.createOscillator();
+      const osc2 = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      
+      osc1.frequency.value = 800; // Higher frequency
+      osc2.frequency.value = 600; // Lower frequency
+      
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(audioContext.destination);
+      
+      // Envelope
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+      
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.5);
+      osc2.stop(now + 1.5);
+    } catch (e) {
+      console.log('Bell sound not available');
+    }
+  };
+
+  const playClickSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const now = audioContext.currentTime;
+      
+      // Create sine wave oscillator
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      
+      osc.frequency.value = 200; // Base frequency for click
+      
+      // Create low-pass filter
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 500; // Lower frequency for bass
+      
+      // Connect nodes
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioContext.destination);
+      
+      // Short envelope for click
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } catch (e) {
+      console.log('Click sound not available');
+    }
+  };
+
+  const playVictorySong = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const now = audioContext.currentTime;
+      
+      // Victory song: ascending C major notes
+      const notes = [
+        { freq: 523.25, time: 0.0 },    // C5
+        { freq: 659.25, time: 0.15 },   // E5
+        { freq: 783.99, time: 0.3 },    // G5
+        { freq: 1046.5, time: 0.45 },   // C6
+      ];
+      
+      const gain = audioContext.createGain();
+      gain.connect(audioContext.destination);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+      
+      notes.forEach((note) => {
+        const osc = audioContext.createOscillator();
+        osc.frequency.value = note.freq;
+        osc.connect(gain);
+        osc.start(now + note.time);
+        osc.stop(now + note.time + 0.14);
+      });
+    } catch (e) {
+      console.log('Victory sound not available');
+    }
+  };
 
   useEffect(() => {
     if (round === 2 && flipped.length === 2) {
@@ -157,6 +252,7 @@ function MemoryGame({
 
   useEffect(() => {
     if (round === 2 && cards.length > 0 && solved.length === cards.length / 2 && !gameWon) {
+      playVictorySong();
       onGameComplete(solved);
       setGameWon(true);
     }
@@ -185,24 +281,33 @@ function MemoryGame({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Round 1: Learn the Cards</CardTitle>
-          <CardDescription>Click on each image to see the word. Take your time!</CardDescription>
+          <CardTitle>Round 1: Memory Challenge</CardTitle>
+          <CardDescription>Learn all the cards before the timer runs out!</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Timer Display */}
-          <div className="flex flex-col items-center gap-3 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-            <p className="text-xs font-semibold text-blue-700 uppercase">Time Remaining</p>
-            <div className="text-4xl font-bold font-mono text-blue-600 tracking-wider">
-              {formatTime(timeLeft)}
+          {/* Chess Clock Timer */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="bg-gradient-to-b from-primary/20 to-accent/30 border-8 border-primary rounded-lg p-6 shadow-2xl w-full max-w-md">
+              <div className="flex items-center justify-between gap-4">
+                {/* Clock Display */}
+                <div className="flex-1 bg-secondary/40 rounded-lg p-4 text-center border-2 border-primary/40">
+                  <div className="text-5xl font-mono font-bold text-primary tracking-wider">
+                    {formatTime(timeLeft)}
+                  </div>
+                  <p className="text-xs text-primary/70 mt-2 uppercase tracking-widest font-semibold">Learning Time</p>
+                </div>
+              </div>
             </div>
+
+            {/* Controls */}
             <div className="flex gap-2">
               {!timerActive ? (
-                <Button onClick={() => setTimerActive(true)} size="sm" className="min-w-20">
-                  Start
+                <Button onClick={() => setTimerActive(true)} size="sm" className="min-w-24 bg-primary hover:bg-primary/80">
+                  ▶ Start
                 </Button>
               ) : (
-                <Button onClick={() => setTimerActive(false)} variant="outline" size="sm" className="min-w-20">
-                  Pause
+                <Button onClick={() => setTimerActive(false)} variant="outline" size="sm" className="min-w-24">
+                  ⏸ Pause
                 </Button>
               )}
               <Button
@@ -213,9 +318,9 @@ function MemoryGame({
                 }}
                 variant="outline"
                 size="sm"
-                className="min-w-20"
+                className="min-w-24"
               >
-                Reset
+                ↻ Reset
               </Button>
             </div>
           </div>
@@ -248,24 +353,28 @@ function MemoryGame({
               align-items: center;
               justify-content: center;
               border-radius: 0.5rem;
-              border: 2px solid;
+              border: 2px solid #7B3FF2;
               padding: 0.5rem;
+              transition: all 0.3s ease;
             }
             .flip-back {
               transform: rotateY(180deg);
             }
           `}</style>
 
-          <div className="grid grid-cols-4 gap-2 max-w-2xl">
+          <div className="grid grid-cols-4 gap-3 max-w-2xl mx-auto">
             {cards.map((card, index) => (
               <div
                 key={card.id}
-                className="aspect-square cursor-pointer flip-container"
-                onClick={() => setLearningCardFlipped(learningCardFlipped === index ? null : index)}
+                className="aspect-square cursor-pointer flip-container hover:scale-105 transition-transform"
+                onClick={() => {
+                  playClickSound();
+                  setLearningCardFlipped(learningCardFlipped === index ? null : index);
+                }}
               >
                 <div className={`flip-inner ${isFlipped(index) ? 'flipped' : ''}`}>
                   {/* Front - Image */}
-                  <div className="flip-front bg-blue-100 border-blue-300">
+                  <div className="flip-front bg-secondary/30 border-primary/40 shadow-lg">
                     {card.imageUrl ? (
                       <img src={card.imageUrl} className="w-full h-full object-contain" alt="vocab icon" />
                     ) : (
@@ -274,7 +383,7 @@ function MemoryGame({
                   </div>
 
                   {/* Back - Word */}
-                  <div className="flip-back bg-white border-primary shadow-lg">
+                  <div className="flip-back bg-secondary/20 border-primary/60 shadow-xl">
                     <span className="font-headline font-bold text-base text-center leading-tight text-slate-700 px-2">
                       {card.content}
                     </span>
@@ -287,7 +396,7 @@ function MemoryGame({
           {/* Next Round Button */}
           <div className="text-center pt-2">
             {!timerActive && timeLeft === 0 ? (
-              <Button onClick={() => setRound(2)} size="lg" className="px-8">
+              <Button onClick={() => { playVictorySong(); setRound(2); }} size="lg" className="px-8">
                 Next Round →
               </Button>
             ) : timerActive ? (
@@ -295,7 +404,10 @@ function MemoryGame({
             ) : timeLeft < 60 ? (
               <p className="text-sm text-muted-foreground">Ready! Click "Start" to begin the timer.</p>
             ) : (
-              <p className="text-sm text-muted-foreground">Click "Start" to begin learning!</p>
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-sm text-muted-foreground">Click "Start" to begin learning!</p>
+                <p className="text-xs text-amber-600 font-semibold">⚡ Learn all the cards before the timer runs out!</p>
+              </div>
             )}
           </div>
         </CardContent>
@@ -721,7 +833,7 @@ function PetStatus({
 
 // --- DEV HP SETTER (development only) ---
 
-function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void }) {
+function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void }) {
   const [value, setValue] = useState(String(hp));
   return (
     <div className="mt-4 p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 flex items-center gap-3 flex-wrap">
@@ -742,6 +854,12 @@ function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDeca
       </Button>
       <Button size="sm" variant="outline" className="h-7 text-xs border-orange-400 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
         Simulate Decay (-10 HP, clears fat)
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-xs border-purple-400 text-purple-600 hover:bg-purple-50" onClick={onResetFlashcards}>
+        Reset Flashcards
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-xs border-green-400 text-green-600 hover:bg-green-50" onClick={onRestorePet}>
+        Restore Pet
       </Button>
       {isFat && (
         <Button size="sm" variant="outline" className="h-7 text-xs border-red-400 text-red-600 hover:bg-red-50" onClick={onClearFat}>
@@ -1103,11 +1221,22 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             onReject={handleRejectPet}
             onBuyEgg={handleBuyEgg}
           />
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV === 'development' && learnerId === '1SLNgciKQlhKVzE9INPBROgBsEz2' && (
             <DevHpSetter
               hp={profile.hp}
               isFat={!!profile.isFat}
-              onSet={(hp) => updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() }).catch(console.error)}
+              onSet={(hp) => {
+                console.log('Setting HP to:', hp);
+                updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() })
+                  .then(() => {
+                    console.log('HP updated successfully');
+                    toast({ title: 'HP Set', description: `HP set to ${hp}` });
+                  })
+                  .catch((err) => {
+                    console.error('HP update failed:', err);
+                    toast({ title: 'Error', description: 'Failed to set HP: ' + err.message, variant: 'destructive' });
+                  });
+              }}
               onClearFat={() => updateDoc(profileRef, { isFat: false }).catch(console.error)}
               onFakeMatch={() => handleGameComplete(vocabulary.slice(0, 3).map((v) => v.id))}
               onSimulateDecay={() => {
@@ -1115,6 +1244,28 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                 const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString(), isFat: false };
                 if (newHp === 0) updates.petState = 'dead';
                 updateDoc(profileRef, updates).catch(console.error);
+              }}
+              onResetFlashcards={async () => {
+                const vocabRef = collection(db, 'students', learnerId, 'vocabulary');
+                const snap = await getDocs(vocabRef);
+                const batch = writeBatch(db);
+                snap.docs.forEach((doc) => {
+                  batch.update(doc.ref, { lastReviewDate: deleteField(), srsLevel: 1 });
+                });
+                await batch.commit().catch(console.error);
+                alert('Flashcards reset! All words set to unreviewed.');
+              }}
+              onRestorePet={() => {
+                console.log('Restoring pet from dead state');
+                updateDoc(profileRef, { petState: 'hatched' })
+                  .then(() => {
+                    console.log('Pet restored successfully');
+                    toast({ title: 'Pet Restored', description: 'Your pet has been brought back to life!' });
+                  })
+                  .catch((err) => {
+                    console.error('Pet restore failed:', err);
+                    toast({ title: 'Error', description: 'Failed to restore pet: ' + err.message, variant: 'destructive' });
+                  });
               }}
             />
           )}
