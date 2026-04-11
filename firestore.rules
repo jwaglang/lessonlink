@@ -29,6 +29,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/students/$(studentId)).data.assignedTeacherId;
     }
 
+    function isAssignedTeacher(studentId) {
+      return isTeacher() && assignedTeacherUid(studentId) == request.auth.uid;
+    }
+
     // ===================================
     // Collection Rules
     // ===================================

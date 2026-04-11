@@ -31,6 +31,7 @@ import {
   Bell,
   Clock,
   CalendarClock,
+  PawPrint,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
@@ -496,6 +497,58 @@ const AppSidebar = () => {
                     <Link href="/t-portal/reports" className="flex items-center gap-2">
                       <BarChart2 className="h-3.5 w-3.5" />
                       Reports
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            )}
+          </div>
+
+          {/* ── Petland (hover → Create Accessory, Refine Composite, Browse Pet Status, Browse Pet Shop) ── */}
+          <div
+            onMouseEnter={() => scheduleOpen('petland', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('petland')}
+          >
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/t-portal/petland')}
+                tooltip="Petland"
+              >
+                <Link href="/t-portal/petland" className="flex items-center gap-2">
+                  <PawPrint className="h-4 w-4" />
+                  <span>Petland</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {isOpen('petland') && (
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/create-accessory'}>
+                    <Link href="/t-portal/petland/create-accessory" className="flex items-center gap-2">
+                      <span>Create Accessory for Pet Shop</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/refine-composite'}>
+                    <Link href="/t-portal/petland/refine-composite" className="flex items-center gap-2">
+                      <span>Refine Accessory Composite</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/browse-pet-status'}>
+                    <Link href="/t-portal/petland/browse-pet-status" className="flex items-center gap-2">
+                      <span>Browse Pet Status</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/pet-shop'}>
+                    <Link href="/t-portal/petland/pet-shop" className="flex items-center gap-2">
+                      <span>Browse Pet Shop</span>
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>

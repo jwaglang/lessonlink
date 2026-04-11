@@ -8,6 +8,15 @@ export interface Dorks {
   copper: number;
 }
 
+export interface GeneratedComposite {
+  accessories: Array<{
+    id: string;                 // accessory ID
+    imageUrl: string;           // accessory image URL
+  }>;
+  imageUrl: string;             // full Storage URL of the composite image
+  createdAt: string;            // ISO 8601 timestamp
+}
+
 export interface PetlandProfile {
   xp: number;
   hp: number;
@@ -21,6 +30,7 @@ export interface PetlandProfile {
   petImageUrl?: string;         // original pet image, immutable
   activePetImageUrl?: string;   // current display image (with accessories), defaults to petImageUrl
   ownedAccessories: string[];   // array of accessory IDs the learner owns
+  generatedComposites?: GeneratedComposite[]; // history of AI-generated composites for picking the best
   inventory: string[];
   unlockedBrochures: string[];
   lastFeedback?: {
@@ -64,6 +74,7 @@ export interface PetShopItem {
   imageUrl: string;           // AI-generated accessory image
   price: number;              // price in XP
   stock: number;              // quantity available in shop
+  collection: string;         // collection name (e.g., "Wizard Collection", "Space Collection")
   createdBy: string;          // teacher UID who created this
   createdDate: string;        // ISO 8601 timestamp
 }

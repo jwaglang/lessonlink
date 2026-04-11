@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import type { PetlandProfile, Vocabulary, PetShopItem } from '../types';
+import type { PetlandProfile, Vocabulary, PetShopItem, GeneratedComposite } from '../types';
 import { PlaceHolderImages } from '../placeholder-images';
 import { mockShopItems, mockBrochures } from '../data';
 import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD } from '../utils';
@@ -732,12 +732,12 @@ function PetStatus({
       ? profile.activePetImageUrl
         ? profile.activePetImageUrl
         : profile.isFat && profile.fatPetImageUrl
-        ? profile.fatPetImageUrl
-        : profile.hp < 20 && profile.starvingPetImageUrl
-          ? profile.starvingPetImageUrl
-          : profile.hp < 50 && profile.thinPetImageUrl
-            ? profile.thinPetImageUrl
-            : profile.petImageUrl || defaultHatchedImage?.imageUrl
+          ? profile.fatPetImageUrl
+          : profile.hp < 20 && profile.starvingPetImageUrl
+            ? profile.starvingPetImageUrl
+            : profile.hp < 50 && profile.thinPetImageUrl
+              ? profile.thinPetImageUrl
+              : profile.petImageUrl || defaultHatchedImage?.imageUrl
       : eggImage?.imageUrl;
 
   return (
@@ -846,6 +846,210 @@ function PetStatus({
   );
 }
 
+// --- COMPOSITE GALLERY MODAL ---
+
+function CompositeGalleryCard({
+  isOpen,
+  onClose,
+  profile,
+  learnerId,
+  onSelectComposite,
+  onDeleteComposite,
+  shopItems = [],
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  profile: PetlandProfile;
+  learnerId: string;
+  onSelectComposite: (imageUrl: string) => void;
+  onDeleteComposite: (imageUrl: string) => void;
+  shopItems?: PetShopItem[];
+}) {
+  const composites = profile.generatedComposites || [];
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+
+  if (!isOpen) return null;
+
+  // Group composites by accessory ID
+  const groupedByAccessory = composites.reduce(
+    (acc, composite) => {
+      // Handle both old (accessoryId) and new (accessories array) formats
+      const accessories = (composite as any).accessories || (
+        (composite as any).accessoryId
+          ? [{ id: (composite as any).accessoryId }]
+          : []
+      );
+      
+      accessories.forEach((accessory: any) => {
+        if (!acc[accessory.id]) {
+          acc[accessory.id] = [];
+        }
+        acc[accessory.id].push(composite);
+      });
+      return acc;
+    },
+    {} as Record<string, typeof composites>
+  );
+
+  // Get accessory info for each owned accessory
+  const ownedAccessoriesInfo = Object.entries(groupedByAccessory).map(([accessoryId]) => {
+    const accessory = shopItems.find((item) => item.id === accessoryId);
+    return { accessoryId, accessory };
+  });
+
+  // Group by collection - only include collections that have owned accessories
+  const collectionNames = Array.from(
+    new Set(ownedAccessoriesInfo.map(({ accessory }) => accessory?.collection).filter(Boolean))
+  ) as string[];
+
+  const accessoriesByCollection = collectionNames.reduce(
+    (acc, collection) => {
+      const accessories = ownedAccessoriesInfo.filter(
+        ({ accessory }) => accessory?.collection === collection
+      );
+      if (accessories.length > 0) {
+        acc[collection] = accessories;
+      }
+      return acc;
+    },
+    {} as Record<string, typeof ownedAccessoriesInfo>
+  );
+
+  return (
+    <>
+      {/* Collections Level */}
+      {!selectedCollection && (
+        <Card className="mt-4 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                My Outfits
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-6 w-6 p-0"
+              >
+                ✕
+              </Button>
+            </div>
+            <CardDescription>Pick a collection to browse your outfits.</CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {collectionNames.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No outfits yet. Purchase accessories to create them!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {collectionNames.map((collection) => (
+                  <Button
+                    key={collection}
+                    onClick={() => setSelectedCollection(collection)}
+                    variant="outline"
+                    className="w-full justify-start text-left h-auto py-3 px-4 border-purple-200 hover:bg-purple-100"
+                  >
+                    <span className="text-lg">🎀</span>
+                    <span className="ml-2 font-semibold">{collection}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {accessoriesByCollection[collection]?.length || 0} outfit{(accessoriesByCollection[collection]?.length || 0) !== 1 ? 's' : ''}
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Accessories in Collection Level */}
+      {selectedCollection && (
+        <Card className="mt-4 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedCollection(null)}
+                className="px-2"
+              >
+                ← Back
+              </Button>
+              <CardTitle className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex-1 text-center">
+                My {selectedCollection}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-6 w-6 p-0"
+              >
+                ✕
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            <div className="space-y-6">
+              {(accessoriesByCollection[selectedCollection] || []).map(({ accessoryId, accessory }) => {
+                const accessoryComposites = groupedByAccessory[accessoryId] || [];
+                if (!accessory) return null;
+
+                return (
+                  <div key={accessoryId}>
+                    <h3 className="font-semibold text-sm mb-3 text-purple-700">
+                      {accessory.name}
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {accessoryComposites.map((composite, idx) => (
+                        <div key={idx} className="flex flex-col gap-2">
+                          <div className="relative aspect-square rounded-lg border-2 border-purple-200 overflow-hidden bg-white">
+                            <img
+                              src={accessory.imageUrl}
+                              alt={accessory.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              className="flex-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                              onClick={() => {
+                                onSelectComposite(composite.imageUrl);
+                                onClose();
+                                setSelectedCollection(null);
+                              }}
+                            >
+                              Put On
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="flex-1 text-xs"
+                              onClick={() => onDeleteComposite(composite.imageUrl)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground text-center">
+                            {new Date(composite.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </>
+  );
+}
+
 // --- DEV HP SETTER (development only) ---
 
 function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void; onSimulateAccessoryPurchase: () => void }) {
@@ -927,6 +1131,8 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const [isLoadingShop, setIsLoadingShop] = useState(false);
   const [isBuyingAccessory, setIsBuyingAccessory] = useState(false);
   const [selectedAccessoryId, setSelectedAccessoryId] = useState<string | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isSelectingAccessoryForPurchase, setIsSelectingAccessoryForPurchase] = useState(false);
 
   const profileRef = doc(db, 'students', learnerId, 'petland', 'profile');
   const hasAppliedDecayRef = useRef(false);
@@ -1234,14 +1440,25 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       // Upload composite to storage
       const compositeUrl = await uploadBase64ToStorage(
         compositeImageB64,
-        `pets/${learnerId}/active-pet-${accessoryId}.png`
+        `pets/${learnerId}/active-pet-${accessoryId}-${crypto.randomUUID().slice(0, 8)}.png`
       );
 
       // Update learner profile
+      const newComposite = {
+        accessories: [
+          {
+            id: accessoryId,
+            imageUrl: item.imageUrl,
+          },
+        ],
+        imageUrl: compositeUrl,
+        createdAt: new Date().toISOString(),
+      };
       const updatedProfile: Partial<PetlandProfile> = {
         xp: profile.xp - itemPrice,
         activePetImageUrl: compositeUrl,
         ownedAccessories: [...(profile.ownedAccessories || []), accessoryId],
+        generatedComposites: [...(profile.generatedComposites || []), newComposite],
       };
 
       await updateDoc(profileRef, updatedProfile);
@@ -1288,6 +1505,55 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     }
   };
 
+  const handleSelectComposite = async (imageUrl: string) => {
+    if (!profile) return;
+    try {
+      await updateDoc(profileRef, {
+        activePetImageUrl: imageUrl,
+      });
+      toast({
+        title: 'Composite selected!',
+        description: 'Your pet is now wearing this composite.',
+      });
+    } catch (error) {
+      console.error('Error selecting composite:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to select composite',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteComposite = async (imageUrl: string) => {
+    if (!profile) return;
+    try {
+      // Remove from generatedComposites array
+      const updatedComposites = (profile.generatedComposites || []).filter((c) => c.imageUrl !== imageUrl);
+      await updateDoc(profileRef, {
+        generatedComposites: updatedComposites,
+        // If the deleted composite was active, clear active view
+        ...(profile.activePetImageUrl === imageUrl && { activePetImageUrl: null }),
+      });
+
+      // Delete from Storage
+      const storageRef = ref(storage, imageUrl.split('/o/')[1]?.split('?')[0] || '');
+      await deleteObject(storageRef).catch(() => {});
+
+      toast({
+        title: 'Composite deleted!',
+        description: 'The composite has been removed.',
+      });
+    } catch (error) {
+      console.error('Error deleting composite:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete composite',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleSimulateAccessoryPurchase = async () => {
     if (!profile || !profile.petImageUrl || !profile.petState || profile.petState !== 'hatched') {
       toast({
@@ -1298,9 +1564,9 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       return;
     }
 
-    // Find first available accessory with stock > 0
-    const availableItem = shopItems.find((item) => item.stock > 0);
-    if (!availableItem) {
+    // Find all available accessories with stock > 0
+    const availableItems = shopItems.filter((item) => item.stock > 0);
+    if (availableItems.length === 0) {
       toast({
         title: 'Error',
         description: 'No accessories available in shop',
@@ -1309,8 +1575,22 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       return;
     }
 
+    // If multiple accessories available, show selection dialog
+    if (availableItems.length > 1) {
+      setIsSelectingAccessoryForPurchase(true);
+      return;
+    }
+
+    // If only one, proceed with purchase
+    await executePurchaseAccessory(availableItems[0]);
+  };
+
+  const executePurchaseAccessory = async (availableItem: PetShopItem) => {
+    if (!profile || !profile.petImageUrl) return;
+
     setIsBuyingAccessory(true);
     setSelectedAccessoryId(availableItem.id);
+    setIsSelectingAccessoryForPurchase(false);
 
     try {
       // Compose the accessory onto the pet
@@ -1330,13 +1610,24 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       // Upload composite to storage
       const compositeUrl = await uploadBase64ToStorage(
         compositeImageB64,
-        `pets/${learnerId}/active-pet-${availableItem.id}.png`
+        `pets/${learnerId}/active-pet-${availableItem.id}-${crypto.randomUUID().slice(0, 8)}.png`
       );
 
       // Update learner profile (no XP deduction in test mode)
+      const newComposite = {
+        accessories: [
+          {
+            id: availableItem.id,
+            imageUrl: availableItem.imageUrl,
+          },
+        ],
+        imageUrl: compositeUrl,
+        createdAt: new Date().toISOString(),
+      };
       const updatedProfile: Partial<PetlandProfile> = {
         activePetImageUrl: compositeUrl,
         ownedAccessories: [...(profile.ownedAccessories || []), availableItem.id],
+        generatedComposites: [...(profile.generatedComposites || []), newComposite],
       };
 
       try {
@@ -1362,7 +1653,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
 
       toast({
         title: 'Test Success! 🎉',
-        description: `Simulated purchase of "${availableItem.name}" for Bob's pet!`,
+        description: `Simulated purchase of "${availableItem.name}" for ${profile.petName || 'your pet'}!`,
       });
     } catch (error) {
       console.error('Error in test accessory purchase:', error);
@@ -1419,6 +1710,49 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isSelectingAccessoryForPurchase} onOpenChange={setIsSelectingAccessoryForPurchase}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Choose an Accessory</DialogTitle>
+            <DialogDescription>Pick which accessory to simulate buying for your pet.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {shopItems
+              .filter((item) => item.stock > 0)
+              .map((item) => (
+                <Button
+                  key={item.id}
+                  onClick={() => executePurchaseAccessory(item)}
+                  disabled={isBuyingAccessory}
+                  variant="outline"
+                  className="w-full justify-start text-left h-auto py-3 px-4"
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="w-16 h-16 rounded object-cover"
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.collection}</p>
+                    </div>
+                  </div>
+                </Button>
+              ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsSelectingAccessoryForPurchase(false)}
+              disabled={isBuyingAccessory}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isNamingPet} onOpenChange={setIsNamingPet}>
         <DialogContent>
           <DialogHeader>
@@ -1470,6 +1804,26 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             onBuyEgg={handleBuyEgg}
             onStoreYourBling={handleStoreYourBling}
           />
+          {(profile.generatedComposites || []).length > 0 && (
+            <>
+              <Button
+                onClick={() => setIsGalleryOpen(true)}
+                className="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                My Outfits
+              </Button>
+              <CompositeGalleryCard
+                isOpen={isGalleryOpen}
+                onClose={() => setIsGalleryOpen(false)}
+                profile={profile}
+                learnerId={learnerId}
+                onSelectComposite={handleSelectComposite}
+                onDeleteComposite={handleDeleteComposite}
+                shopItems={shopItems}
+              />
+            </>
+          )}
           {process.env.NODE_ENV === 'development' && learnerId === '1SLNgciKQlhKVzE9INPBROgBsEz2' && (
             <DevHpSetter
               hp={profile.hp}

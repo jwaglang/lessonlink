@@ -130,7 +130,7 @@ export default function LearnerProfilePage() {
         </TabsContent>
 
         <TabsContent value="petland" className="mt-6">
-          <LearnerPetlandTab studentId={studentId} latestSessionInstanceId={latestSessionInstanceId} />
+          <LearnerPetlandTab studentId={studentId} student={student} latestSessionInstanceId={latestSessionInstanceId} />
         </TabsContent>
       </Tabs>
     </div>

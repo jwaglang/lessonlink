@@ -224,6 +224,70 @@ export async function composeAccessoryOnPet(
   return `data:${imagePart.inlineData.mimeType ?? 'image/png'};base64,${imagePart.inlineData.data}`;
 }
 
+export async function refineComposite(
+  badCompositeUrl: string,
+  correctionInstructions: string
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
+
+  // Fetch bad composite image
+  const compositeResponse = await fetch(badCompositeUrl);
+  if (!compositeResponse.ok) throw new Error(`Failed to fetch composite image: ${compositeResponse.status}`);
+  const compositeArrayBuffer = await compositeResponse.arrayBuffer();
+  const compositeBase64 = Buffer.from(compositeArrayBuffer).toString('base64');
+  const compositeMimeType = compositeResponse.headers.get('content-type') || 'image/png';
+
+  const refinementPrompt =
+    'You are fixing a problematic composite image. Here is an image with issues that need to be corrected.\n\n' +
+    'PROBLEMS TO FIX:\n' +
+    correctionInstructions +
+    '\n\n' +
+    'INSTRUCTIONS:\n' +
+    '- Carefully edit ONLY the specific problems mentioned above\n' +
+    '- Keep everything else in the image as-is\n' +
+    '- Do not regenerate the entire image unnecessarily\n' +
+    '- Output only the corrected image with no text or explanation.';
+
+  const response = await fetchWithRetry(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType: compositeMimeType, data: compositeBase64 } },
+              { text: refinementPrompt },
+            ],
+          },
+        ],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[refineComposite] API error:', error);
+    throw new Error(`Composite refinement failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts as { inlineData?: { mimeType?: string; data?: string } }[] | undefined;
+  const imagePart = parts?.find((p) => p.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    console.error('[refineComposite] No image in response:', JSON.stringify(data, null, 2));
+    throw new Error('No refined composite image returned from API.');
+  }
+
+  const refinedBase64 = `data:${imagePart.inlineData.mimeType ?? 'image/png'};base64,${imagePart.inlineData.data}`;
+  console.log('[refineComposite] Successfully generated refined composite');
+  return refinedBase64;
+}
+
 export async function generateVocabIcon(word: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');

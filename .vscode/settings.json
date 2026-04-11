@@ -11,6 +11,22 @@
         "/^git add -A ; git commit -m \"docs: Rename roadmap to hexdate Q4B \\(April 11, 2026\\)\" ; git push$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^firebase deploy --only firestore:rules$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^firebase --version ; firebase deploy --only firestore:rules 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^npx firebase deploy --only firestore:rules$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^mv src/modules/petland/components/learner-petland-tab-new\\.tsx src/modules/petland/components/learner-petland-tab\\.tsx$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     }
 }
