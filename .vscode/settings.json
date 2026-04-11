@@ -1,0 +1,16 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^git add \"Project Files \\(handoff, Roadmap etc\\)/LessonLink-Roadmap-Q46\\.md\" ; git commit -m \"docs: Reorder Pet Shop status line to end of Petland completion list\" ; git push$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^mv \"Project Files \\(handoff, Roadmap etc\\)/LessonLink-Roadmap-Q46\\.md\" \"Project Files \\(handoff, Roadmap etc\\)/LessonLink-Roadmap-Q4B\\.md\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^git add -A ; git commit -m \"docs: Rename roadmap to hexdate Q4B \\(April 11, 2026\\)\" ; git push$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
