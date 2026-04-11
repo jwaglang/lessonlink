@@ -164,6 +164,66 @@ export async function generatePetImage(wish: GeneratePetImageInput): Promise<Gen
   return `data:${prediction.mimeType ?? 'image/png'};base64,${prediction.bytesBase64Encoded}`;
 }
 
+export async function composeAccessoryOnPet(
+  petImageUrl: string,
+  accessoryImageUrl: string,
+  mergePrompt: string
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
+
+  // Fetch pet image
+  const petResponse = await fetch(petImageUrl);
+  if (!petResponse.ok) throw new Error(`Failed to fetch pet image: ${petResponse.status}`);
+  const petArrayBuffer = await petResponse.arrayBuffer();
+  const petBase64 = Buffer.from(petArrayBuffer).toString('base64');
+  const petMimeType = petResponse.headers.get('content-type') || 'image/png';
+
+  // Fetch accessory image
+  const accessoryResponse = await fetch(accessoryImageUrl);
+  if (!accessoryResponse.ok) throw new Error(`Failed to fetch accessory image: ${accessoryResponse.status}`);
+  const accessoryArrayBuffer = await accessoryResponse.arrayBuffer();
+  const accessoryBase64 = Buffer.from(accessoryArrayBuffer).toString('base64');
+  const accessoryMimeType = accessoryResponse.headers.get('content-type') || 'image/png';
+
+  const response = await fetchWithRetry(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType: petMimeType, data: petBase64 } },
+              { inlineData: { mimeType: accessoryMimeType, data: accessoryBase64 } },
+              { text: mergePrompt },
+            ],
+          },
+        ],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[composeAccessoryOnPet] API error:', error);
+    throw new Error(`Accessory composition failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts as { inlineData?: { mimeType?: string; data?: string } }[] | undefined;
+  const imagePart = parts?.find((p) => p.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    console.error('[composeAccessoryOnPet] No image in response:', JSON.stringify(data, null, 2));
+    throw new Error('No composite image returned from API.');
+  }
+
+  return `data:${imagePart.inlineData.mimeType ?? 'image/png'};base64,${imagePart.inlineData.data}`;
+}
+
 export async function generateVocabIcon(word: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');

@@ -313,5 +313,11 @@ service cloud.firestore {
       allow delete: if request.auth != null && isTeacher();
     }
 
+    // Pet Shop Items — teachers create/update/delete, everyone reads
+    match /petShopItems/{itemId} {
+      allow read, list: if true;
+      allow create, update, delete: if isAdmin() || isTeacher();
+    }
+
   }
 }

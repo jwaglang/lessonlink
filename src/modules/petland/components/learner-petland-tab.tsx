@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { PetlandProfile, Vocabulary, FeedbackType } from '../types';
+import type { PetlandProfile, Vocabulary, FeedbackType, PetShopItem } from '../types';
 import { db, storage } from '@/lib/firebase';
 import {
   doc,
@@ -14,11 +14,13 @@ import {
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
-import { generateVocabIcon, removeTextFromImage } from '../ai/generate-pet-image-flow';
+import { generateVocabIcon, removeTextFromImage, generatePetImage } from '../ai/generate-pet-image-flow';
 import { generateSentence } from '../ai/generate-sentence';
 import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
+import { createPetShopItem } from '@/lib/firestore';
+import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +61,7 @@ import {
   PlusCircle,
   PawPrint,
   RotateCcw,
+  ShoppingBag,
 } from 'lucide-react';
 
 // Custom SVG treasure chest icon
@@ -107,6 +110,7 @@ interface LearnerPetlandTabProps {
 
 export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }: LearnerPetlandTabProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<PetlandProfile | null>(null);
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -126,6 +130,15 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
   const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
   const [isGeneratingSentence, setIsGeneratingSentence] = useState(false);
   const [isRemovingText, setIsRemovingText] = useState(false);
+
+  // Pet Shop Accessory form
+  const [accessoryDesc, setAccessoryDesc] = useState('');
+  const [accessoryName, setAccessoryName] = useState('');
+  const [accessoryStock, setAccessoryStock] = useState(10);
+  const [accessoryPrice, setAccessoryPrice] = useState(50);
+  const [previewAccessoryUrl, setPreviewAccessoryUrl] = useState<string | null>(null);
+  const [isGeneratingAccessory, setIsGeneratingAccessory] = useState(false);
+  const [isCreatingItem, setIsCreatingItem] = useState(false);
 
   // Edit vocab
   const [isEditVocabOpen, setIsEditVocabOpen] = useState(false);
@@ -365,6 +378,61 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
     } catch {
       toast({ variant: 'destructive', title: 'Failed to update stats' });
     }
+  };
+
+  const handleGenerateAccessory = async () => {
+    if (!accessoryDesc) {
+      toast({ variant: 'destructive', title: 'Description required' });
+      return;
+    }
+    setIsGeneratingAccessory(true);
+    try {
+      // Use generatePetImage with a modified prompt for accessories
+      const accessoryPrompt = `Studio Ghibli-style hand-drawn animation. A single accessory item that a cute pet would wear or use. Description: ${accessoryDesc}. The item should be detailed, recognizable, and whimsical. Centered composition, soft natural colors, clean lines. Item only—no background or pet visible.`;
+      const base64Data = await generatePetImage(accessoryPrompt);
+      const url = await uploadBase64ToStorage(base64Data, `vocabulary/shop/${crypto.randomUUID().slice(0, 8)}.png`);
+      setPreviewAccessoryUrl(url);
+      toast({ title: 'Accessory image generated!' });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      toast({ variant: 'destructive', title: 'Generation failed', description: errorMsg });
+    }
+    setIsGeneratingAccessory(false);
+  };
+
+  const handleCreateAccessoryItem = async () => {
+    if (!user?.uid) {
+      toast({ variant: 'destructive', title: 'Not authenticated' });
+      return;
+    }
+    if (!accessoryName || !previewAccessoryUrl) {
+      toast({ variant: 'destructive', title: 'Missing name or image' });
+      return;
+    }
+    setIsCreatingItem(true);
+    try {
+      await createPetShopItem(
+        {
+          name: accessoryName,
+          description: accessoryDesc,
+          imageUrl: previewAccessoryUrl,
+          price: accessoryPrice,
+          stock: accessoryStock,
+        },
+        user.uid
+      );
+      toast({ title: 'Accessory created!', description: `"${accessoryName}" added to Pet Shop` });
+      // Reset form
+      setAccessoryDesc('');
+      setAccessoryName('');
+      setAccessoryStock(10);
+      setAccessoryPrice(50);
+      setPreviewAccessoryUrl(null);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      toast({ variant: 'destructive', title: 'Failed to create accessory', description: errorMsg });
+    }
+    setIsCreatingItem(false);
   };
 
   if (profileLoading) {
@@ -881,6 +949,99 @@ export default function LearnerPetlandTab({ studentId, latestSessionInstanceId }
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pet Shop Accessory Creation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5" />
+            Create Accessory for Pet Shop
+          </CardTitle>
+          <CardDescription className="text-xs">Design a new pet accessory for learners to purchase with Dorks</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Accessory Description</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                placeholder="e.g., a wizard hat with stars, a sparkling necklace, colorful crown..."
+                value={accessoryDesc}
+                onChange={(e) => setAccessoryDesc(e.target.value)}
+                disabled={isGeneratingAccessory}
+              />
+              <Button
+                onClick={handleGenerateAccessory}
+                disabled={isGeneratingAccessory || !accessoryDesc}
+                size="icon"
+              >
+                {isGeneratingAccessory ? <Loader2 className="animate-spin h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+
+          {previewAccessoryUrl && (
+            <div className="flex flex-col items-center gap-2">
+              <img
+                src={previewAccessoryUrl}
+                className="w-32 h-32 rounded-lg border object-contain bg-white"
+                alt="accessory preview"
+              />
+              <p className="text-xs text-muted-foreground">Preview</p>
+            </div>
+          )}
+
+          <div>
+            <Label>Accessory Name</Label>
+            <Input
+              placeholder="e.g., Wizard Hat, Royal Crown, etc."
+              value={accessoryName}
+              onChange={(e) => setAccessoryName(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Price (in Dorks)</Label>
+              <Input
+                type="number"
+                min="1"
+                value={accessoryPrice}
+                onChange={(e) => setAccessoryPrice(Number(e.target.value))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Stock Quantity</Label>
+              <Input
+                type="number"
+                min="1"
+                value={accessoryStock}
+                onChange={(e) => setAccessoryStock(Number(e.target.value))}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          <Button
+            onClick={handleCreateAccessoryItem}
+            disabled={isCreatingItem || !previewAccessoryUrl || !accessoryName}
+            className="w-full"
+          >
+            {isCreatingItem ? (
+              <>
+                <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Create & Add to Shop
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

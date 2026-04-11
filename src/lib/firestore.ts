@@ -67,6 +67,7 @@ import type {
   ScheduleTemplate,
   HomeworkAssignment,
 } from './types';
+import type { PetShopItem } from '@/modules/petland/types';
 
 // ===================================
 // Re-export types for convenience
@@ -1947,6 +1948,47 @@ export async function getHomeworkByStudent(studentId: string): Promise<HomeworkA
   const q = query(homeworkAssignmentsCollection, where('studentId', '==', studentId), orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
   return snap.docs.map(d => asId<HomeworkAssignment>(d.id, d.data()));
+}
+
+/* =========================================================
+   Pet Shop Items (Petland Accessories)
+   ========================================================= */
+
+const petShopItemsCollection = collection(db, 'petShopItems');
+
+export async function createPetShopItem(data: Omit<PetShopItem, 'id' | 'createdDate'> & { createdDate?: string }, teacherUid: string): Promise<PetShopItem> {
+  const ref = await addDoc(petShopItemsCollection, {
+    ...data,
+    createdBy: teacherUid,
+    createdDate: nowIso(),
+  } as any);
+  const snap = await getDoc(ref);
+  return asId<PetShopItem>(snap.id, snap.data());
+}
+
+export async function getPetShopItems(): Promise<PetShopItem[]> {
+  const snap = await getDocs(petShopItemsCollection);
+  return snap.docs.map(d => asId<PetShopItem>(d.id, d.data()));
+}
+
+export async function getPetShopItem(itemId: string): Promise<PetShopItem | null> {
+  const snap = await getDoc(doc(db, 'petShopItems', itemId));
+  return snap.exists() ? asId<PetShopItem>(snap.id, snap.data()) : null;
+}
+
+export async function updatePetShopItem(itemId: string, updates: Partial<PetShopItem>): Promise<void> {
+  await updateDoc(doc(db, 'petShopItems', itemId), updates as any);
+}
+
+export async function deletePetShopItem(itemId: string): Promise<void> {
+  await deleteDoc(doc(db, 'petShopItems', itemId));
+}
+
+export async function decrementPetShopItemStock(itemId: string): Promise<void> {
+  const item = await getPetShopItem(itemId);
+  if (item) {
+    await updatePetShopItem(itemId, { stock: Math.max(0, item.stock - 1) });
+  }
 }
 
 export async function getHomeworkBySessionInstance(sessionInstanceId: string): Promise<HomeworkAssignment[]> {

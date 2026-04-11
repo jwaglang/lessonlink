@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import type { PetlandProfile, Vocabulary } from '../types';
+import type { PetlandProfile, Vocabulary, PetShopItem } from '../types';
 import { PlaceHolderImages } from '../placeholder-images';
 import { mockShopItems, mockBrochures } from '../data';
 import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD } from '../utils';
 import { FeedbackOverlay } from './feedback-overlay';
 import { HungerAlerts } from './hunger-alerts';
-import { generatePetImage, editPetImage } from '../ai/generate-pet-image-flow';
+import { generatePetImage, editPetImage, composeAccessoryOnPet } from '../ai/generate-pet-image-flow';
 
 const FAT_PROMPT =
   'Modify this creature to be extremely chubby and round, belly bulging out, gobbling junk food, looking embarrassed and sheepish at getting caught. Keep the exact same creature — same colors, features, species — just make it fat.';
@@ -28,6 +28,7 @@ import {
   deleteField,
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getPetShopItems, decrementPetShopItemStock } from '@/lib/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -667,6 +668,7 @@ function PetStatus({
   onHatch,
   isHatching,
   onBuyEgg,
+  onStoreYourBling,
 }: {
   profile: PetlandProfile;
   previewImageUrl: string | null;
@@ -675,6 +677,7 @@ function PetStatus({
   onHatch: (wish: string) => void;
   onBuyEgg: () => void;
   isHatching: boolean;
+  onStoreYourBling: () => void;
 }) {
   const eggImage = PlaceHolderImages.find((img) => img.id === 'pet-egg');
   const defaultHatchedImage = PlaceHolderImages.find((img) => img.id === 'pet-hatched');
@@ -726,7 +729,9 @@ function PetStatus({
 
   const imageUrl =
     profile.petState === 'hatched'
-      ? profile.isFat && profile.fatPetImageUrl
+      ? profile.activePetImageUrl
+        ? profile.activePetImageUrl
+        : profile.isFat && profile.fatPetImageUrl
         ? profile.fatPetImageUrl
         : profile.hp < 20 && profile.starvingPetImageUrl
           ? profile.starvingPetImageUrl
@@ -779,6 +784,16 @@ function PetStatus({
             <>
               <h2 className="text-2xl font-bold mt-2">{profile.petName || 'My Pet'}</h2>
               <p className="text-sm text-muted-foreground -mt-1">Level {petLevel}</p>
+              {profile.activePetImageUrl && (
+                <Button
+                  onClick={onStoreYourBling}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                >
+                  Store your bling!
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -833,7 +848,7 @@ function PetStatus({
 
 // --- DEV HP SETTER (development only) ---
 
-function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void }) {
+function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void; onSimulateAccessoryPurchase: () => void }) {
   const [value, setValue] = useState(String(hp));
   return (
     <div className="mt-4 p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 flex items-center gap-3 flex-wrap">
@@ -860,6 +875,9 @@ function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDeca
       </Button>
       <Button size="sm" variant="outline" className="h-7 text-xs border-green-400 text-green-600 hover:bg-green-50" onClick={onRestorePet}>
         Restore Pet
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-xs border-cyan-400 text-cyan-600 hover:bg-cyan-50" onClick={onSimulateAccessoryPurchase}>
+        Simulate Buy Accessory
       </Button>
       {isFat && (
         <Button size="sm" variant="outline" className="h-7 text-xs border-red-400 text-red-600 hover:bg-red-50" onClick={onClearFat}>
@@ -905,6 +923,10 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const [pendingWish, setPendingWish] = useState('');
   const [showFatConfirm, setShowFatConfirm] = useState(false);
   const [isFatGenerating, setIsFatGenerating] = useState(false);
+  const [shopItems, setShopItems] = useState<PetShopItem[]>([]);
+  const [isLoadingShop, setIsLoadingShop] = useState(false);
+  const [isBuyingAccessory, setIsBuyingAccessory] = useState(false);
+  const [selectedAccessoryId, setSelectedAccessoryId] = useState<string | null>(null);
 
   const profileRef = doc(db, 'students', learnerId, 'petland', 'profile');
   const hasAppliedDecayRef = useRef(false);
@@ -961,6 +983,27 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       }
     }
   }, [profile]);
+
+  // Load Pet Shop items
+  useEffect(() => {
+    (async () => {
+      try {
+        setIsLoadingShop(true);
+        const items = await getPetShopItems();
+        setShopItems(items);
+      } catch (error) {
+        console.error('Error loading pet shop items:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load pet shop items',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingShop(false);
+      }
+    })();
+  }, []);
+
 
 
   // Live subscribe to vocabulary
@@ -1129,6 +1172,211 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     setIsRecoveryHatch(true);
   };
 
+  const handleBuyAccessory = async (accessoryId: string) => {
+    // Helper function to safely get price as number
+    const getPrice = (price: any): number => {
+      if (typeof price === 'number') return price;
+      if (price && typeof price === 'object' && 'gold' in price) {
+        // Old format: convert Dorks to a numeric value (for backward compatibility)
+        return (price.gold || 0) * 100 + (price.silver || 0) * 10 + (price.copper || 0);
+      }
+      return 0;
+    };
+
+    if (!profile || !profile.petImageUrl || !profile.petState || profile.petState !== 'hatched') {
+      toast({
+        title: 'Error',
+        description: 'Please hatch your pet first!',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const item = shopItems.find((i) => i.id === accessoryId);
+    if (!item) {
+      toast({
+        title: 'Error',
+        description: 'Accessory not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const itemPrice = getPrice(item.price);
+
+    if (profile.xp < itemPrice) {
+      toast({
+        title: 'Not enough XP',
+        description: `You need ${itemPrice} XP but only have ${profile.xp}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsBuyingAccessory(true);
+    setSelectedAccessoryId(accessoryId);
+
+    try {
+      // Compose the accessory onto the pet
+      const mergePrompt =
+        'Carefully composite the accessory onto the pet image. Match the Studio Ghibli art style of the pet. ' +
+        'Place the accessory naturally on the pet (e.g., on head, back, or held). ' +
+        'Blend shadows and lighting to match the pet\'s lighting. ' +
+        'Scale the accessory proportionally so it looks like it belongs. ' +
+        'Preserve the pet\'s character and expression. ' +
+        'The final image should look like the pet is wearing/holding this accessory.';
+      const compositeImageB64 = await composeAccessoryOnPet(
+        profile.petImageUrl,
+        item.imageUrl,
+        mergePrompt
+      );
+
+      // Upload composite to storage
+      const compositeUrl = await uploadBase64ToStorage(
+        compositeImageB64,
+        `pets/${learnerId}/active-pet-${accessoryId}.png`
+      );
+
+      // Update learner profile
+      const updatedProfile: Partial<PetlandProfile> = {
+        xp: profile.xp - itemPrice,
+        activePetImageUrl: compositeUrl,
+        ownedAccessories: [...(profile.ownedAccessories || []), accessoryId],
+      };
+
+      await updateDoc(profileRef, updatedProfile);
+      await decrementPetShopItemStock(accessoryId);
+
+      // Refresh shop items
+      const updatedItems = await getPetShopItems();
+      setShopItems(updatedItems);
+
+      toast({
+        title: 'Success!',
+        description: `You got ${item.name}!`,
+      });
+    } catch (error) {
+      console.error('Error buying accessory:', error);
+      toast({
+        title: 'Purchase failed',
+        description: 'Something went wrong. Dorks refunded.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsBuyingAccessory(false);
+      setSelectedAccessoryId(null);
+    }
+  };
+
+  const handleStoreYourBling = async () => {
+    if (!profile) return;
+    try {
+      await updateDoc(profileRef, {
+        activePetImageUrl: null,
+      });
+      toast({
+        title: 'Bling stored away!',
+        description: 'Your accessory has been removed (but you still own it)',
+      });
+    } catch (error) {
+      console.error('Error storing bling:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to store your accessory',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSimulateAccessoryPurchase = async () => {
+    if (!profile || !profile.petImageUrl || !profile.petState || profile.petState !== 'hatched') {
+      toast({
+        title: 'Error',
+        description: 'Pet must be hatched first!',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Find first available accessory with stock > 0
+    const availableItem = shopItems.find((item) => item.stock > 0);
+    if (!availableItem) {
+      toast({
+        title: 'Error',
+        description: 'No accessories available in shop',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsBuyingAccessory(true);
+    setSelectedAccessoryId(availableItem.id);
+
+    try {
+      // Compose the accessory onto the pet
+      const mergePrompt =
+        'Carefully composite the accessory onto the pet image. Match the Studio Ghibli art style of the pet. ' +
+        'Place the accessory naturally on the pet (e.g., on head, back, or held). ' +
+        'Blend shadows and lighting to match the pet\'s lighting. ' +
+        'Scale the accessory proportionally so it looks like it belongs. ' +
+        'Preserve the pet\'s character and expression. ' +
+        'The final image should look like the pet is wearing/holding this accessory.';
+      const compositeImageB64 = await composeAccessoryOnPet(
+        profile.petImageUrl,
+        availableItem.imageUrl,
+        mergePrompt
+      );
+
+      // Upload composite to storage
+      const compositeUrl = await uploadBase64ToStorage(
+        compositeImageB64,
+        `pets/${learnerId}/active-pet-${availableItem.id}.png`
+      );
+
+      // Update learner profile (no XP deduction in test mode)
+      const updatedProfile: Partial<PetlandProfile> = {
+        activePetImageUrl: compositeUrl,
+        ownedAccessories: [...(profile.ownedAccessories || []), availableItem.id],
+      };
+
+      try {
+        await updateDoc(profileRef, updatedProfile);
+        console.log('✅ Profile updated successfully');
+      } catch (err) {
+        console.error('❌ Profile update failed:', err);
+        throw err;
+      }
+
+      // Skip stock decrement for test mode - this is a simulation, not a real transaction
+      console.log('⏭️ Skipping stock decrement (test mode - simulated purchase only)');
+
+      try {
+        // Refresh shop items
+        const updatedItems = await getPetShopItems();
+        setShopItems(updatedItems);
+        console.log('✅ Shop items refreshed');
+      } catch (err) {
+        console.error('❌ Shop refresh failed:', err);
+        // Don't throw - this is just UI refresh
+      }
+
+      toast({
+        title: 'Test Success! 🎉',
+        description: `Simulated purchase of "${availableItem.name}" for Bob's pet!`,
+      });
+    } catch (error) {
+      console.error('Error in test accessory purchase:', error);
+      toast({
+        title: 'Test failed',
+        description: 'Error: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsBuyingAccessory(false);
+      setSelectedAccessoryId(null);
+    }
+  };
+
   const today = getTodayDateString();
   // Memory Match: new words only (never reviewed, requires 4+ for game to work)
   const unreviewedVocab = vocabulary.filter((w) => !w.lastReviewDate);
@@ -1220,6 +1468,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             onAccept={handleAcceptPet}
             onReject={handleRejectPet}
             onBuyEgg={handleBuyEgg}
+            onStoreYourBling={handleStoreYourBling}
           />
           {process.env.NODE_ENV === 'development' && learnerId === '1SLNgciKQlhKVzE9INPBROgBsEz2' && (
             <DevHpSetter
@@ -1267,6 +1516,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                     toast({ title: 'Error', description: 'Failed to restore pet: ' + err.message, variant: 'destructive' });
                   });
               }}
+              onSimulateAccessoryPurchase={handleSimulateAccessoryPurchase}
             />
           )}
         </TabsContent>
@@ -1325,8 +1575,109 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
 
         <TabsContent value="shop">
           <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              Pet Shop coming soon!
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5" />
+                Pet Shop
+              </CardTitle>
+              <CardDescription>
+                Browse and buy accessories for your pet using Dorks!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {isLoadingShop ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : shopItems.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  No accessories available yet. Check back soon!
+                </div>
+              ) : (
+                <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                  {shopItems.map((item) => {
+                    const itemPrice = typeof item.price === 'number' ? item.price : 0;
+                    const isOwned = profile.ownedAccessories?.includes(item.id);
+                    const isOutOfStock = item.stock <= 0;
+                    const canBuy = profile.xp >= itemPrice && !isOutOfStock;
+
+                    return (
+                      <Card key={item.id} className="flex flex-col overflow-hidden">
+                        <CardContent className="p-4 flex-1 flex flex-col">
+                          {/* Accessory Image */}
+                          <div className="relative w-full aspect-square mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                            {item.imageUrl ? (
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                fill
+                                className="object-contain p-2"
+                              />
+                            ) : (
+                              <div className="text-muted-foreground">No image</div>
+                            )}
+                          </div>
+
+                          {/* Name & Description */}
+                          <h3 className="font-semibold">{item.name}</h3>
+                          <p className="text-sm text-muted-foreground mb-3 flex-1">
+                            {item.description}
+                          </p>
+
+                          {/* Price & Stock */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-1">
+                              <Coins className="w-4 h-4 text-yellow-500" />
+                              <span className="font-semibold text-yellow-600">
+                                {itemPrice} XP
+                              </span>
+                            </div>
+                            <Badge
+                              variant={item.stock > 0 ? 'default' : 'destructive'}
+                            >
+                              {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
+                            </Badge>
+                          </div>
+
+                          {/* Status & Button */}
+                          {isOwned && (
+                            <Badge variant="outline" className="mb-2 w-full justify-center">
+                              ✓ Owned
+                            </Badge>
+                          )}
+
+                          <Button
+                            onClick={() => handleBuyAccessory(item.id)}
+                            disabled={
+                              !canBuy ||
+                              isBuyingAccessory ||
+                              !profile.petImageUrl ||
+                              !profile.petState ||
+                              profile.petState !== 'hatched'
+                            }
+                            className="w-full"
+                          >
+                            {isBuyingAccessory && selectedAccessoryId === item.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Buying...
+                              </>
+                            ) : !profile.petImageUrl ||
+                            !profile.petState ||
+                            profile.petState !== 'hatched'
+                              ? 'Hatch a pet first'
+                              : isOutOfStock
+                              ? 'Out of stock'
+                              : !canBuy
+                              ? `Need ${itemPrice - profile.xp} more XP`
+                              : 'Buy'}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

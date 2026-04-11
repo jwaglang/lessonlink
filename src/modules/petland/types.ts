@@ -18,7 +18,9 @@ export interface PetlandProfile {
   isFat?: boolean;              // true when overfed; clears automatically on next HP decay
   petState: PetState;
   petName: string;
-  petImageUrl?: string;
+  petImageUrl?: string;         // original pet image, immutable
+  activePetImageUrl?: string;   // current display image (with accessories), defaults to petImageUrl
+  ownedAccessories: string[];   // array of accessory IDs the learner owns
   inventory: string[];
   unlockedBrochures: string[];
   lastFeedback?: {
@@ -53,6 +55,17 @@ export interface ShopItem {
   type: 'accessory' | 'ticket';
   image: string;
   imageHint: string;
+}
+
+export interface PetShopItem {
+  id: string;
+  name: string;
+  description: string;        // original prompt used to generate the accessory
+  imageUrl: string;           // AI-generated accessory image
+  price: number;              // price in XP
+  stock: number;              // quantity available in shop
+  createdBy: string;          // teacher UID who created this
+  createdDate: string;        // ISO 8601 timestamp
 }
 
 export interface Brochure {
