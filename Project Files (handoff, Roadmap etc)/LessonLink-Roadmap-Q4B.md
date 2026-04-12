@@ -583,11 +583,43 @@ Teachers create lesson plans, homeworks, and assessments, then recreate them man
 
 ---
 
+### ✅ Phase 16: Petland Pet Shop Integration
+
+**Goal:** Build end-to-end pet shop system for Petland reward integration where teachers create Studio Ghibli-style accessories (via AI) that students purchase with XP and wear on their pets.
+
+**Completed:** April 12, 2026. All features end-to-end tested and production-ready.
+
+**Implementation Summary:**
+
+- ✅ Pet Shop core feature (create → browse → purchase → wear)
+- ✅ AI image generation via Gemini for accessory creation
+- ✅ Firebase Storage integration with **signed URL authentication**
+- ✅ Student shopping UI with responsive grid (2-5 columns)
+- ✅ Accessory wearing system with "Store your bling!" revert button
+- ✅ Delete functionality with confirmation dialog
+- ✅ Collection-based organization (e.g., "Magic and Spells" with Kiddoland styling)
+- ✅ Developer testing button ("Simulate Buy Accessory") for Max (ID: 1SLNgciKQlhKVzE9INPBROgBsEz2)
+- ✅ Auto-signing of unsigned Firebase URLs (30-day token validity)
+- ✅ API helper endpoints: `/api/petshop/sign-url`, `/api/petshop/list`, `/api/petshop/update-item-url`
+
+**Key Technical Achievement:**
+Discovered and resolved critical Firebase Storage authentication blocker: all public files require signed URLs with authentication tokens. Implemented auto-signing infrastructure so users provide simple HTTPS URLs and signing happens automatically on create-item submission.
+
+**Files Modified:**
+- `src/app/api/petshop/create-item/route.ts` — Auto-signing logic
+- `src/app/api/petshop/generate-accessory/route.ts` — Signed URL generation
+- `src/app/t-portal/petland/pet-shop/page.tsx` — Delete button, image fixes, Kiddoland styling
+- 4 new API helper endpoints created
+
+**Status:** Complete and production-ready. All three initial accessories working (2 AI-generated, 1 manual with auto-signing).
+
+---
+
 ### ⬜ Phase 17: Petland Integration & Holistic Progress System
 
 **Goal:** Integrate Petland reward system with LL to create a unified, real-time progress assessment that combines class participation, independent practice, formal assessments, and session attendance into one holistic view.
 
-**Context:** Petland is a separate Firebase app that tracks student engagement outside of class (vocabulary review games, RPG activities). It generates XP (time-based measure of practice hours) and HP (accuracy/health from games). LL tracks session attendance (credit system), formal assessments (evaluations), and homework. Together, these systems provide a complete picture of student progress toward the ~200 hours per level needed to pass a proficiency level.
+**Context:** Petland is a separate Firebase app that tracks student engagement outside of class (vocabulary review games, RPG activities). It generates XP (time-based measure of practice hours) and HP (accuracy/health from games). LL tracks session attendance (credit system), formal assessments (evaluations), and homework. Together, these systems provide a complete picture of student progress toward the ~200 hours per level needed to pass a proficiency level. Phase 16 (Pet Shop) is the UI component; Phase 17 builds the backend integration and unified progress calculation.
 
 #### Progress Model — Three Pillars
 

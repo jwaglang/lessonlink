@@ -46,6 +46,17 @@ const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 const OPEN_DELAY = 500;
 const CLOSE_DELAY = 300;
 
+/* ── Helper: Generate cascading delays with quadratic acceleration ── */
+const generateCascadeDelays = (numItems: number): number[] => {
+  const delays: number[] = [];
+  for (let i = 0; i < numItems; i++) {
+    // Quadratic formula: creates aggressive acceleration (ultra-fast)
+    const delay = Math.round(5 * i * i + 12 * i + 5);
+    delays.push(delay);
+  }
+  return delays;
+};
+
 const StudentAppSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
@@ -58,6 +69,13 @@ const StudentAppSidebar = () => {
   const openTimers = useRef<Record<string, NodeJS.Timeout>>({});
   const closeTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
+  // Cascading state for all submenu items
+  const [calendarVisibleItems, setCalendarVisibleItems] = useState(0);
+  const [chatVisibleItems, setChatVisibleItems] = useState(0);
+  const [coursesVisibleItems, setCoursesVisibleItems] = useState(0);
+  const [tutorsVisibleItems, setTutorsVisibleItems] = useState(0);
+  const cascadeTimersRef = useRef<NodeJS.Timeout[]>([]);
+
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   // Cleanup all timers on unmount
@@ -65,6 +83,7 @@ const StudentAppSidebar = () => {
     return () => {
       Object.values(openTimers.current).forEach(clearTimeout);
       Object.values(closeTimers.current).forEach(clearTimeout);
+      cascadeTimersRef.current.forEach(clearTimeout);
     };
   }, []);
 
@@ -105,6 +124,65 @@ const StudentAppSidebar = () => {
   const handleLogout = useCallback(async () => {
     try { await logOut(); router.push('/'); } catch (e) { console.error('Logout error:', e); }
   }, [router]);
+
+  // Cascade effect: manage all submenu item visibility
+  useEffect(() => {
+    // Clear any pending cascade timers
+    cascadeTimersRef.current.forEach(clearTimeout);
+    cascadeTimersRef.current = [];
+
+    // Calendar (Schedule, Availability) - 2 items
+    if (openMenus.has('calendar')) {
+      const delays = generateCascadeDelays(2);
+      delays.forEach((delay) => {
+        const timer = setTimeout(() => {
+          setCalendarVisibleItems((prev) => Math.min(prev + 1, 2));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setCalendarVisibleItems(0);
+    }
+
+    // Chat (Notifications, Communications) - 2 items
+    if (openMenus.has('chat')) {
+      const delays = generateCascadeDelays(2);
+      delays.forEach((delay) => {
+        const timer = setTimeout(() => {
+          setChatVisibleItems((prev) => Math.min(prev + 1, 2));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setChatVisibleItems(0);
+    }
+
+    // Courses (My Units, My Packages, My Balance) - 3 items
+    if (openMenus.has('courses')) {
+      const delays = generateCascadeDelays(3);
+      delays.forEach((delay) => {
+        const timer = setTimeout(() => {
+          setCoursesVisibleItems((prev) => Math.min(prev + 1, 3));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setCoursesVisibleItems(0);
+    }
+
+    // Tutors (My Tutor, Feedback, Evaluations, Homework) - 4 items
+    if (openMenus.has('tutors')) {
+      const delays = generateCascadeDelays(4);
+      delays.forEach((delay) => {
+        const timer = setTimeout(() => {
+          setTutorsVisibleItems((prev) => Math.min(prev + 1, 4));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setTutorsVisibleItems(0);
+    }
+  }, [openMenus]);
 
   return (
     <>
@@ -149,22 +227,26 @@ const StudentAppSidebar = () => {
 
             {isOpen('calendar') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/s-portal/calendar?tab=schedule" className="flex items-center gap-2">
-                      <CalendarClock className="h-3.5 w-3.5" />
-                      Schedule
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/s-portal/calendar?tab=availability" className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5" />
-                      Availability
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {calendarVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/s-portal/calendar?tab=schedule" className="flex items-center gap-2">
+                        <CalendarClock className="h-3.5 w-3.5" />
+                        Schedule
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {calendarVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/s-portal/calendar?tab=availability" className="flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5" />
+                        Availability
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
@@ -189,22 +271,26 @@ const StudentAppSidebar = () => {
 
             {isOpen('chat') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/s-portal/chat?tab=notifications" className="flex items-center gap-2">
-                      <Bell className="h-3.5 w-3.5" />
-                      Notifications
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/s-portal/chat?tab=communications" className="flex items-center gap-2">
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      Communications
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {chatVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/s-portal/chat?tab=notifications" className="flex items-center gap-2">
+                        <Bell className="h-3.5 w-3.5" />
+                        Notifications
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {chatVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/s-portal/chat?tab=communications" className="flex items-center gap-2">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Communications
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
@@ -234,30 +320,36 @@ const StudentAppSidebar = () => {
 
             {isOpen('courses') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/units'}>
-                    <Link href="/s-portal/units" className="flex items-center gap-2">
-                      <BookOpen className="h-3.5 w-3.5" />
-                      My Units
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/packages'}>
-                    <Link href="/s-portal/packages" className="flex items-center gap-2">
-                      <CreditCard className="h-3.5 w-3.5" />
-                      My Packages
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/balance'}>
-                    <Link href="/s-portal/balance" className="flex items-center gap-2">
-                      <Wallet className="h-3.5 w-3.5" />
-                      My Balance
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {coursesVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/units'}>
+                      <Link href="/s-portal/units" className="flex items-center gap-2">
+                        <BookOpen className="h-3.5 w-3.5" />
+                        My Units
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {coursesVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/packages'}>
+                      <Link href="/s-portal/packages" className="flex items-center gap-2">
+                        <CreditCard className="h-3.5 w-3.5" />
+                        My Packages
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {coursesVisibleItems > 2 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/balance'}>
+                      <Link href="/s-portal/balance" className="flex items-center gap-2">
+                        <Wallet className="h-3.5 w-3.5" />
+                        My Balance
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
@@ -298,38 +390,46 @@ const StudentAppSidebar = () => {
 
             {isOpen('tutors') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/tutors/my-tutor'}>
-                    <Link href="/s-portal/tutors/my-tutor" className="flex items-center gap-2">
-                      <GraduationCap className="h-3.5 w-3.5" />
-                      My Tutor
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/feedback'}>
-                    <Link href="/s-portal/feedback" className="flex items-center gap-2">
-                      <Library className="h-3.5 w-3.5" />
-                      Feedback
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/evaluations'}>
-                    <Link href="/s-portal/evaluations" className="flex items-center gap-2">
-                      <ClipboardCheck className="h-3.5 w-3.5" />
-                      Evaluations
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/homework'}>
-                    <Link href="/s-portal/homework" className="flex items-center gap-2">
-                      <BookOpen className="h-3.5 w-3.5" />
-                      Homework
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {tutorsVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/tutors/my-tutor'}>
+                      <Link href="/s-portal/tutors/my-tutor" className="flex items-center gap-2">
+                        <GraduationCap className="h-3.5 w-3.5" />
+                        My Tutor
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {tutorsVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/feedback'}>
+                      <Link href="/s-portal/feedback" className="flex items-center gap-2">
+                        <Library className="h-3.5 w-3.5" />
+                        Feedback
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {tutorsVisibleItems > 2 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/evaluations'}>
+                      <Link href="/s-portal/evaluations" className="flex items-center gap-2">
+                        <ClipboardCheck className="h-3.5 w-3.5" />
+                        Evaluations
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {tutorsVisibleItems > 3 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/homework'}>
+                      <Link href="/s-portal/homework" className="flex items-center gap-2">
+                        <BookOpen className="h-3.5 w-3.5" />
+                        Homework
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>

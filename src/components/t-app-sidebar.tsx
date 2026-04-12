@@ -62,6 +62,17 @@ const OPEN_DELAY = 500;       // main menu hover → open
 const SUB_OPEN_DELAY = 300;   // submenu hover → cascade open
 const CLOSE_DELAY = 300;      // mouse-leave → close
 
+/* ── Helper: Generate cascading delays with quadratic acceleration ── */
+const generateCascadeDelays = (numItems: number): number[] => {
+  const delays: number[] = [];
+  for (let i = 0; i < numItems; i++) {
+    // Quadratic formula: creates aggressive acceleration (ultra-fast)
+    const delay = Math.round(5 * i * i + 12 * i + 5);
+    delays.push(delay);
+  }
+  return delays;
+};
+
 const AppSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
@@ -81,6 +92,14 @@ const AppSidebar = () => {
   const [loadingCourses, setLoadingCourses] = useState<Set<string>>(new Set());
   const [loadingLevels, setLoadingLevels] = useState<Set<string>>(new Set());
 
+  // Cascading state for all submenu items
+  const [calendarVisibleItems, setCalendarVisibleItems] = useState(0);
+  const [chatVisibleItems, setChatVisibleItems] = useState(0);
+  const [learnersVisibleItems, setLearnersVisibleItems] = useState(0);
+  const [petlandVisibleItems, setPetlandVisibleItems] = useState(0);
+  const [coursesVisibleCount, setCoursesVisibleCount] = useState(0);
+  const cascadeTimersRef = useRef<NodeJS.Timeout[]>([]);
+
   const adminEmail = useMemo(() => user?.email === 'jwag.lang@gmail.com', [user]);
 
   useEffect(() => { setIsAdmin(adminEmail); }, [adminEmail]);
@@ -90,8 +109,81 @@ const AppSidebar = () => {
     return () => {
       Object.values(openTimers.current).forEach(clearTimeout);
       Object.values(closeTimers.current).forEach(clearTimeout);
+      cascadeTimersRef.current.forEach(clearTimeout);
     };
   }, []);
+
+  // Cascade effect: manage all submenu item visibility
+  useEffect(() => {
+    // Clear any pending cascade timers
+    cascadeTimersRef.current.forEach(clearTimeout);
+    cascadeTimersRef.current = [];
+
+    // Calendar (Schedule, Availability) - 2 items
+    if (openMenus.has('calendar')) {
+      const delays = generateCascadeDelays(2);
+      delays.forEach((delay, index) => {
+        const timer = setTimeout(() => {
+          setCalendarVisibleItems((prev) => Math.min(prev + 1, 2));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setCalendarVisibleItems(0);
+    }
+
+    // Chat (Notifications, Communications) - 2 items
+    if (openMenus.has('chat')) {
+      const delays = generateCascadeDelays(2);
+      delays.forEach((delay, index) => {
+        const timer = setTimeout(() => {
+          setChatVisibleItems((prev) => Math.min(prev + 1, 2));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setChatVisibleItems(0);
+    }
+
+    // Courses - cascade based on number of courses
+    if (openMenus.has('courses') && courses.length > 0) {
+      const delays = generateCascadeDelays(courses.length);
+      delays.forEach((delay, index) => {
+        const timer = setTimeout(() => {
+          setCoursesVisibleCount((prev) => Math.min(prev + 1, courses.length));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setCoursesVisibleCount(0);
+    }
+
+    // Learners (Roster, Packages, Approvals, Reports) - 4 items
+    if (openMenus.has('learners')) {
+      const delays = generateCascadeDelays(4);
+      delays.forEach((delay, index) => {
+        const timer = setTimeout(() => {
+          setLearnersVisibleItems((prev) => Math.min(prev + 1, 4));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setLearnersVisibleItems(0);
+    }
+
+    // Petland (4 items)
+    if (openMenus.has('petland')) {
+      const delays = generateCascadeDelays(4);
+      delays.forEach((delay, index) => {
+        const timer = setTimeout(() => {
+          setPetlandVisibleItems((prev) => Math.min(prev + 1, 4));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setPetlandVisibleItems(0);
+    }
+  }, [openMenus, courses]);
 
   /* ── Hover helpers ── */
 
@@ -245,25 +337,29 @@ const AppSidebar = () => {
 
             {isOpen('calendar') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={pathname === '/t-portal/calendar' && !pathname.includes('tab=availability')}
-                  >
-                    <Link href="/t-portal/calendar?tab=schedule" className="flex items-center gap-2">
-                      <CalendarClock className="h-3.5 w-3.5" />
-                      Schedule
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/t-portal/calendar?tab=availability" className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5" />
-                      Availability
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {calendarVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={pathname === '/t-portal/calendar' && !pathname.includes('tab=availability')}
+                    >
+                      <Link href="/t-portal/calendar?tab=schedule" className="flex items-center gap-2">
+                        <CalendarClock className="h-3.5 w-3.5" />
+                        Schedule
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {calendarVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/t-portal/calendar?tab=availability" className="flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5" />
+                        Availability
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
@@ -288,22 +384,26 @@ const AppSidebar = () => {
 
             {isOpen('chat') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/t-portal/chat?tab=notifications" className="flex items-center gap-2">
-                      <Bell className="h-3.5 w-3.5" />
-                      Notifications
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild>
-                    <Link href="/t-portal/chat?tab=communications" className="flex items-center gap-2">
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      Communications
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {chatVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/t-portal/chat?tab=notifications" className="flex items-center gap-2">
+                        <Bell className="h-3.5 w-3.5" />
+                        Notifications
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {chatVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link href="/t-portal/chat?tab=communications" className="flex items-center gap-2">
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Communications
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
@@ -328,99 +428,95 @@ const AppSidebar = () => {
 
             {isOpen('courses') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/courses'}>
-                    <Link href="/t-portal/courses">All Courses</Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-
-                {courses.map((course) => (
-                  <div
-                    key={course.id}
-                    onMouseEnter={() => {
-                      cancelClose('courses');
-                      scheduleOpen(`course-${course.id}`, SUB_OPEN_DELAY);
-                      ensureLevelsLoaded(course.id);
-                    }}
-                    onMouseLeave={() => {
-                      scheduleClose(`course-${course.id}`);
-                    }}
-                  >
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        asChild
-                        isActive={pathname.includes(`/courses/${course.id}/`)}
-                      >
-                        <Link
-                          href={`/t-portal/courses/${course.id}/levels`}
-                          className="flex items-center justify-between w-full"
+                {courses.map((course, index) => (
+                  coursesVisibleCount > index && (
+                    <div
+                      key={course.id}
+                      onMouseEnter={() => {
+                        cancelClose('courses');
+                        scheduleOpen(`course-${course.id}`, SUB_OPEN_DELAY);
+                        ensureLevelsLoaded(course.id);
+                      }}
+                      onMouseLeave={() => {
+                        scheduleClose(`course-${course.id}`);
+                      }}
+                    >
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname.includes(`/courses/${course.id}/`)}
                         >
-                          <span className="truncate">{course.title}</span>
-                          {loadingCourses.has(course.id) && (
-                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-1 flex-shrink-0" />
-                          )}
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-
-                    {/* Cascade: levels */}
-                    {isOpen(`course-${course.id}`) && course.levels && course.levels.length > 0 && (
-                      <SidebarMenuSub>
-                        {course.levels.map((level) => (
-                          <div
-                            key={level.id}
-                            onMouseEnter={() => {
-                              cancelClose(`course-${course.id}`);
-                              cancelClose('courses');
-                              scheduleOpen(`level-${level.id}`, SUB_OPEN_DELAY);
-                              ensureUnitsLoaded(course.id, level.id);
-                            }}
-                            onMouseLeave={() => {
-                              scheduleClose(`level-${level.id}`);
-                            }}
+                          <Link
+                            href={`/t-portal/courses/${course.id}/levels`}
+                            className="flex items-center justify-between w-full"
                           >
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={pathname.includes(`/levels/${level.id}/`)}
-                              >
-                                <Link
-                                  href={`/t-portal/courses/${course.id}/levels/${level.id}/units`}
-                                  className="flex items-center justify-between w-full text-xs"
-                                >
-                                  <span className="truncate">{level.title}</span>
-                                  {loadingLevels.has(level.id) && (
-                                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-1 flex-shrink-0" />
-                                  )}
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-
-                            {/* Cascade: units */}
-                            {isOpen(`level-${level.id}`) && level.units && level.units.length > 0 && (
-                              <SidebarMenuSub>
-                                {level.units.map((unit) => (
-                                  <SidebarMenuSubItem key={unit.id}>
-                                    <SidebarMenuSubButton
-                                      asChild
-                                      isActive={pathname.includes(`/units/${unit.id}/`)}
-                                    >
-                                      <Link
-                                        href={`/t-portal/courses/${course.id}/levels/${level.id}/units/${unit.id}/sessions`}
-                                        className="text-xs"
-                                      >
-                                        {unit.title}
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
+                            <span className="truncate">{course.title}</span>
+                            {loadingCourses.has(course.id) && (
+                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-1 flex-shrink-0" />
                             )}
-                          </div>
-                        ))}
-                      </SidebarMenuSub>
-                    )}
-                  </div>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+
+                      {/* Cascade: levels */}
+                      {isOpen(`course-${course.id}`) && course.levels && course.levels.length > 0 && (
+                        <SidebarMenuSub>
+                          {course.levels.map((level) => (
+                            <div
+                              key={level.id}
+                              onMouseEnter={() => {
+                                cancelClose(`course-${course.id}`);
+                                cancelClose('courses');
+                                scheduleOpen(`level-${level.id}`, SUB_OPEN_DELAY);
+                                ensureUnitsLoaded(course.id, level.id);
+                              }}
+                              onMouseLeave={() => {
+                                scheduleClose(`level-${level.id}`);
+                              }}
+                            >
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname.includes(`/levels/${level.id}/`)}
+                                >
+                                  <Link
+                                    href={`/t-portal/courses/${course.id}/levels/${level.id}/units`}
+                                    className="flex items-center justify-between w-full text-xs"
+                                  >
+                                    <span className="truncate">{level.title}</span>
+                                    {loadingLevels.has(level.id) && (
+                                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent ml-1 flex-shrink-0" />
+                                    )}
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+
+                              {/* Cascade: units */}
+                              {isOpen(`level-${level.id}`) && level.units && level.units.length > 0 && (
+                                <SidebarMenuSub>
+                                  {level.units.map((unit) => (
+                                    <SidebarMenuSubItem key={unit.id}>
+                                      <SidebarMenuSubButton
+                                        asChild
+                                        isActive={pathname.includes(`/units/${unit.id}/`)}
+                                      >
+                                        <Link
+                                          href={`/t-portal/courses/${course.id}/levels/${level.id}/units/${unit.id}/sessions`}
+                                          className="text-xs"
+                                        >
+                                          {unit.title}
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              )}
+                            </div>
+                          ))}
+                        </SidebarMenuSub>
+                      )}
+                    </div>
+                  )
                 ))}
 
                 {courses.length === 0 && (
@@ -457,49 +553,57 @@ const AppSidebar = () => {
 
             {isOpen('learners') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname.startsWith('/t-portal/students')}>
-                    <Link href="/t-portal/students" className="flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5" />
-                      Learner Roster
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/packages'}>
-                    <Link href="/t-portal/packages" className="flex items-center gap-2">
-                      <CreditCard className="h-3.5 w-3.5" />
-                      Learner Packages
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/approvals'}>
-                    <Link href="/t-portal/approvals" className="flex items-center justify-between w-full">
-                      <span className="flex items-center gap-2">
-                        <ClipboardCheck className="h-3.5 w-3.5" />
-                        Approvals
-                      </span>
-                      {pendingCount > 0 && (
-                        <Badge
-                          variant="destructive"
-                          className="h-5 w-5 p-0 flex items-center justify-center text-xs min-w-5"
-                          aria-label={`${pendingCount} pending approvals`}
-                        >
-                          {pendingCount}
-                        </Badge>
-                      )}
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/reports'}>
-                    <Link href="/t-portal/reports" className="flex items-center gap-2">
-                      <BarChart2 className="h-3.5 w-3.5" />
-                      Reports
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {learnersVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname.startsWith('/t-portal/students')}>
+                      <Link href="/t-portal/students" className="flex items-center gap-2">
+                        <Users className="h-3.5 w-3.5" />
+                        Learner Roster
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {learnersVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/packages'}>
+                      <Link href="/t-portal/packages" className="flex items-center gap-2">
+                        <CreditCard className="h-3.5 w-3.5" />
+                        Learner Packages
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {learnersVisibleItems > 2 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/approvals'}>
+                      <Link href="/t-portal/approvals" className="flex items-center justify-between w-full">
+                        <span className="flex items-center gap-2">
+                          <ClipboardCheck className="h-3.5 w-3.5" />
+                          Approvals
+                        </span>
+                        {pendingCount > 0 && (
+                          <Badge
+                            variant="destructive"
+                            className="h-5 w-5 p-0 flex items-center justify-center text-xs min-w-5"
+                            aria-label={`${pendingCount} pending approvals`}
+                          >
+                            {pendingCount}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {learnersVisibleItems > 3 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/reports'}>
+                      <Link href="/t-portal/reports" className="flex items-center gap-2">
+                        <BarChart2 className="h-3.5 w-3.5" />
+                        Reports
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
@@ -524,34 +628,42 @@ const AppSidebar = () => {
 
             {isOpen('petland') && (
               <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/create-accessory'}>
-                    <Link href="/t-portal/petland/create-accessory" className="flex items-center gap-2">
-                      <span>Create Accessory for Pet Shop</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/refine-composite'}>
-                    <Link href="/t-portal/petland/refine-composite" className="flex items-center gap-2">
-                      <span>Refine Accessory Composite</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/browse-pet-status'}>
-                    <Link href="/t-portal/petland/browse-pet-status" className="flex items-center gap-2">
-                      <span>Browse Pet Status</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/pet-shop'}>
-                    <Link href="/t-portal/petland/pet-shop" className="flex items-center gap-2">
-                      <span>Browse Pet Shop</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
+                {petlandVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/create-accessory'}>
+                      <Link href="/t-portal/petland/create-accessory" className="flex items-center gap-2">
+                        <span>Create Accessory for Pet Shop</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {petlandVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/refine-composite'}>
+                      <Link href="/t-portal/petland/refine-composite" className="flex items-center gap-2">
+                        <span>Refine Accessory Composite</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {petlandVisibleItems > 2 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/browse-pet-status'}>
+                      <Link href="/t-portal/petland/browse-pet-status" className="flex items-center gap-2">
+                        <span>Browse Pet Status</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {petlandVisibleItems > 3 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/pet-shop'}>
+                      <Link href="/t-portal/petland/pet-shop" className="flex items-center gap-2">
+                        <span>Browse Pet Shop</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
               </SidebarMenuSub>
             )}
           </div>
