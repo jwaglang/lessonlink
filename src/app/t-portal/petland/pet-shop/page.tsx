@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { PetShopItem } from '@/modules/petland/types';
-import { getPetShopItems, updatePetShopItem } from '@/lib/firestore';
+import { getPetShopItems, updatePetShopItem, deletePetShopItem } from '@/lib/firestore';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import {
 import { ShoppingBag, Loader2, ChevronDown, ChevronRight, Edit2, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function PetShopPage() {
   const { toast } = useToast();
@@ -37,6 +38,7 @@ export default function PetShopPage() {
   const [showNewCollectionDialog, setShowNewCollectionDialog] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemData, setEditingItemData] = useState<Partial<PetShopItem>>({});
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadItems() {
@@ -125,6 +127,33 @@ export default function PetShopPage() {
     }
   };
 
+  const handleDeleteItem = async () => {
+    if (!deletingItemId) return;
+    
+    try {
+      const itemToDelete = items.find(i => i.id === deletingItemId);
+      if (!itemToDelete) return;
+
+      await deletePetShopItem(deletingItemId);
+      
+      // Update local state
+      setItems(items.filter(i => i.id !== deletingItemId));
+
+      toast({
+        title: 'Item deleted',
+        description: `"${itemToDelete.name}" has been removed from the pet shop.`,
+      });
+
+      setDeletingItemId(null);
+      setEditingItemId(null);
+      setEditingItemData({});
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to delete item';
+      console.error('Failed to delete item:', error);
+      toast({ title: 'Error deleting item', description: errorMsg, variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-16 gap-2">
@@ -191,6 +220,26 @@ export default function PetShopPage() {
               Cancel
             </Button>
             <Button onClick={handleCreateCollection}>Create Collection</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deletingItemId} onOpenChange={(open) => !open && setDeletingItemId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Accessory?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. The accessory will be permanently removed from the pet shop.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingItemId(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteItem}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -271,9 +320,12 @@ export default function PetShopPage() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex gap-2">
               <Button variant="outline" onClick={() => setEditingItemId(null)}>
                 Cancel
+              </Button>
+              <Button variant="destructive" onClick={() => setDeletingItemId(editingItemId)}>
+                Delete
               </Button>
               <Button onClick={handleSaveItem}>
                 Save Changes
@@ -300,15 +352,27 @@ export default function PetShopPage() {
               {/* Collection Header - Clickable */}
               <button
                 onClick={() => toggleCollection(collectionName)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors text-left"
+                className={cn(
+                  "w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left font-bold",
+                  collectionName === 'Magic and Spells'
+                    ? 'bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 text-white border-purple-600 shadow-lg hover:shadow-xl hover:from-purple-500 hover:via-pink-400 hover:to-purple-600'
+                    : 'border-border hover:bg-muted/50'
+                )}
               >
                 {isExpanded ? (
                   <ChevronDown className="h-5 w-5 flex-shrink-0" />
                 ) : (
                   <ChevronRight className="h-5 w-5 flex-shrink-0" />
                 )}
-                <h2 className="text-xl font-bold flex-1">{collectionName}</h2>
-                <Badge variant="secondary">{collectionItems.length} items</Badge>
+                <h2 className="text-xl flex-1">{collectionName}</h2>
+                <Badge 
+                  variant={collectionName === 'Magic and Spells' ? 'default' : 'secondary'}
+                  className={cn(
+                    collectionName === 'Magic and Spells' && 'bg-white text-purple-600 font-bold'
+                  )}
+                >
+                  {collectionItems.length} items
+                </Badge>
               </button>
 
               {/* Collection Items - Collapsible */}

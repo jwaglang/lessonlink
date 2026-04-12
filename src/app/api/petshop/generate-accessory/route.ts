@@ -106,9 +106,14 @@ async function uploadImageToStorage(
       },
     });
 
-    // Get the public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/vocabulary/shop/${fileName}`;
+    // Get the signed download URL (valid for 1 hour)
+    const response = await file.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + 60 * 60 * 1000, // 1 hour
+    });
 
+    const publicUrl = response[0];
     console.log(`[generateAccessory] Image uploaded: ${publicUrl}`);
     return publicUrl;
   } catch (error) {
