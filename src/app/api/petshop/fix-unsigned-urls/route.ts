@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     console.log('[fix-unsigned-urls] Using app:', app.name);
     
     const storage = getStorage(app);
-    console.log('[fix-unsigned-urls] Storage bucket:', process.env.FIREBASE_STORAGE_BUCKET);
+    console.log('[fix-unsigned-urls] Storage bucket:', process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
     const bucket = storage.bucket();
     
     // Get all pet shop items

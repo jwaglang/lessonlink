@@ -31,9 +31,10 @@ import { cn } from '@/lib/utils';
 export default function PetShopPage() {
   const { toast } = useToast();
   const [items, setItems] = useState<PetShopItem[]>([]);
+  const [allCollections, setAllCollections] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set(['Magic and Spells', 'Wizard Collection'])); // Start some expanded
+  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set(['Magic and Spells', 'Wizard Collection'])); 
   const [newCollectionName, setNewCollectionName] = useState('');
   const [showNewCollectionDialog, setShowNewCollectionDialog] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -41,21 +42,30 @@ export default function PetShopPage() {
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadItems() {
+    async function loadData() {
       try {
         setError(null);
-        const allItems = await getPetShopItems();
-        setItems(allItems || []);
+        const [itemsData, collectionsResponse] = await Promise.all([
+          getPetShopItems(),
+          fetch('/api/petshop/collections'),
+        ]);
+        
+        setItems(itemsData || []);
+        
+        if (collectionsResponse.ok) {
+          const collectionsData = await collectionsResponse.json();
+          setAllCollections(collectionsData.collections || []);
+        }
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Failed to load pet shop items';
-        console.error('Failed to load pet shop items:', error);
+        const errorMsg = error instanceof Error ? error.message : 'Failed to load pet shop data';
+        console.error('Failed to load pet shop data:', error);
         setError(errorMsg);
         setItems([]);
       } finally {
         setLoading(false);
       }
     }
-    loadItems();
+    loadData();
   }, []);
 
   // Group items by collection
@@ -84,11 +94,39 @@ export default function PetShopPage() {
       return;
     }
     
-    // Just add to expanded collections and clear form
-    setExpandedCollections(new Set([...expandedCollections, newCollectionName]));
-    setNewCollectionName('');
-    setShowNewCollectionDialog(false);
-    toast({ title: `Created collection "${newCollectionName}"`, description: 'Add items to this collection by moving them.' });
+    try {
+      const response = await fetch('/api/petshop/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCollectionName }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create collection');
+      }
+
+      // Add to expanded collections
+      setExpandedCollections(new Set([...expandedCollections, newCollectionName]));
+      
+      // Reload collections to show new one
+      const collectionsResponse = await fetch('/api/petshop/collections');
+      if (collectionsResponse.ok) {
+        const collectionsData = await collectionsResponse.json();
+        setAllCollections(collectionsData.collections || []);
+      }
+      
+      setNewCollectionName('');
+      setShowNewCollectionDialog(false);
+      
+      toast({ title: 'Collection created!', description: `"${newCollectionName}" is now available.` });
+    } catch (error) {
+      toast({ 
+        title: 'Error', 
+        description: error instanceof Error ? error.message : 'Failed to create collection',
+        variant: 'destructive' 
+      });
+    }
   };
 
   const handleSaveItem = async () => {
@@ -180,8 +218,6 @@ export default function PetShopPage() {
       </div>
     );
   }
-
-  const allCollections = Array.from(new Set([...collections.map(([name]) => name)])).sort();
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-8">
@@ -354,7 +390,7 @@ export default function PetShopPage() {
                 onClick={() => toggleCollection(collectionName)}
                 className={cn(
                   "w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left font-bold",
-                  collectionName === 'Magic and Spells'
+                  collectionName !== 'Uncategorized'
                     ? 'bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 text-white border-purple-600 shadow-lg hover:shadow-xl hover:from-purple-500 hover:via-pink-400 hover:to-purple-600'
                     : 'border-border hover:bg-muted/50'
                 )}
@@ -366,9 +402,9 @@ export default function PetShopPage() {
                 )}
                 <h2 className="text-xl flex-1">{collectionName}</h2>
                 <Badge 
-                  variant={collectionName === 'Magic and Spells' ? 'default' : 'secondary'}
+                  variant={collectionName !== 'Uncategorized' ? 'default' : 'secondary'}
                   className={cn(
-                    collectionName === 'Magic and Spells' && 'bg-white text-purple-600 font-bold'
+                    collectionName !== 'Uncategorized' && 'bg-white text-purple-600 font-bold'
                   )}
                 >
                   {collectionItems.length} items

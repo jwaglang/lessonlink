@@ -32,6 +32,9 @@ import {
   Clock,
   CalendarClock,
   PawPrint,
+  Wand2,
+  Eye,
+  ShoppingBag,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
@@ -632,7 +635,8 @@ const AppSidebar = () => {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/create-accessory'}>
                       <Link href="/t-portal/petland/create-accessory" className="flex items-center gap-2">
-                        <span>Create Accessory for Pet Shop</span>
+                        <Wand2 className="h-3.5 w-3.5" />
+                        <span>Create Accessories</span>
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
@@ -641,7 +645,8 @@ const AppSidebar = () => {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/refine-composite'}>
                       <Link href="/t-portal/petland/refine-composite" className="flex items-center gap-2">
-                        <span>Refine Accessory Composite</span>
+                        <PawPrint className="h-3.5 w-3.5" />
+                        <span>Refine Accessories</span>
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
@@ -650,6 +655,7 @@ const AppSidebar = () => {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/browse-pet-status'}>
                       <Link href="/t-portal/petland/browse-pet-status" className="flex items-center gap-2">
+                        <Eye className="h-3.5 w-3.5" />
                         <span>Browse Pet Status</span>
                       </Link>
                     </SidebarMenuSubButton>
@@ -659,6 +665,7 @@ const AppSidebar = () => {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/petland/pet-shop'}>
                       <Link href="/t-portal/petland/pet-shop" className="flex items-center gap-2">
+                        <ShoppingBag className="h-3.5 w-3.5" />
                         <span>Browse Pet Shop</span>
                       </Link>
                     </SidebarMenuSubButton>

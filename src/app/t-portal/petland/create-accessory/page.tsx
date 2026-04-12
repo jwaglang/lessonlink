@@ -1,11 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getPetShopItems } from '@/lib/firestore';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Wand2, Loader2 } from 'lucide-react';
 
@@ -15,6 +32,14 @@ export default function CreateAccessoryPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('ai');
   const [loading, setLoading] = useState(false);
+  const [collections, setCollections] = useState<string[]>([]);
+  const [loadingCollections, setLoadingCollections] = useState(true);
+  const [showNewCollectionDialog, setShowNewCollectionDialog] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [newCollectionTab, setNewCollectionTab] = useState<'ai' | 'manual'>('ai');
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
+  const [pendingAiData, setPendingAiData] = useState<typeof aiFormData | null>(null);
   
   const [aiFormData, setAiFormData] = useState({
     prompt: '',
@@ -32,6 +57,90 @@ export default function CreateAccessoryPage() {
     stock: '',
     collection: '',
   });
+
+  // Fetch existing collections on mount
+  useEffect(() => {
+    async function loadCollections() {
+      try {
+        const response = await fetch('/api/petshop/collections');
+        if (!response.ok) throw new Error('Failed to load collections');
+        
+        const data = await response.json();
+        setCollections(data.collections || []);
+      } catch (error) {
+        console.error('Failed to load collections:', error);
+      } finally {
+        setLoadingCollections(false);
+      }
+    }
+    loadCollections();
+  }, []);
+
+  const handleCreateNewCollection = async () => {
+    if (!newCollectionName.trim()) {
+      toast({
+        title: 'Please enter a collection name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (collections.includes(newCollectionName)) {
+      toast({
+        title: 'Collection already exists',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Create collection via API
+      const response = await fetch('/api/petshop/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCollectionName.trim() }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create collection');
+      }
+
+      // Reload collections from API
+      const collectionsResponse = await fetch('/api/petshop/collections');
+      if (!collectionsResponse.ok) throw new Error('Failed to reload collections');
+      
+      const data = await collectionsResponse.json();
+      setCollections(data.collections || []);
+
+      // Select the new collection in the current form
+      if (newCollectionTab === 'ai') {
+        setAiFormData((prev) => ({
+          ...prev,
+          collection: newCollectionName,
+        }));
+      } else {
+        setManualFormData((prev) => ({
+          ...prev,
+          collection: newCollectionName,
+        }));
+      }
+
+      setNewCollectionName('');
+      setShowNewCollectionDialog(false);
+      toast({
+        title: 'Success',
+        description: `Collection "${newCollectionName}" created and selected.`,
+      });
+    } catch (error) {
+      console.error('Failed to create collection:', error);
+      toast({
+        title: 'Error creating collection',
+        description: error instanceof Error ? error.message : 'Failed to create collection',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleAiInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -67,25 +176,62 @@ export default function CreateAccessoryPage() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/petshop/generate-accessory', {
+      // First, generate and upload the image preview
+      const previewResponse = await fetch('/api/petshop/generate-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: aiFormData.prompt,
-          name: aiFormData.name,
-          price: parseInt(aiFormData.price),
-          stock: parseInt(aiFormData.stock) || 0,
-          collection: aiFormData.collection,
+        }),
+      });
+
+      if (!previewResponse.ok) {
+        throw new Error('Failed to generate preview');
+      }
+
+      const previewData = await previewResponse.json();
+      
+      // Show the preview modal
+      setPreviewImageUrl(previewData.imageUrl);
+      setPendingAiData({ ...aiFormData });
+      setShowPreview(true);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to generate preview. Try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmPreview = async () => {
+    if (!pendingAiData || !previewImageUrl) return;
+
+    setLoading(true);
+    try {
+      // Now save to Firestore with the image URL
+      const response = await fetch('/api/petshop/create-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: pendingAiData.name,
+          description: '',
+          imageUrl: previewImageUrl,
+          price: parseInt(pendingAiData.price),
+          stock: parseInt(pendingAiData.stock) || 0,
+          collection: pendingAiData.collection,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate accessory');
+        throw new Error('Failed to save accessory');
       }
 
       toast({
         title: 'Success!',
-        description: 'Accessory generated and added to pet shop.',
+        description: 'Accessory added to pet shop.',
       });
 
       setAiFormData({
@@ -95,10 +241,13 @@ export default function CreateAccessoryPage() {
         stock: '',
         collection: '',
       });
+      setPendingAiData(null);
+      setPreviewImageUrl('');
+      setShowPreview(false);
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to generate accessory. Try again.',
+        description: 'Failed to save accessory. Try again.',
         variant: 'destructive',
       });
     } finally {
@@ -245,13 +394,46 @@ export default function CreateAccessoryPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Collection *</label>
-                <Input
-                  name="collection"
-                  value={aiFormData.collection}
-                  onChange={handleAiInputChange}
-                  placeholder="e.g., Magic and Spells"
-                  required
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={aiFormData.collection}
+                      onValueChange={(value) => {
+                        if (value === '__create_new__') {
+                          setNewCollectionTab('ai');
+                          setShowNewCollectionDialog(true);
+                        } else {
+                          setAiFormData((prev) => ({
+                            ...prev,
+                            collection: value,
+                          }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a collection..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingCollections ? (
+                          <SelectItem value="__loading__" disabled>
+                            Loading collections...
+                          </SelectItem>
+                        ) : (
+                          <>
+                            {collections.map((collection) => (
+                              <SelectItem key={collection} value={collection}>
+                                {collection}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__create_new__" className="font-semibold">
+                              + Create New Collection
+                            </SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
@@ -346,13 +528,46 @@ export default function CreateAccessoryPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Collection *</label>
-                <Input
-                  name="collection"
-                  value={manualFormData.collection}
-                  onChange={handleManualInputChange}
-                  placeholder="e.g., Magic and Spells"
-                  required
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={manualFormData.collection}
+                      onValueChange={(value) => {
+                        if (value === '__create_new__') {
+                          setNewCollectionTab('manual');
+                          setShowNewCollectionDialog(true);
+                        } else {
+                          setManualFormData((prev) => ({
+                            ...prev,
+                            collection: value,
+                          }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a collection..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingCollections ? (
+                          <SelectItem value="__loading__" disabled>
+                            Loading collections...
+                          </SelectItem>
+                        ) : (
+                          <>
+                            {collections.map((collection) => (
+                              <SelectItem key={collection} value={collection}>
+                                {collection}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__create_new__" className="font-semibold">
+                              + Create New Collection
+                            </SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
@@ -369,6 +584,115 @@ export default function CreateAccessoryPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Image Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Review Generated Image</DialogTitle>
+            <DialogDescription>
+              Does this image look good for "{pendingAiData?.name}"? You can regenerate or save it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {previewImageUrl && (
+              <div className="flex justify-center">
+                <img
+                  src={previewImageUrl}
+                  alt="Preview"
+                  className="h-64 rounded-lg border object-contain bg-muted"
+                />
+              </div>
+            )}
+            {pendingAiData && (
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="font-semibold">Name:</span> {pendingAiData.name}
+                </div>
+                <div>
+                  <span className="font-semibold">Collection:</span> {pendingAiData.collection}
+                </div>
+                <div>
+                  <span className="font-semibold">Price:</span> {pendingAiData.price} XP
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPreview(false);
+                setPendingAiData(null);
+                setPreviewImageUrl('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPreview(false);
+                setLoading(false);
+              }}
+            >
+              Regenerate
+            </Button>
+            <Button onClick={handleConfirmPreview} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save to Pet Shop'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create New Collection Dialog */}
+      <Dialog open={showNewCollectionDialog} onOpenChange={setShowNewCollectionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Collection</DialogTitle>
+            <DialogDescription>
+              Enter a name for the new collection. It will be available in the collection list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="new-collection-name">Collection Name</Label>
+              <Input
+                id="new-collection-name"
+                value={newCollectionName}
+                onChange={(e) => setNewCollectionName(e.target.value)}
+                placeholder="e.g., Magical Creatures, Fantasy Items, etc."
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateNewCollection();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowNewCollectionDialog(false);
+                setNewCollectionName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateNewCollection}>
+              Create Collection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

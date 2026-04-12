@@ -1,8 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { PawPrint, Wand2, Eye, ShoppingBag } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 
@@ -11,32 +9,28 @@ export default function PetlandPage() {
 
   const options = [
     {
-      title: 'Create Accessory for Pet Shop',
+      title: 'Create Accessories',
       description: 'Generate new pet accessories using AI and add them to your pet shop inventory.',
       icon: Wand2,
       href: '/t-portal/petland/create-accessory',
-      color: 'bg-blue-100 text-blue-700',
     },
     {
-      title: 'Refine Accessory Composite',
+      title: 'Refine Accessories',
       description: 'Fix AI-generated pet composites by providing instructions for refinement.',
       icon: PawPrint,
       href: '/t-portal/petland/refine-composite',
-      color: 'bg-purple-100 text-purple-700',
     },
     {
       title: 'Browse Pet Status',
       description: 'Select a learner to view and monitor their pet status and vitals.',
       icon: Eye,
       href: '/t-portal/petland/browse-pet-status',
-      color: 'bg-green-100 text-green-700',
     },
     {
       title: 'Browse Pet Shop',
       description: 'View all available pet accessories organized by collection.',
       icon: ShoppingBag,
       href: '/t-portal/petland/pet-shop',
-      color: 'bg-amber-100 text-amber-700',
     },
   ];
 
@@ -48,28 +42,26 @@ export default function PetlandPage() {
         icon={PawPrint}
       />
 
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Options as clean rows */}
+      <div className="space-y-2">
         {options.map((option) => {
           const Icon = option.icon;
           return (
-            <Card key={option.href} className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{option.title}</CardTitle>
-                    <CardDescription className="mt-2">{option.description}</CardDescription>
-                  </div>
-                  <div className={`p-3 rounded-lg ${option.color}`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
+            <div
+              key={option.href}
+              onClick={() => router.push(option.href)}
+              className="flex items-center justify-between gap-4 p-4 bg-card border hover:border-purple-500 hover:shadow-md transition-all cursor-pointer rounded-lg"
+            >
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="flex-shrink-0 p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+                  <Icon className="h-5 w-5" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => router.push(option.href)} className="w-full">
-                  Open
-                </Button>
-              </CardContent>
-            </Card>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">{option.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{option.description}</p>
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>

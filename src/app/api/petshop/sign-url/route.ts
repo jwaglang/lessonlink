@@ -15,7 +15,7 @@ function getAdminStorage() {
         clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
         privateKey,
       }),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   }
   return getStorage(app);

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
@@ -32,7 +31,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 2)
       if (response.status === 429) {
         const retryAfter = response.headers.get('retry-after');
         const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 4000;
-        console.log(`[generateAccessory] Rate limited. Waiting ${waitTime}ms...`);
+        console.log(`[generatePreview] Rate limited. Waiting ${waitTime}ms...`);
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
@@ -70,7 +69,7 @@ async function generateAccessoryImage(prompt: string): Promise<string> {
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('[generateAccessory] API error:', error);
+    console.error('[generatePreview] API error:', error);
     throw new Error(`Image generation failed: ${response.status}`);
   }
 
@@ -78,7 +77,7 @@ async function generateAccessoryImage(prompt: string): Promise<string> {
   const prediction = data?.predictions?.[0];
 
   if (!prediction?.bytesBase64Encoded) {
-    console.error('[generateAccessory] No image in response:', JSON.stringify(data, null, 2));
+    console.error('[generatePreview] No image in response:', JSON.stringify(data, null, 2));
     throw new Error('No image returned from API');
   }
 
@@ -115,10 +114,10 @@ async function uploadImageToStorage(
     });
 
     const publicUrl = response[0];
-    console.log(`[generateAccessory] Image uploaded: ${publicUrl}`);
+    console.log(`[generatePreview] Image uploaded: ${publicUrl}`);
     return publicUrl;
   } catch (error) {
-    console.error('[generateAccessory] Upload error:', error);
+    console.error('[generatePreview] Upload error:', error);
     throw new Error('Failed to upload image to storage');
   }
 }
@@ -126,16 +125,16 @@ async function uploadImageToStorage(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, name, price, stock, collection } = body;
+    const { prompt } = body;
 
-    if (!prompt || !name || price === undefined || !collection) {
+    if (!prompt) {
       return NextResponse.json(
-        { error: 'Missing required fields: prompt, name, price, collection' },
+        { error: 'Missing required field: prompt' },
         { status: 400 }
       );
     }
 
-    console.log('[generateAccessory] Starting image generation...');
+    console.log('[generatePreview] Starting image generation...');
 
     // Generate the image
     const imageBase64 = await generateAccessoryImage(prompt);
@@ -144,33 +143,18 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.png`;
 
-    console.log('[generateAccessory] Uploading to storage...');
+    console.log('[generatePreview] Uploading to storage...');
 
     // Upload to Firebase Storage
     const imageUrl = await uploadImageToStorage(imageBase64, fileName);
 
-    console.log('[generateAccessory] Saving to Firestore...');
-
-    // Save to Firestore
-    const docRef = await adminDb.collection('petShopItems').add({
-      name,
-      description: '',
-      imageUrl,
-      price,
-      stock: stock || 0,
-      collection,
-      createdDate: Date.now(),
-      updatedDate: Date.now(),
-    });
-
     return NextResponse.json({
       success: true,
-      id: docRef.id,
       imageUrl,
     });
   } catch (error) {
-    console.error('[generateAccessory] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate accessory';
+    console.error('[generatePreview] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }
