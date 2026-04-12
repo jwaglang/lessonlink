@@ -613,52 +613,107 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 **Status:** Complete and production-ready. All three initial accessories working (2 AI-generated, 1 manual with auto-signing).
 
+#### Phase 16 Enhancement: Collection Management System (April 12, 2026)
+
+**New Features Added:**
+- ✅ **14-Icon Theme System** — Expanded from 10 to 14 icon options (sparkles, wind, wand, rocket, flame, droplet, zap, star, heart, leaf, tree, bug, bird, default)
+- ✅ **Three-View Pet Shop Display** — Students toggle between Items, Collections, and Price view modes
+- ✅ **Collapsible Collections** — Collections expand/collapse on both T and L sides with chevron indicators (▶/▼)
+- ✅ **Database-Driven Icons** — Icons stored in `petShopCollections` collection with user selection during item creation
+- ✅ **Edit Collections** — Teachers can change collection name and icon theme via Edit dialog
+- ✅ **Delete Collections Safely** — Delete confirmation dialog moves items to "Uncategorized" instead of orphaning them
+- ✅ **Icon Picker Dropdown** — 14 options available in Create and Edit dialogs
+- ✅ **Full CRUD Endpoints** — GET, POST, PATCH, DELETE for `/api/petshop/collections`
+- ✅ **Database Cleanup** — Resolved leading space inconsistencies, consolidated duplicate entries, created missing collections
+- ✅ **Icon Syncing** — Real-time icon metadata consistency between T and L sides with smart fallback for legacy collections
+
+**Files Modified:**
+- `src/lib/collection-icons.ts` (NEW) — Icon type definitions and 14 ICON_OPTIONS
+- `src/app/api/petshop/collections/route.ts` — Full CRUD with iconType support
+- `src/app/t-portal/petland/pet-shop/page.tsx` — Edit/delete dialogs, icon picker, collection management UI
+- `src/modules/petland/components/student-dashboard.tsx` — Three-view toggle, collapsible sections, collection metadata fetching
+
+**Schema Update:**
+`petShopCollections` collection: `{name, iconType, createdDate}`
+
+**Status:** Complete and production-ready. Collection management fully integrated and tested. Database cleaned and consolidated.
+
 ---
 
-### ⬜ Phase 17: Petland Integration & Holistic Progress System
+### 🔧 Phase 17: Live Session Background (Classroom Immersion)
 
-**Goal:** Integrate Petland reward system with LL to create a unified, real-time progress assessment that combines class participation, independent practice, formal assessments, and session attendance into one holistic view.
+**Goal:** Build real-time visual feedback during live sessions where students see teacher rewards (stars ⭐, wow 💫, brainfart 🧠), current lesson vocabulary/grammar/phonics, and session score in real-time.
 
-**Context:** Petland is a separate Firebase app that tracks student engagement outside of class (vocabulary review games, RPG activities). It generates XP (time-based measure of practice hours) and HP (accuracy/health from games). LL tracks session attendance (credit system), formal assessments (evaluations), and homework. Together, these systems provide a complete picture of student progress toward the ~200 hours per level needed to pass a proficiency level. Phase 16 (Pet Shop) is the UI component; Phase 17 builds the backend integration and unified progress calculation.
+**Status:** Not started. **NEW PRIORITY** as of April 12, 2026.
 
-#### Progress Model — Three Pillars
+**Implementation:**
 
-**Pillar 1: Session Attendance (LL Credit System — already built)**
+- [ ] Create `/s-portal/petland/session/[sessionId]/background` route OR modal overlay on existing session page
+- [ ] Real-time Firestore listeners for teacher rewards (multi-reward support)
+- [ ] Display vocabulary/grammar/phonics items added by teacher in real-time
+- [ ] Show session score/progress bar (cumulative points earned this session)
+- [ ] Beautiful full-screen design matching Kiddoland aesthetic
+- [ ] Smooth animations/celebrations when new rewards appear
+- [ ] `sessionProgress` collection structure: `{sessionId, studentId, teacherId, rewards: [], vocabulary: [], grammar: [], phonics: [], points: number}`
+- [ ] Teacher-side quick-add interface for vocabulary/grammar/phonics during session (buttons in T-side session panel)
+- [ ] Real-time sync: when T clicks "Star", immediately visible on L background
 
-- Hours booked, completed, remaining via `studentCredit`
-- Session completion tracked via `sessionInstances`
-- Contributes to the ~200 hours/level target
+**Key Decision:** This is the visual centerpiece of the classroom experience. Drives student engagement during lessons and sets the foundation for end-of-session scoring.
 
-**Pillar 2: Independent Practice (Petland — external, synced via webhook)**
+---
 
-- XP = measure of time spent practicing/learning outside class
-- HP = accuracy/engagement score from Petland games (vocab reviews, RPG)
-- One-way sync: Petland → LL via `POST /api/rewards/sync`
-- XP contributes to the ~200 hours/level target alongside session hours
-- Source of truth for XP/HP: Petland (LL displays only, with optional manual T adjustments stored locally)
+### 🔧 Phase 17B: Review System Integration → Petland
 
-**Pillar 3: Formal Assessment (LL — Phases 14 + 15)**
+**Goal:** Automatically push classroom vocabulary/grammar/phonics into Petland's spaced repetition system after session ends.
 
-- Unit evaluations: initial + final assessment scores (Phase 14) ✅
-- Homework accuracy tracking (Phase 15)
-- AI-generated assessment reports (Phase 14) ✅
+**Status:** Not started. **NEW PRIORITY** as of April 12, 2026.
 
-#### Implementation
+**Flow:**
 
-- [ ] Build `/api/rewards/sync` webhook endpoint to receive XP/HP from Petland
-- [ ] Create `studentRewards` collection (or extend existing) for XP/HP display data
-- [ ] Define the holistic progress formula: how session hours (credit system) + XP (Petland) + assessment scores + homework accuracy combine into an overall progress measure
-- [ ] Build unified progress calculation engine that pulls from all three pillars
-- [ ] T-portal: progress overview on learner Profile & Progress tab (currently shows placeholder rewards card)
-- [ ] S-portal: real-time progress display on dashboard
+1. Session ends (T closes it)
+2. Items added during session (vocabulary/grammar/phonics) tagged with `sessionId` + `timestamp`
+3. Auto-push to student's review queue in Petland
+4. Items appear with `nextReviewDate` calculated by spaced repetition algorithm
+5. Student sees review reminders on Petland dashboard
+
+**Implementation:**
+
+- [ ] Build webhook: `/api/rewards/session-complete` to receive session close event from Petland
+- [ ] Extract items from `sessionProgress.vocabulary` / `grammar` / `phonics`
+- [ ] Call Petland API to add to review queue (or sync via reverse webhook if already architected)
+- [ ] Tag items with session metadata for learner history tracking
+- [ ] Calculate initial `nextReviewDate` based on spaced repetition algorithm (1 day, 3 days, 7 days, etc.)
+
+---
+
+### 🔧 Phase 17C: End-of-Session Scoreboard
+
+**Goal:** Display celebratory scoreboard when session ends showing total points, breakdown by category, comparison to previous sessions, and celebration animations for high performance.
+
+**Status:** Not started. **NEW PRIORITY** as of April 12, 2026.
+
+**Implementation:**
+
+- [ ] Scoreboard page/modal triggered on session close
+- [ ] Display total points + breakdown (vocabulary mastery, grammar accuracy, phonics fluency, participation/stars, wow count, brainfart recovery)
+- [ ] Celebrate high scores with animations
+- [ ] Show comparison to last 3 sessions (optional badge if beating personal record)
+- [ ] Link to continue/return dashboard
+- [ ] Persist `sessionScoreboard` data for historical tracking and progress analytics
+- [ ] Connect to Phase 18 (enhanced progress page) for trend visualization
+
+**Priority Ranking:**
+- Phase 17 (Live Background) — MUST have for classroom experience
+- Phase 17B (Review Integration) — SHOULD have for spaced repetition loop
+- Phase 17C (Scoreboard) — NICE to have for engagement/celebration, but can come after Phase 17 if needed
 
 ---
 
 ### ⬜ Phase 18: Enhanced Progress ("Check-up" Page)
 
-**Goal:** Create engaging, themed progress dashboard with visual analytics — the parent/student-facing showcase of the holistic progress system built in Phase 17.
+**Goal:** Create engaging, themed progress dashboard with visual analytics — the parent/student-facing showcase of the holistic progress system. Builds on Phase 17 (Live Background + rewards data) and Phase 17B (Petland integration).
 
-**"Check-up" Page Concept:**
+**Status:** Stacked until Phases 17/17B/17C complete. Build after live session system is proven.
 
 - **Theme:** Kiddoland Doctor gives student a checkup
 - **Aesthetic:** Medical chart style (clipboard, stethoscope icons)
@@ -891,6 +946,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - **Booking Gate Rewrite:** ✅ Complete (March 3, 2026). Unit-assignment gate replaced with T-L relationship + credit check. `reserveCredit()` wired into booking flow.
 - **T-Selection & Approval Flow:** ✅ Built (March 3, 2026). Browse Tutors → Request as My Tutor → T Approves → `assignedTeacherId` set. E2E retest pending.
 - **Phase 15-B:** ✅ Complete (March 24, 2026). T assigns homework, L/T uploads JSON, T grades. Client-side Firestore pattern. teacherInstructions field added. **Email attachment added April 1** — T can attach HTML workbook/worksheet to homework email. File size guard at 6MB. Email failure warning toast. Status flips to 'delivered' on successful email send.
+- **Phase 16: Petland Pet Shop Integration:** ✅ Complete (April 12, 2026). **Collection Management System** — Teachers create, edit, delete collections with 14 icon themes. Students toggle three-view modes (Items | Collections | Price). Collapsible collections with real-time icon syncing. Database-driven architecture: `petShopCollections` collection stores name + iconType. All API CRUD endpoints working (GET, POST, PATCH, DELETE). Collections expand/collapse on both T and L sides. Icon picker dropdown in dialogs. Collection cleanup scripts resolved spacing inconsistencies and consolidated duplicates. System production-ready.
 - **Curriculum-AI Architecture Spec:** ✅ Complete (March 23, 2026). Homework templates, AI integration layer, AI content generation, AI advisor, vocabulary mastery tracker.
 - **Module Architecture (KTFT/KCBT/KUPT):** ✅ Spec complete (March 29, 2026). Three-module design: KTFT (reference + developmental sequences), KCBT (per-course blueprint), KUPT (unit design, stacked). All modules inside LL.
 - **Kiddoland Template Updates:** ✅ All four templates updated to Export Standard v1 (Song Worksheet and Sentence Switcher applied post-April 1).
@@ -901,8 +957,8 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - **S-Portal:** Major redesign — permanent top bar (Book/Top Up), restructured sidebar, enhanced dashboard with credit/progress/rewards cards, Calendar Availability tab, Browse Tutors refactor. Top Up page built (Feb 24).
 - **AI APIs:** ✅ Live. DeepSeek primary with failover chain. `AI_USE_MOCK=false`.
 - **Email:** ✅ Resend domain verified. Sending operational from `notifications@updates.kiddoland.co`.
-- **Next:** Homework Generator build (Track 1) → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
-- **Estimated sessions for A+B+C:** 8–10
+- **Next:** Live Session Background (real-time teacher feedback + vocabulary display) → Review System Integration (session items → Petland spaced repetition) → End-of-Session Scoreboard → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
+- **Estimated sessions for Live Session Background + Review System + Scoreboard:** 3–5 | **Estimated sessions for A+B+C:** 8–10
 
 **Repository:** https://github.com/jwaglang/lessonlink
 
@@ -988,6 +1044,6 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 6, 2026 (Q48)
+**Last Updated:** April 12, 2026 (Q4C)
 
-**Version:** Q48 (6.4) — Petland body condition redesign complete. `isSick` removed, `isFat` introduced. Firestore vocabulary write rule fixed (root cause of persistent permissions error). Dev tools expanded. Testing pass + `firebase deploy --only firestore:rules` required before next build.
+**Version:** Q4C (6.5) — Pet Shop collection management system complete. 14-icon theme system, three-view toggle (Items | Collections | Price), collapsible collections, full CRUD endpoints. NEW PRIORITIES identified: Phase 17 (Live Session Background), Phase 17B (Review System Integration), Phase 17C (End-of-Session Scoreboard). Session Handoff Q4Cb documents all work. Ready for Phase 17 build.

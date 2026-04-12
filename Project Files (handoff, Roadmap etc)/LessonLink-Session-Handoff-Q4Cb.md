@@ -4,7 +4,7 @@
 April 12, 2026
 
 ## Session Summary
-Enhanced Pet Shop feature with Firebase Storage URL signing, delete functionality, and Kiddoland-themed styling. Resolved critical image display issue requiring signed authentication tokens; implemented auto-signing infrastructure for seamless file serving; added item deletion with confirmation; applied vibrant purple-pink gradient styling to "Magic and Spells" collection. All changes committed to main branch.
+Enhanced Pet Shop feature with Firebase Storage URL signing, delete functionality, and Kiddoland-themed styling. Resolved critical image display issue requiring signed authentication tokens; implemented auto-signing infrastructure for seamless file serving; added item deletion with confirmation; applied vibrant purple-pink gradient styling to "Magic and Spells" collection. **Identified and architected Phase 17 (Live Session Background)** — real-time classroom immersion system showing teacher rewards, vocabulary/grammar/phonics, and session score during live sessions. Comprehensive implementation spec with database schema, UI sketches, and teacher/student workflows documented for next session build.
 
 ---
 
@@ -107,20 +107,137 @@ Enhanced Pet Shop feature with Firebase Storage URL signing, delete functionalit
 
 ---
 
-## Next Session Should
+## Next Session: Phase 17 — Live Session Background (Classroom Immersion)
 
-### Immediate Priority (if continuing Pet Shop)
+**Priority Level:** 🔴 **CRITICAL** — This is the visual centerpiece of the classroom experience. Real-time engagement with rewards + lesson content is the value proposition.
+
+### What Phase 17 Builds
+
+During a live session (when student is attending), display a beautiful full-screen background showing:
+
+1. **Real-Time Teacher Rewards** — Stars ⭐, wow 💫, brainfart 🧠 appear instantly as T clicks them during class
+2. **Current Lesson Content** — Vocabulary, grammar, and phonics items T adds in real-time (quick-add buttons during session)
+3. **Session Score & Progress Bar** — Cumulative points earned this session with smooth animations
+4. **Beautiful Kiddoland Aesthetic** — Full-screen immersive design matching Petland branding
+5. **Smooth Animations** — Rewards appear with celebration effects; points add with visual feedback
+
+### Database Schema Required
+
+**New Collection: `sessionProgress`**
+```
+{
+  sessionId: string,              // UUID of session instance
+  studentId: string,              // learner's uid
+  teacherId: string,              // teacher's uid
+  rewards: [
+    {type: 'star' | 'wow' | 'brainfart', timestamp: ISO}
+  ],
+  vocabulary: [
+    {word: string, meaning: string, timestamp: ISO}
+  ],
+  grammar: [
+    {term: string, explanation: string, timestamp: ISO}
+  ],
+  phonics: [
+    {sound: string, examples: string[], timestamp: ISO}
+  ],
+  points: number,                 // cumulative points this session
+  createdDate: ISO,
+  completedDate: ISO (optional)
+}
+```
+
+### Implementation Steps
+
+**Phase 17.1: Setup & Real-Time Listeners**
+- [ ] Create types for `sessionProgress` collection structure in `src/lib/types.ts`
+- [ ] Create `/s-portal/session/[sessionId]/background` route (modal or full-screen view)
+- [ ] Implement Firestore real-time listener: `onSnapshot(sessionProgress doc)` to listen for live updates
+- [ ] Build real-time state management: `rewards[]`, `vocabulary[]`, `grammar[]`, `phonics[]`, `points`
+
+**Phase 17.2: Teacher-Side Quick-Add Interface**
+- [ ] Add quick-add buttons to T-side session panel: [+ Star], [+ Wow], [+ Brainfart], [+ Vocabulary], [+ Grammar], [+ Phonics]
+- [ ] When T clicks "Star", create reward entry with timestamp in `sessionProgress.rewards[]`
+- [ ] When T clicks "Add Vocabulary", open quick dialog: input word + meaning → save to `sessionProgress.vocabulary[]`
+- [ ] Same pattern for grammar and phonics (each with 2-3 field inputs)
+- [ ] Firstore operations client-side (T is logged in teacher)
+
+**Phase 17.3: Student-Side Background Display**
+- [ ] Build full-screen responsive layout: centered content area with rewards + content sections
+- [ ] Real-time reward animations: when new reward appears in `rewards[]`, trigger celebration animation + sound (optional)
+- [ ] Reward count badges visible: "Stars: 5" "Wow: 2" "Brainfart: 0"
+- [ ] Vocabulary/grammar/phonics sections (expandable cards or scrollable list) showing items T added
+- [ ] Session score display: `{currentPoints} / {sessionTargetPoints}` with progress bar
+- [ ] Beautiful styling: use Kiddoland colors (purples, pinks, greens), smooth transitions, kid-friendly fonts
+
+**Phase 17.4: Scoring System**
+- [ ] Define point values: star = +5, wow = +10, brainfart = -5 (or similar)
+- [ ] Update `sessionProgress.points` whenever reward added
+- [ ] Display running total prominently on background screen
+- [ ] Celebration animation when reaching milestone scores (25 pts, 50 pts, 100 pts)
+
+**Phase 17.5: End-of-Session Flow**
+- [ ] When T closes session, set `sessionProgress.completedDate`
+- [ ] Trigger Phase 17B: Review System Integration (push items to Petland automatically)
+- [ ] Display final scoreboard (Phase 17C) showing total points + breakdown
+
+### Quick Sketches
+
+**Teacher-Side Session Panel (Add these buttons):**
+```
+[Rewards] ━━ [⭐ Star] [💫 Wow] [🧠 Brainfart]
+[Content] ━━ [+ Vocabulary] [+ Grammar] [+ Phonics]
+```
+
+**Student-Side Background Screen:**
+```
+╔══════════════════════════════════╗
+║    🎓 Learning Progress          ║
+║                                  ║
+║  ⭐⭐⭐⭐⭐  (5 stars)              ║
+║  💫💫  (2 wows)                   ║
+║                                  ║
+║  Points: 65 / 100 ▓▓▓▓░░░░░     ║
+║                                  ║
+║  📚 Today's Words:               ║
+║    • elephant - an animal...     ║
+║    • beautiful - adjective...    ║
+║                                  ║
+║  📝 Grammar:                     ║
+║    • Simple Past: was, were...   ║
+║                                  ║
+║  🔊 Sounds:                      ║
+║    • /sh/ as in shell, fish...   ║
+╚══════════════════════════════════╝
+```
+
+### Architecture Notes
+
+- **Real-Time Sync:** Use Firestore `onSnapshot()` listener (not polls) for instant teacher→student updates
+- **Permission Model:** Teacher (uid) can write to `sessionProgress.rewards`, `vocabulary`, etc. Student can read (listen for updates).
+- **Offline Handling:** If student connection drops during session, re-establish listener on reconnect (resume from last known state)
+- **Cleanup:** `sessionProgress` docs should be archived/deleted after 30 days (or stored in separate collection for historical analytics)
+
+### Why This Matters
+
+This is where the magic happens. Students need visual, real-time feedback during class to stay engaged. Without it, LL is just a booking system. With it, every session becomes an interactive experience where students see their progress accumulating in real-time.
+
+---
+
+## Next Session Should (if not doing Phase 17)
+
+### Secondary Tasks (if deferring Phase 17)
 1. **Test Manual Upload End-to-End** — Have non-developer user submit wizard hat image via manual upload form to verify auto-signing works seamlessly
 2. **Improve Manual URL UX** — Add helpful popup/tooltip showing correct Firebase Storage URL format when user clicks "Manual Upload" tab
-3. **Monitor Signed URL Expiration** — Set calendar reminder to test 30-day expiration; implement refresh mechanism if needed before launch
+3. **Review All Pet Shop Collections** — Ensure all collection headers display correctly across teachers' created items
 
-### Secondary Tasks (if time permits)
-2. **Review All Pet Shop Collections** — Ensure all collection headers display correctly across teachers' created items
-3. **Batch Fix Utility** — Consider running `/api/petshop/fix-unsigned-urls` to ensure any legacy unsigned URLs in database are corrected
-4. **KUPT Integration** — Begin Petland course integration work (Phase 17) or move to curriculum-building phases (A/B/C)
+### Curriculum Build (if Phase 17 deferred)
+4. **Phase A: Foundation** — Types + CRUD for HomeworkTemplate, VocabularyMasteryRecord, AI interfaces
+5. **Phase B: AI Layer** — Provider adapters and integration
+6. **Phase C: UI** — Template management UI, KTFT reference page, KCBT blueprint builder
 
 ### Blocked By
-- Nothing. All pet shop features complete and tested. Ready for next feature development.
+- Nothing. All active features complete and tested. Ready for Phase 17 build or curriculum architecture.
 
 ---
 
