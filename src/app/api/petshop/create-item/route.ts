@@ -15,40 +15,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If the imageUrl looks like an unsigned Firebase Storage URL, sign it
-    if (imageUrl.includes('firebasestorage.googleapis.com') && !imageUrl.includes('&token=')) {
+    let storagePath: string | null = null;
+
+    // Extract storage path from Firebase Storage URL
+    if (imageUrl.includes('firebasestorage.googleapis.com')) {
       try {
-        // Extract file path from URL
+        // Extract file path from URL: ...o%2Fpath%2Fto%2Ffile.png?...
         const filePathMatch = imageUrl.match(/\/o\/(.+?)\?/);
         if (filePathMatch) {
           const encodedPath = filePathMatch[1];
-          const filePath = decodeURIComponent(encodedPath);
-          
-          // Generate signed URL
-          const app = getApps()[0];
-          const storage = getStorage(app);
-          const bucket = storage.bucket();
-          const file = bucket.file(filePath);
-          
-          const response = await file.getSignedUrl({
-            version: 'v4',
-            action: 'read',
-            expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
-          });
-          
-          imageUrl = response[0];
-          console.log('[create-item] Auto-signed URL:', imageUrl.substring(0, 100) + '...');
+          storagePath = decodeURIComponent(encodedPath);
+          console.log('[create-item] Extracted storage path:', storagePath);
         }
       } catch (error) {
-        console.error('[create-item] Failed to auto-sign URL:', error);
-        // Continue with original URL - might work anyway
+        console.error('[create-item] Failed to extract path:', error);
       }
+    }
+
+    // If we couldn't extract a path, reject the request
+    if (!storagePath) {
+      return NextResponse.json(
+        { error: 'Invalid Firebase Storage URL - unable to extract file path' },
+        { status: 400 }
+      );
     }
 
     const docRef = await adminDb.collection('petShopItems').add({
       name,
       description: description || '',
-      imageUrl,
+      storagePath,
       price,
       stock: stock || 0,
       collection,

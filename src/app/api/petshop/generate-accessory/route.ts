@@ -54,7 +54,7 @@ async function generateAccessoryImage(prompt: string): Promise<string> {
     throw new Error('GEMINI_API_KEY is not set');
   }
 
-  const accessoryPrompt = `Studio Ghibli-style hand-drawn animation. A whimsical pet accessory or magical item. Every detail below must be clearly visible and accurate: ${prompt}. The color, texture, and any objects or materials mentioned must be prominently featured exactly as described. Detailed and enchanting design. Centered composition, suitable for a children's game. Soft natural colors, clean lines.`;
+  const accessoryPrompt = `Studio Ghibli-style hand-drawn animation. A whimsical pet accessory or magical item. Every detail below must be clearly visible and accurate: ${prompt}. The color, texture, and any objects or materials mentioned must be prominently featured exactly as described. Detailed and enchanting design. Large accessory filling most of the frame, centered composition on plain white or light neutral background. Absolutely no text, letters, numbers, or words anywhere. No scenery or landscape. Suitable for a children's game. Soft natural colors, clean lines.`;
 
   const response = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
@@ -85,10 +85,55 @@ async function generateAccessoryImage(prompt: string): Promise<string> {
   return prediction.bytesBase64Encoded;
 }
 
+async function removeTextFromImage(imageBase64: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not set');
+  }
+
+  const editPrompt = 'Remove all text, letters, words, numbers, labels, and written symbols from this image. Keep all the visual content, colors, shapes, and artistic elements intact. Preserve the original composition and meaning.';
+
+  const response = await fetchWithRetry(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType: 'image/png', data: imageBase64 } },
+              { text: editPrompt },
+            ],
+          },
+        ],
+        generationConfig: { responseModalities: ['IMAGE'] },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[generateAccessory] Text removal error:', error);
+    throw new Error(`Image cleaning failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const parts = data?.candidates?.[0]?.content?.parts as { inlineData?: { mimeType?: string; data?: string } }[] | undefined;
+  const imagePart = parts?.find((p) => p.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    console.error('[generateAccessory] No cleaned image in response:', JSON.stringify(data, null, 2));
+    throw new Error('No image returned from cleaning API.');
+  }
+
+  return imagePart.inlineData.data;
+}
+
 async function uploadImageToStorage(
   imageBase64: string,
   fileName: string
-): Promise<string> {
+): Promise<{ storagePath: string; signedUrl: string }> {
   try {
     const storage = getAdminStorage();
     const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
@@ -98,7 +143,8 @@ async function uploadImageToStorage(
     const imageBuffer = Buffer.from(imageBase64, 'base64');
 
     // Create a file reference
-    const file = bucket.file(`vocabulary/shop/${fileName}`);
+    const storagePath = `accessories/shop/${fileName}`;
+    const file = bucket.file(storagePath);
 
     // Upload the file
     await file.save(imageBuffer, {
@@ -107,16 +153,16 @@ async function uploadImageToStorage(
       },
     });
 
-    // Get the signed download URL (valid for 1 hour)
+    // Get the signed download URL (valid for 100 years)
     const response = await file.getSignedUrl({
       version: 'v4',
       action: 'read',
-      expires: Date.now() + 60 * 60 * 1000, // 1 hour
+      expires: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000, // 100 years
     });
 
-    const publicUrl = response[0];
-    console.log(`[generateAccessory] Image uploaded: ${publicUrl}`);
-    return publicUrl;
+    const signedUrl = response[0];
+    console.log(`[generateAccessory] Image uploaded: ${storagePath}`);
+    return { storagePath, signedUrl };
   } catch (error) {
     console.error('[generateAccessory] Upload error:', error);
     throw new Error('Failed to upload image to storage');
@@ -144,18 +190,18 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.png`;
 
-    console.log('[generateAccessory] Uploading to storage...');
+    console.log('[generateAccessory] Uploading image to storage...');
 
     // Upload to Firebase Storage
-    const imageUrl = await uploadImageToStorage(imageBase64, fileName);
+    const { storagePath, signedUrl } = await uploadImageToStorage(imageBase64, fileName);
 
     console.log('[generateAccessory] Saving to Firestore...');
 
-    // Save to Firestore
+    // Save to Firestore - store only the path, not the signed URL
     const docRef = await adminDb.collection('petShopItems').add({
       name,
       description: '',
-      imageUrl,
+      storagePath,
       price,
       stock: stock || 0,
       collection,
@@ -166,7 +212,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: docRef.id,
-      imageUrl,
+      imageUrl: signedUrl, // Return URL for immediate preview, but it's not stored
     });
   } catch (error) {
     console.error('[generateAccessory] Error:', error);

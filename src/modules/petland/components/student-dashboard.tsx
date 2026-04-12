@@ -12,6 +12,36 @@ import { generatePetImage, editPetImage, composeAccessoryOnPet } from '../ai/gen
 
 const FAT_PROMPT =
   'Modify this creature to be extremely chubby and round, belly bulging out, gobbling junk food, looking embarrassed and sheepish at getting caught. Keep the exact same creature — same colors, features, species — just make it fat.';
+
+// Collection name to icon mapping
+function getCollectionIcon(iconType: string = 'default') {
+  // Name-based fallbacks for collections without stored iconType
+  const nameBasedDefaults: Record<string, string> = {
+    'Oh my stars!': 'sparkles',
+    'Letting off some steam!': 'wind',
+    'Magic and Spells': 'wand',
+  };
+
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    'sparkles': Sparkles,
+    'wind': Wind,
+    'wand': Wand2,
+    'rocket': Rocket,
+    'flame': Flame,
+    'droplet': Droplet,
+    'zap': Zap,
+    'star': Star,
+    'heart': Heart,
+    'leaf': Leaf,
+    'tree': Trees,
+    'bug': Bug,
+    'bird': Bird,
+    'default': Package,
+  };
+
+  const normalizedType = iconType.toLowerCase();
+  return iconMap[normalizedType] || Package;
+}
 const THIN_PROMPT =
   'Modify this creature to be noticeably skinny and underfed, ribs showing, looking hungry and sad. Keep the exact same creature — same colors, features, species — just make it thin.';
 const STARVING_PROMPT =
@@ -51,15 +81,27 @@ import {
   Heart,
   Sparkles,
   Coins,
-
+  Leaf,
+  Trees,
+  Bug,
+  Bird,
   ShoppingBag,
-  Map,
+  Map as MapIcon,
   Gamepad2,
   BookUser,
   Wand2,
   Loader2,
   CheckCircle,
   XCircle,
+  ChevronDown,
+  ChevronRight,
+  Rocket,
+  Star,
+  Flame,
+  Wind,
+  Droplet,
+  Zap,
+  Package,
 } from 'lucide-react';
 
 // --- STORAGE HELPER ---
@@ -1133,6 +1175,9 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const [selectedAccessoryId, setSelectedAccessoryId] = useState<string | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isSelectingAccessoryForPurchase, setIsSelectingAccessoryForPurchase] = useState(false);
+  const [shopViewBy, setShopViewBy] = useState<'items' | 'collections' | 'price'>('items');
+  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set());
+  const [collectionMetadata, setCollectionMetadata] = useState<Record<string, string>>({});
 
   const profileRef = doc(db, 'students', learnerId, 'petland', 'profile');
   const hasAppliedDecayRef = useRef(false);
@@ -1190,13 +1235,31 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     }
   }, [profile]);
 
-  // Load Pet Shop items
+  // Load Pet Shop items and collection metadata
   useEffect(() => {
     (async () => {
       try {
         setIsLoadingShop(true);
-        const items = await getPetShopItems();
+        const [items, collectionsRes] = await Promise.all([
+          getPetShopItems(),
+          fetch('/api/petshop/collections')
+        ]);
         setShopItems(items);
+        
+        const nameBasedDefaults: Record<string, string> = {
+          'Oh my stars!': 'sparkles',
+          'Letting off some steam!': 'wind',
+          'Magic and Spells': 'wand',
+        };
+        
+        if (collectionsRes.ok) {
+          const data = await collectionsRes.json();
+          const metadata: Record<string, string> = {};
+          for (const col of data.collections || []) {
+            metadata[col.name] = col.iconType || nameBasedDefaults[col.name] || 'default';
+          }
+          setCollectionMetadata(metadata);
+        }
       } catch (error) {
         console.error('Error loading pet shop items:', error);
         toast({
@@ -1376,6 +1439,16 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     deleteObject(ref(storage, `pets/${learnerId}/thin-pet.png`)).catch(() => {});
     deleteObject(ref(storage, `pets/${learnerId}/starving-pet.png`)).catch(() => {});
     setIsRecoveryHatch(true);
+  };
+
+  const toggleCollection = (collectionName: string) => {
+    const newExpanded = new Set(expandedCollections);
+    if (newExpanded.has(collectionName)) {
+      newExpanded.delete(collectionName);
+    } else {
+      newExpanded.add(collectionName);
+    }
+    setExpandedCollections(newExpanded);
   };
 
   const handleBuyAccessory = async (accessoryId: string) => {
@@ -1788,7 +1861,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             Pet Shop
           </TabsTrigger>
           <TabsTrigger value="brochures">
-            <Map className="mr-2 h-4 w-4" />
+            <MapIcon className="mr-2 h-4 w-4" />
             Travel Agent
           </TabsTrigger>
         </TabsList>
@@ -1948,88 +2021,337 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                   No accessories available yet. Check back soon!
                 </div>
               ) : (
-                <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {shopItems.map((item) => {
-                    const itemPrice = typeof item.price === 'number' ? item.price : 0;
-                    const isOwned = profile.ownedAccessories?.includes(item.id);
-                    const isOutOfStock = item.stock <= 0;
-                    const canBuy = profile.xp >= itemPrice && !isOutOfStock;
+                <div className="space-y-6">
+                  {/* View Toggle */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={shopViewBy === 'items' ? 'default' : 'outline'}
+                      onClick={() => setShopViewBy('items')}
+                      size="sm"
+                    >
+                      Items
+                    </Button>
+                    <Button
+                      variant={shopViewBy === 'collections' ? 'default' : 'outline'}
+                      onClick={() => setShopViewBy('collections')}
+                      size="sm"
+                    >
+                      Collections
+                    </Button>
+                    <Button
+                      variant={shopViewBy === 'price' ? 'default' : 'outline'}
+                      onClick={() => setShopViewBy('price')}
+                      size="sm"
+                    >
+                      Price
+                    </Button>
+                  </div>
 
-                    return (
-                      <Card key={item.id} className="flex flex-col overflow-hidden">
-                        <CardContent className="p-4 flex-1 flex flex-col">
-                          {/* Accessory Image */}
-                          <div className="relative w-full aspect-square mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
-                            {item.imageUrl ? (
-                              <Image
-                                src={item.imageUrl}
-                                alt={item.name}
-                                fill
-                                className="object-contain p-2"
-                              />
-                            ) : (
-                              <div className="text-muted-foreground">No image</div>
-                            )}
-                          </div>
+                  {/* Items View - Flat Grid */}
+                  {shopViewBy === 'items' && (
+                    <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      {shopItems.map((item) => {
+                        const itemPrice = typeof item.price === 'number' ? item.price : 0;
+                        const isOwned = profile.ownedAccessories?.includes(item.id);
+                        const isOutOfStock = item.stock <= 0;
+                        const canBuy = profile.xp >= itemPrice && !isOutOfStock;
 
-                          {/* Name & Description */}
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground mb-3 flex-1">
-                            {item.description}
-                          </p>
+                        return (
+                          <Card key={item.id} className="flex flex-col overflow-hidden">
+                            <CardContent className="p-4 flex-1 flex flex-col">
+                              {/* Accessory Image */}
+                              <div className="relative w-full aspect-square mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                                {item.imageUrl ? (
+                                  <Image
+                                    src={item.imageUrl}
+                                    alt={item.name}
+                                    fill
+                                    className="object-contain p-2"
+                                  />
+                                ) : (
+                                  <div className="text-muted-foreground">No image</div>
+                                )}
+                              </div>
 
-                          {/* Price & Stock */}
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-1">
-                              <Coins className="w-4 h-4 text-yellow-500" />
-                              <span className="font-semibold text-yellow-600">
-                                {itemPrice} XP
-                              </span>
+                              {/* Name & Description */}
+                              <h3 className="font-semibold">{item.name}</h3>
+                              <p className="text-sm text-muted-foreground mb-3 flex-1">
+                                {item.description}
+                              </p>
+
+                              {/* Price & Stock */}
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-1">
+                                  <Coins className="w-4 h-4 text-yellow-500" />
+                                  <span className="font-semibold text-yellow-600">
+                                    {itemPrice} XP
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant={item.stock > 0 ? 'default' : 'destructive'}
+                                >
+                                  {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
+                                </Badge>
+                              </div>
+
+                              {/* Status & Button */}
+                              {isOwned && (
+                                <Badge variant="outline" className="mb-2 w-full justify-center">
+                                  ✓ Owned
+                                </Badge>
+                              )}
+
+                              <Button
+                                onClick={() => handleBuyAccessory(item.id)}
+                                disabled={
+                                  !canBuy ||
+                                  isBuyingAccessory ||
+                                  !profile.petImageUrl ||
+                                  !profile.petState ||
+                                  profile.petState !== 'hatched'
+                                }
+                                className="w-full"
+                              >
+                                {isBuyingAccessory && selectedAccessoryId === item.id ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    Buying...
+                                  </>
+                                ) : !profile.petImageUrl ||
+                                !profile.petState ||
+                                profile.petState !== 'hatched'
+                                  ? 'Hatch a pet first'
+                                  : isOutOfStock
+                                  ? 'Out of stock'
+                                  : !canBuy
+                                  ? `Need ${itemPrice - profile.xp} more XP`
+                                  : 'Buy'}
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Collections View - Grouped */}
+                  {shopViewBy === 'collections' && (
+                    <div className="space-y-4">
+                      {Array.from(
+                        shopItems.reduce((map, item) => {
+                          const collection = item.collection || 'Uncategorized';
+                          if (!map.has(collection)) map.set(collection, []);
+                          map.get(collection)!.push(item);
+                          return map;
+                        }, new Map<string, PetShopItem[]>())
+                      )
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([collectionName, collectionItems]) => {
+                          const isExpanded = expandedCollections.has(collectionName);
+                          return (
+                            <div key={collectionName} className="space-y-3">
+                              <button
+                                onClick={() => toggleCollection(collectionName)}
+                                className="w-full flex items-center gap-3 bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 text-white px-4 py-3 rounded-lg font-bold hover:shadow-lg transition-all text-left"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-5 w-5 flex-shrink-0" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5 flex-shrink-0" />
+                                )}
+                                {(() => {
+                                  const iconType = collectionMetadata[collectionName] || 'default';
+                                  const IconComponent = getCollectionIcon(iconType);
+                                  return <IconComponent className="h-5 w-5 flex-shrink-0" />;
+                                })()}
+                                <span className="flex-1">{collectionName}</span>
+                                <Badge className="bg-white text-purple-600 font-bold flex-shrink-0">
+                                  {collectionItems.length}
+                                </Badge>
+                              </button>
+                              {isExpanded && (
+                                <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                                  {collectionItems.map((item) => {
+                                    const itemPrice = typeof item.price === 'number' ? item.price : 0;
+                                    const isOwned = profile.ownedAccessories?.includes(item.id);
+                                    const isOutOfStock = item.stock <= 0;
+                                    const canBuy = profile.xp >= itemPrice && !isOutOfStock;
+
+                                    return (
+                                      <Card key={item.id} className="flex flex-col overflow-hidden">
+                                        <CardContent className="p-4 flex-1 flex flex-col">
+                                          {/* Accessory Image */}
+                                          <div className="relative w-full aspect-square mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                                            {item.imageUrl ? (
+                                              <Image
+                                                src={item.imageUrl}
+                                                alt={item.name}
+                                                fill
+                                                className="object-contain p-2"
+                                              />
+                                            ) : (
+                                              <div className="text-muted-foreground">No image</div>
+                                            )}
+                                          </div>
+
+                                          {/* Name & Description */}
+                                          <h3 className="font-semibold">{item.name}</h3>
+                                          <p className="text-sm text-muted-foreground mb-3 flex-1">
+                                            {item.description}
+                                          </p>
+
+                                          {/* Price & Stock */}
+                                          <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-1">
+                                              <Coins className="w-4 h-4 text-yellow-500" />
+                                              <span className="font-semibold text-yellow-600">
+                                                {itemPrice} XP
+                                              </span>
+                                            </div>
+                                            <Badge
+                                              variant={item.stock > 0 ? 'default' : 'destructive'}
+                                            >
+                                              {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
+                                            </Badge>
+                                          </div>
+
+                                          {/* Status & Button */}
+                                          {isOwned && (
+                                            <Badge variant="outline" className="mb-2 w-full justify-center">
+                                              ✓ Owned
+                                            </Badge>
+                                          )}
+
+                                          <Button
+                                            onClick={() => handleBuyAccessory(item.id)}
+                                            disabled={
+                                              !canBuy ||
+                                              isBuyingAccessory ||
+                                              !profile.petImageUrl ||
+                                              !profile.petState ||
+                                              profile.petState !== 'hatched'
+                                            }
+                                            className="w-full"
+                                          >
+                                            {isBuyingAccessory && selectedAccessoryId === item.id ? (
+                                              <>
+                                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                                Buying...
+                                              </>
+                                            ) : !profile.petImageUrl ||
+                                            !profile.petState ||
+                                            profile.petState !== 'hatched'
+                                              ? 'Hatch a pet first'
+                                              : isOutOfStock
+                                              ? 'Out of stock'
+                                              : !canBuy
+                                              ? `Need ${itemPrice - profile.xp} more XP`
+                                              : 'Buy'}
+                                          </Button>
+                                        </CardContent>
+                                      </Card>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                            <Badge
-                              variant={item.stock > 0 ? 'default' : 'destructive'}
-                            >
-                              {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
-                            </Badge>
-                          </div>
+                          );
+                        })}
+                    </div>
+                  )}
 
-                          {/* Status & Button */}
-                          {isOwned && (
-                            <Badge variant="outline" className="mb-2 w-full justify-center">
-                              ✓ Owned
-                            </Badge>
-                          )}
+                  {/* Price View - Sorted by Price */}
+                  {shopViewBy === 'price' && (
+                    <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      {[...shopItems]
+                        .sort((a, b) => {
+                          const priceA = typeof a.price === 'number' ? a.price : 0;
+                          const priceB = typeof b.price === 'number' ? b.price : 0;
+                          return priceA - priceB;
+                        })
+                        .map((item) => {
+                          const itemPrice = typeof item.price === 'number' ? item.price : 0;
+                          const isOwned = profile.ownedAccessories?.includes(item.id);
+                          const isOutOfStock = item.stock <= 0;
+                          const canBuy = profile.xp >= itemPrice && !isOutOfStock;
 
-                          <Button
-                            onClick={() => handleBuyAccessory(item.id)}
-                            disabled={
-                              !canBuy ||
-                              isBuyingAccessory ||
-                              !profile.petImageUrl ||
-                              !profile.petState ||
-                              profile.petState !== 'hatched'
-                            }
-                            className="w-full"
-                          >
-                            {isBuyingAccessory && selectedAccessoryId === item.id ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                Buying...
-                              </>
-                            ) : !profile.petImageUrl ||
-                            !profile.petState ||
-                            profile.petState !== 'hatched'
-                              ? 'Hatch a pet first'
-                              : isOutOfStock
-                              ? 'Out of stock'
-                              : !canBuy
-                              ? `Need ${itemPrice - profile.xp} more XP`
-                              : 'Buy'}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                          return (
+                            <Card key={item.id} className="flex flex-col overflow-hidden">
+                              <CardContent className="p-4 flex-1 flex flex-col">
+                                {/* Accessory Image */}
+                                <div className="relative w-full aspect-square mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-gray-100">
+                                  {item.imageUrl ? (
+                                    <Image
+                                      src={item.imageUrl}
+                                      alt={item.name}
+                                      fill
+                                      className="object-contain p-2"
+                                    />
+                                  ) : (
+                                    <div className="text-muted-foreground">No image</div>
+                                  )}
+                                </div>
+
+                                {/* Name & Description */}
+                                <h3 className="font-semibold">{item.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-3 flex-1">
+                                  {item.description}
+                                </p>
+
+                                {/* Price & Stock */}
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-1">
+                                    <Coins className="w-4 h-4 text-yellow-500" />
+                                    <span className="font-semibold text-yellow-600">
+                                      {itemPrice} XP
+                                    </span>
+                                  </div>
+                                  <Badge
+                                    variant={item.stock > 0 ? 'default' : 'destructive'}
+                                  >
+                                    {item.stock > 0 ? `${item.stock} in stock` : 'Out of stock'}
+                                  </Badge>
+                                </div>
+
+                                {/* Status & Button */}
+                                {isOwned && (
+                                  <Badge variant="outline" className="mb-2 w-full justify-center">
+                                    ✓ Owned
+                                  </Badge>
+                                )}
+
+                                <Button
+                                  onClick={() => handleBuyAccessory(item.id)}
+                                  disabled={
+                                    !canBuy ||
+                                    isBuyingAccessory ||
+                                    !profile.petImageUrl ||
+                                    !profile.petState ||
+                                    profile.petState !== 'hatched'
+                                  }
+                                  className="w-full"
+                                >
+                                  {isBuyingAccessory && selectedAccessoryId === item.id ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                      Buying...
+                                    </>
+                                  ) : !profile.petImageUrl ||
+                                  !profile.petState ||
+                                  profile.petState !== 'hatched'
+                                    ? 'Hatch a pet first'
+                                    : isOutOfStock
+                                    ? 'Out of stock'
+                                    : !canBuy
+                                    ? `Need ${itemPrice - profile.xp} more XP`
+                                    : 'Buy'}
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

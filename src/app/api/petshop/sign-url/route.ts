@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const response = await file.getSignedUrl({
       version: 'v4',
       action: 'read',
-      expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+      expires: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000, // 100 years
     });
 
     const signedUrl = response[0];

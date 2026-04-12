@@ -40,6 +40,7 @@ export default function CreateAccessoryPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [pendingAiData, setPendingAiData] = useState<typeof aiFormData | null>(null);
+  const [isCleaningImage, setIsCleaningImage] = useState(false);
   
   const [aiFormData, setAiFormData] = useState({
     prompt: '',
@@ -139,6 +140,71 @@ export default function CreateAccessoryPage() {
         description: error instanceof Error ? error.message : 'Failed to create collection',
         variant: 'destructive',
       });
+    }
+  };
+
+  // Helper function to convert image URL to base64
+  const urlToBase64 = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUri = reader.result as string;
+          // Extract base64 part (remove data:image/png;base64, prefix)
+          const base64 = dataUri.split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Failed to convert image to base64:', error);
+      throw error;
+    }
+  };
+
+  // Handle removing text from preview image
+  const handleRemoveText = async () => {
+    if (!previewImageUrl) return;
+
+    setIsCleaningImage(true);
+    try {
+      // Convert image URL to base64
+      const base64 = await urlToBase64(previewImageUrl);
+
+      // Call cleanup endpoint
+      const response = await fetch('/api/petshop/cleanup-accessory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove text from image');
+      }
+
+      const data = await response.json();
+      
+      // Update preview with cleaned image
+      setPreviewImageUrl(data.imageUrl);
+      
+      toast({
+        title: 'Text removed',
+        description: 'Image has been cleaned successfully.',
+      });
+    } catch (error) {
+      console.error('Error removing text:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove text from image. Try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCleaningImage(false);
     }
   };
 
@@ -346,6 +412,17 @@ export default function CreateAccessoryPage() {
           <CardContent>
             <form onSubmit={handleAiSubmit} className="space-y-4">
               <div>
+                <label className="block text-sm font-medium mb-1">Accessory Name *</label>
+                <Input
+                  name="name"
+                  value={aiFormData.name}
+                  onChange={handleAiInputChange}
+                  placeholder="e.g., Crystal Orb"
+                  required
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium mb-1">Accessory Description *</label>
                 <Textarea
                   name="prompt"
@@ -353,17 +430,6 @@ export default function CreateAccessoryPage() {
                   onChange={handleAiInputChange}
                   placeholder="Describe the accessory you want to create (e.g., a magical crystal orb, floating on a surface, glowing blue light)"
                   className="min-h-24"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Accessory Name *</label>
-                <Input
-                  name="name"
-                  value={aiFormData.name}
-                  onChange={handleAiInputChange}
-                  placeholder="e.g., Crystal Orb"
                   required
                 />
               </div>
@@ -631,6 +697,20 @@ export default function CreateAccessoryPage() {
             </Button>
             <Button
               variant="outline"
+              onClick={handleRemoveText}
+              disabled={isCleaningImage || loading}
+            >
+              {isCleaningImage ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing Text...
+                </>
+              ) : (
+                'Remove Text'
+              )}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowPreview(false);
                 setLoading(false);
@@ -638,7 +718,7 @@ export default function CreateAccessoryPage() {
             >
               Regenerate
             </Button>
-            <Button onClick={handleConfirmPreview} disabled={loading}>
+            <Button onClick={handleConfirmPreview} disabled={loading || isCleaningImage}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

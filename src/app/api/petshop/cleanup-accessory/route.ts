@@ -27,11 +27,10 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 2)
     try {
       const response = await fetch(url, options);
 
-      // Handle rate limiting
       if (response.status === 429) {
         const retryAfter = response.headers.get('retry-after');
         const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 4000;
-        console.log(`[generatePreview] Rate limited. Waiting ${waitTime}ms...`);
+        console.log(`[cleanupAccessory] Rate limited. Waiting ${waitTime}ms...`);
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
@@ -45,43 +44,6 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 2)
     }
   }
   throw new Error('Failed after retries');
-}
-
-async function generateAccessoryImage(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set');
-  }
-
-  const accessoryPrompt = `Studio Ghibli-style hand-drawn animation. A whimsical pet accessory or magical item. Every detail below must be clearly visible and accurate: ${prompt}. The color, texture, and any objects or materials mentioned must be prominently featured exactly as described. Detailed and enchanting design. Large accessory filling most of the frame, centered composition on plain white or light neutral background. Absolutely no text, letters, numbers, or words anywhere. No scenery or landscape. Suitable for a children's game. Soft natural colors, clean lines.`;
-
-  const response = await fetchWithRetry(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        instances: [{ prompt: accessoryPrompt }],
-        parameters: { sampleCount: 1 },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('[generatePreview] API error:', error);
-    throw new Error(`Image generation failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const prediction = data?.predictions?.[0];
-
-  if (!prediction?.bytesBase64Encoded) {
-    console.error('[generatePreview] No image in response:', JSON.stringify(data, null, 2));
-    throw new Error('No image returned from API');
-  }
-
-  return prediction.bytesBase64Encoded;
 }
 
 async function removeTextFromImage(imageBase64: string): Promise<string> {
@@ -113,7 +75,7 @@ async function removeTextFromImage(imageBase64: string): Promise<string> {
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('[generatePreview] Text removal error:', error);
+    console.error('[cleanupAccessory] API error:', error);
     throw new Error(`Image cleaning failed: ${response.status}`);
   }
 
@@ -122,7 +84,7 @@ async function removeTextFromImage(imageBase64: string): Promise<string> {
   const imagePart = parts?.find((p) => p.inlineData?.data);
 
   if (!imagePart?.inlineData?.data) {
-    console.error('[generatePreview] No cleaned image in response:', JSON.stringify(data, null, 2));
+    console.error('[cleanupAccessory] No image in response:', JSON.stringify(data, null, 2));
     throw new Error('No image returned from cleaning API.');
   }
 
@@ -138,20 +100,15 @@ async function uploadImageToStorage(
     const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
     const bucket = storage.bucket(bucketName);
 
-    // Convert base64 to Buffer
     const imageBuffer = Buffer.from(imageBase64, 'base64');
+    const file = bucket.file(`accessories/shop/${fileName}`);
 
-    // Create a file reference
-    const file = bucket.file(`vocabulary/shop/${fileName}`);
-
-    // Upload the file
     await file.save(imageBuffer, {
       metadata: {
         contentType: 'image/png',
       },
     });
 
-    // Get the signed download URL (valid for 1 hour)
     const response = await file.getSignedUrl({
       version: 'v4',
       action: 'read',
@@ -159,49 +116,48 @@ async function uploadImageToStorage(
     });
 
     const publicUrl = response[0];
-    console.log(`[generatePreview] Image uploaded: ${publicUrl}`);
+    console.log(`[cleanupAccessory] Cleaned image uploaded: ${publicUrl}`);
     return publicUrl;
   } catch (error) {
-    console.error('[generatePreview] Upload error:', error);
-    throw new Error('Failed to upload image to storage');
+    console.error('[cleanupAccessory] Upload error:', error);
+    throw new Error('Failed to upload cleaned image to storage');
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt } = body;
+    const { imageBase64 } = body;
 
-    if (!prompt) {
+    if (!imageBase64) {
       return NextResponse.json(
-        { error: 'Missing required field: prompt' },
+        { error: 'Missing imageBase64' },
         { status: 400 }
       );
     }
 
-    console.log('[generatePreview] Starting image generation...');
+    console.log('[cleanupAccessory] Starting text removal...');
 
-    // Generate the image
-    const imageBase64 = await generateAccessoryImage(prompt);
+    // Remove text from the image
+    const cleanedImageBase64 = await removeTextFromImage(imageBase64);
 
     // Create a unique filename
     const timestamp = Date.now();
-    const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.png`;
+    const fileName = `${timestamp}-cleaned-${Math.random().toString(36).substring(7)}.png`;
 
-    console.log('[generatePreview] Uploading image to storage...');
+    console.log('[cleanupAccessory] Uploading cleaned image to storage...');
 
-    // Upload to Firebase Storage
-    const imageUrl = await uploadImageToStorage(imageBase64, fileName);
+    // Upload the cleaned image
+    const imageUrl = await uploadImageToStorage(cleanedImageBase64, fileName);
 
     return NextResponse.json({
       success: true,
       imageUrl,
     });
   } catch (error) {
-    console.error('[generatePreview] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
+    console.error('[cleanupAccessory] Error:', error);
     return NextResponse.json(
-      { error: errorMessage },
+      { error: error instanceof Error ? error.message : 'Failed to clean image' },
       { status: 500 }
     );
   }
