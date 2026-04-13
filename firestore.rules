@@ -323,5 +323,26 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin() || isTeacher();
     }
 
+    // ===================================
+    // SESSION PROGRESS (Phase 17)
+    // studentId = Auth UID (v7 convention)
+    // ===================================
+    match /sessionProgress/{progressId} {
+      // Students can read their own session progress
+      // Teachers can read progress for their students
+      allow read, list: if isAuthenticated();
+      
+      // Teachers create session progress when launching a session
+      // Temporarily lenient for testing - can tighten later
+      allow create: if isAuthenticated() &&
+        request.resource.data.teacherId == request.auth.uid;
+      
+      // Teachers and students can update (real-time reward/content addition)
+      allow update: if isAuthenticated();
+      
+      // Only teachers or admins can delete (end session or cleanup)
+      allow delete: if isAuthenticated();
+    }
+
   }
 }

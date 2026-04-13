@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getPetShopItems } from '@/lib/firestore';
-import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +26,7 @@ import { Wand2, Loader2 } from 'lucide-react';
 
 type TabType = 'ai' | 'manual';
 
-export default function CreateAccessoryPage() {
+export default function CreateAccessoryTabContent() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('ai');
   const [loading, setLoading] = useState(false);
@@ -59,7 +57,6 @@ export default function CreateAccessoryPage() {
     collection: '',
   });
 
-  // Fetch existing collections on mount
   useEffect(() => {
     async function loadCollections() {
       try {
@@ -67,7 +64,6 @@ export default function CreateAccessoryPage() {
         if (!response.ok) throw new Error('Failed to load collections');
         
         const data = await response.json();
-        // Remove duplicates from collections array
         const uniqueCollections = [...new Set(data.collections || [])];
         setCollections(uniqueCollections);
       } catch (error) {
@@ -97,7 +93,6 @@ export default function CreateAccessoryPage() {
     }
 
     try {
-      // Create collection via API
       const response = await fetch('/api/petshop/collections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,16 +104,13 @@ export default function CreateAccessoryPage() {
         throw new Error(error.error || 'Failed to create collection');
       }
 
-      // Reload collections from API
       const collectionsResponse = await fetch('/api/petshop/collections');
       if (!collectionsResponse.ok) throw new Error('Failed to reload collections');
       
       const data = await collectionsResponse.json();
-      // Remove duplicates from collections array
       const uniqueCollections = [...new Set(data.collections || [])];
       setCollections(uniqueCollections);
 
-      // Select the new collection in the current form
       if (newCollectionTab === 'ai') {
         setAiFormData((prev) => ({
           ...prev,
@@ -147,7 +139,6 @@ export default function CreateAccessoryPage() {
     }
   };
 
-  // Helper function to convert image URL to base64
   const urlToBase64 = async (url: string): Promise<string> => {
     try {
       const response = await fetch(url);
@@ -158,7 +149,6 @@ export default function CreateAccessoryPage() {
         const reader = new FileReader();
         reader.onload = () => {
           const dataUri = reader.result as string;
-          // Extract base64 part (remove data:image/png;base64, prefix)
           const base64 = dataUri.split(',')[1];
           resolve(base64);
         };
@@ -171,16 +161,13 @@ export default function CreateAccessoryPage() {
     }
   };
 
-  // Handle removing text from preview image
   const handleRemoveText = async () => {
     if (!previewImageUrl) return;
 
     setIsCleaningImage(true);
     try {
-      // Convert image URL to base64
       const base64 = await urlToBase64(previewImageUrl);
 
-      // Call cleanup endpoint
       const response = await fetch('/api/petshop/cleanup-accessory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -192,8 +179,6 @@ export default function CreateAccessoryPage() {
       }
 
       const data = await response.json();
-      
-      // Update preview with cleaned image
       setPreviewImageUrl(data.imageUrl);
       
       toast({
@@ -246,7 +231,6 @@ export default function CreateAccessoryPage() {
 
     setLoading(true);
     try {
-      // First, generate and upload the image preview
       const previewResponse = await fetch('/api/petshop/generate-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -261,7 +245,6 @@ export default function CreateAccessoryPage() {
 
       const previewData = await previewResponse.json();
       
-      // Show the preview modal
       setPreviewImageUrl(previewData.imageUrl);
       setPendingAiData({ ...aiFormData });
       setShowPreview(true);
@@ -281,7 +264,6 @@ export default function CreateAccessoryPage() {
 
     setLoading(true);
     try {
-      // Now save to Firestore with the image URL
       const response = await fetch('/api/petshop/create-item', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -381,13 +363,7 @@ export default function CreateAccessoryPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8">
-      <PageHeader
-        title="Create Accessory for Pet Shop"
-        description="Generate new pet accessories using AI or add existing ones manually."
-        icon={Wand2}
-      />
-
+    <div className="space-y-4">
       <div className="flex gap-2 border-b">
         <Button
           variant={activeTab === 'ai' ? 'default' : 'ghost'}
@@ -464,50 +440,46 @@ export default function CreateAccessoryPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Collection *</label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Select
-                      value={aiFormData.collection}
-                      onValueChange={(value) => {
-                        if (value === '__create_new__') {
-                          setNewCollectionTab('ai');
-                          setShowNewCollectionDialog(true);
-                        } else {
-                          setAiFormData((prev) => ({
-                            ...prev,
-                            collection: value,
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a collection..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingCollections ? (
-                          <SelectItem value="__loading__" disabled>
-                            Loading collections...
-                          </SelectItem>
-                        ) : (
-                          <>
-                            {collections.map((collection, index) => {
-                              const collectionName = typeof collection === 'string' ? collection : collection?.name || String(collection);
-                              const collectionValue = typeof collection === 'string' ? collection : collection?.name || JSON.stringify(collection);
-                              return (
-                                <SelectItem key={`collection-ai-${index}`} value={collectionValue}>
-                                  {collectionName}
-                                </SelectItem>
-                              );
-                            })}
-                            <SelectItem value="__create_new__" className="font-semibold">
-                              + Create New Collection
+                <Select
+                  value={aiFormData.collection}
+                  onValueChange={(value) => {
+                    if (value === '__create_new__') {
+                      setNewCollectionTab('ai');
+                      setShowNewCollectionDialog(true);
+                    } else {
+                      setAiFormData((prev) => ({
+                        ...prev,
+                        collection: value,
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a collection..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingCollections ? (
+                      <SelectItem value="__loading__" disabled>
+                        Loading collections...
+                      </SelectItem>
+                    ) : (
+                      <>
+                        {collections.map((collection, index) => {
+                          const collectionName = typeof collection === 'string' ? collection : collection?.name || String(collection);
+                          const collectionValue = typeof collection === 'string' ? collection : collection?.name || JSON.stringify(collection);
+                          return (
+                            <SelectItem key={`collection-ai-${index}`} value={collectionValue}>
+                              {collectionName}
                             </SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                          );
+                        })}
+                        <SelectItem value="__create_new__" className="font-semibold">
+                          + Create New Collection
+                        </SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
@@ -602,50 +574,46 @@ export default function CreateAccessoryPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">Collection *</label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Select
-                      value={manualFormData.collection}
-                      onValueChange={(value) => {
-                        if (value === '__create_new__') {
-                          setNewCollectionTab('manual');
-                          setShowNewCollectionDialog(true);
-                        } else {
-                          setManualFormData((prev) => ({
-                            ...prev,
-                            collection: value,
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a collection..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingCollections ? (
-                          <SelectItem value="__loading__" disabled>
-                            Loading collections...
-                          </SelectItem>
-                        ) : (
-                          <>
-                            {collections.map((collection, index) => {
-                              const collectionName = typeof collection === 'string' ? collection : collection?.name || String(collection);
-                              const collectionValue = typeof collection === 'string' ? collection : collection?.name || JSON.stringify(collection);
-                              return (
-                                <SelectItem key={`collection-manual-${index}`} value={collectionValue}>
-                                  {collectionName}
-                                </SelectItem>
-                              );
-                            })}
-                            <SelectItem value="__create_new__" className="font-semibold">
-                              + Create New Collection
+                <Select
+                  value={manualFormData.collection}
+                  onValueChange={(value) => {
+                    if (value === '__create_new__') {
+                      setNewCollectionTab('manual');
+                      setShowNewCollectionDialog(true);
+                    } else {
+                      setManualFormData((prev) => ({
+                        ...prev,
+                        collection: value,
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a collection..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingCollections ? (
+                      <SelectItem value="__loading__" disabled>
+                        Loading collections...
+                      </SelectItem>
+                    ) : (
+                      <>
+                        {collections.map((collection, index) => {
+                          const collectionName = typeof collection === 'string' ? collection : collection?.name || String(collection);
+                          const collectionValue = typeof collection === 'string' ? collection : collection?.name || JSON.stringify(collection);
+                          return (
+                            <SelectItem key={`collection-manual-${index}`} value={collectionValue}>
+                              {collectionName}
                             </SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                          );
+                        })}
+                        <SelectItem value="__create_new__" className="font-semibold">
+                          + Create New Collection
+                        </SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button type="submit" disabled={loading} className="w-full">
@@ -663,7 +631,6 @@ export default function CreateAccessoryPage() {
         </Card>
       )}
 
-      {/* Image Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -744,7 +711,6 @@ export default function CreateAccessoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create New Collection Dialog */}
       <Dialog open={showNewCollectionDialog} onOpenChange={setShowNewCollectionDialog}>
         <DialogContent>
           <DialogHeader>

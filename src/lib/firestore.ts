@@ -66,6 +66,20 @@ import type {
   SessionFeedback,
   ScheduleTemplate,
   HomeworkAssignment,
+  Reward,
+  VocabProgress,
+  GrammarPoint,
+  PhonicsItem,
+  SessionProgress as Phase17SessionProgress,
+  BehaviorDeductionType,
+  TreasureChestReward,
+  WowReward,
+  OopsieEvent,
+  BehaviorDeduction,
+  SessionVocabulary,
+  SessionGrammar,
+  SessionPhonics,
+  BEHAVIOR_DEDUCTIONS,
 } from './types';
 import type { PetShopItem } from '@/modules/petland/types';
 
@@ -2075,4 +2089,343 @@ export async function updateProgressWithHomeworkStats(
       lastActivityAt: nowIso(),
     } as any);
   }
+}
+
+// =========================================================
+// Phase 17: Live Session Background - Firestore Functions
+// =========================================================
+
+const sessionProgressCollection = collection(db, 'sessionProgress');
+
+/**
+ * Create or get session progress for a live session (Phase 17)
+ */
+export async function getOrCreateSessionProgress(
+  sessionInstanceId: string,
+  studentId: string,
+  teacherId: string,
+  options?: {
+    sessionQuestion?: string;
+    sessionAim?: string;
+    xpTarget?: number;
+    theme?: 'space' | 'ocean' | 'farm' | 'desert' | 'city';
+  }
+): Promise<Phase17SessionProgress> {
+  const q = query(
+    sessionProgressCollection,
+    where('sessionInstanceId', '==', sessionInstanceId),
+    where('studentId', '==', studentId),
+    limit(1)
+  );
+
+  const existing = await getDocs(q);
+  if (!existing.empty) {
+    return asId<Phase17SessionProgress>(existing.docs[0].id, existing.docs[0].data());
+  }
+
+  // Create new session progress
+  const newProgress = {
+    sessionInstanceId,
+    studentId,
+    teacherId,
+    sessionQuestion: options?.sessionQuestion || '',
+    sessionAim: options?.sessionAim || '',
+    xpTarget: options?.xpTarget || 60,
+    theme: options?.theme || 'space',
+    treasureChests: [],
+    wows: [],
+    oopsies: [],
+    behaviorDeductions: [],
+    vocabulary: [],
+    grammar: [],
+    phonics: [],
+    totalXpEarned: 0,
+    status: 'active' as const,
+    createdAt: nowIso(),
+  };
+
+  const ref = await addDoc(sessionProgressCollection, newProgress);
+  const snap = await getDoc(ref);
+  return asId<Phase17SessionProgress>(snap.id, snap.data());
+}
+
+/**
+ * Add treasure chest reward to session
+ */
+export async function addTreasureChest(
+  sessionProgressId: string,
+  amount: number
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const newTreasure: TreasureChestReward = {
+    amount,
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    treasureChests: [...(progress.treasureChests || []), newTreasure],
+    totalXpEarned: progress.totalXpEarned + amount,
+  } as any);
+}
+
+/**
+ * Add wow reward to session
+ */
+export async function addWow(sessionProgressId: string): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const newWow: WowReward = {
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    wows: [...(progress.wows || []), newWow],
+  } as any);
+}
+
+/**
+ * Add oopsie event to session
+ */
+export async function addOopsie(sessionProgressId: string): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const newOopsie: OopsieEvent = {
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    oopsies: [...(progress.oopsies || []), newOopsie],
+  } as any);
+}
+
+/**
+ * Add behavior deduction to session
+ */
+export async function addBehaviorDeduction(
+  sessionProgressId: string,
+  type: BehaviorDeductionType
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const { amount } = BEHAVIOR_DEDUCTIONS[type];
+
+  const newDeduction: BehaviorDeduction = {
+    type,
+    amount,
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    behaviorDeductions: [...(progress.behaviorDeductions || []), newDeduction],
+    totalXpEarned: progress.totalXpEarned + amount,
+  } as any);
+}
+
+/**
+ * Legacy: Add generic reward to session (deprecated - use addTreasureChest, addWow, etc.)
+ */
+export async function addReward(
+  sessionProgressId: string,
+  rewardType: 'wow' | 'treasure' | 'brainfart'
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  
+  if (rewardType === 'treasure') {
+    const amount = Math.floor(Math.random() * 41) + 10;
+    await addTreasureChest(sessionProgressId, amount);
+  } else if (rewardType === 'wow') {
+    await addWow(sessionProgressId);
+  } else if (rewardType === 'brainfart') {
+    await addOopsie(sessionProgressId);
+  }
+}
+
+/**
+ * Add vocabulary to session progress
+ */
+export async function addSessionVocabulary(
+  sessionProgressId: string,
+  word: string,
+  meaning: string
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const newVocab: SessionVocabulary = {
+    word,
+    meaning,
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    vocabulary: [...(progress.vocabulary || []), newVocab],
+  } as any);
+}
+
+/**
+ * Add grammar point to session progress
+ */
+export async function addSessionGrammar(
+  sessionProgressId: string,
+  point: string,
+  example: string
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const newGrammar: SessionGrammar = {
+    point,
+    example,
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    grammar: [...(progress.grammar || []), newGrammar],
+  } as any);
+}
+
+/**
+ * Add phonics item to session progress
+ */
+export async function addSessionPhonics(
+  sessionProgressId: string,
+  sound: string,
+  examples: string[]
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  const progressSnap = await getDoc(ref);
+  if (!progressSnap.exists()) throw new Error('Session progress not found');
+
+  const progress = progressSnap.data() as Phase17SessionProgress;
+  const newPhonics: SessionPhonics = {
+    sound,
+    examples,
+    timestamp: nowIso(),
+  };
+
+  await updateDoc(ref, {
+    phonics: [...(progress.phonics || []), newPhonics],
+  } as any);
+}
+
+/**
+ * Update session question and aim
+ */
+export async function updateSessionGoals(
+  sessionProgressId: string,
+  question: string,
+  aim: string
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  
+  await updateDoc(ref, {
+    sessionQuestion: question,
+    sessionAim: aim,
+  } as any);
+}
+
+/**
+ * Update XP target for the session
+ */
+export async function updateSessionTarget(
+  sessionProgressId: string,
+  xpTarget: number
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  
+  await updateDoc(ref, {
+    xpTarget,
+  } as any);
+}
+
+/**
+ * Set the magic word for the session
+ */
+export async function setMagicWord(
+  sessionProgressId: string,
+  magicWord: string
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  
+  await updateDoc(ref, {
+    magicWord,
+  } as any);
+}
+
+/**
+ * Update session theme
+ */
+export async function updateSessionTheme(
+  sessionProgressId: string,
+  theme: 'space' | 'ocean' | 'farm' | 'desert' | 'city'
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  
+  await updateDoc(ref, {
+    theme,
+  } as any);
+}
+
+/**
+ * End the session
+ */
+export async function endSession(sessionProgressId: string): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  
+  await updateDoc(ref, {
+    status: 'completed',
+    completedAt: nowIso(),
+  } as any);
+}
+
+/**
+ * Real-time listener for session progress
+ */
+export function onSessionProgressUpdate(
+  sessionProgressId: string,
+  callback: (progress: Phase17SessionProgress) => void
+): Unsubscribe {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  return onSnapshot(ref, snap => {
+    if (snap.exists()) {
+      callback(asId<Phase17SessionProgress>(snap.id, snap.data()));
+    }
+  });
+}
+
+/**
+ * Look up session progress by sessionId (useful for students joining a live session)
+ */
+export async function getSessionProgressBySessionId(sessionId: string): Promise<Phase17SessionProgress | null> {
+  const q = query(
+    sessionProgressCollection,
+    where('sessionId', '==', sessionId),
+    limit(1)
+  );
+
+  const existing = await getDocs(q);
+  if (existing.empty) return null;
+
+  return asId<Phase17SessionProgress>(existing.docs[0].id, existing.docs[0].data());
 }

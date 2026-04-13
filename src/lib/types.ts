@@ -709,3 +709,129 @@ export interface HomeworkAssignment {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================
+// PHASE 17: LIVE SESSION BACKGROUND
+// ============================================
+
+export interface Reward {
+  id: string;
+  type: 'wow' | 'treasure' | 'brainfart';
+  points?: number; // treasure only (random 10-50)
+  timestamp: string; // ISO timestamp
+}
+
+export interface VocabProgress {
+  id: string;
+  word: string;
+  definition: string;
+  timestamp: string;
+}
+
+export interface GrammarPoint {
+  id: string;
+  rule: string;
+  example: string;
+  timestamp: string;
+}
+
+export interface PhonicsItem {
+  id: string;
+  sound: string;
+  word: string;
+  timestamp: string;
+}
+
+export interface SessionProgress {
+  id: string;
+  sessionId: string;          // links to sessionInstance
+  studentId: string;          // Firebase Auth UID
+  teacherId: string;          // Firebase Auth UID
+  rewards: Reward[];
+  vocabulary: VocabProgress[];
+  grammar: GrammarPoint[];
+  phonics: PhonicsItem[];
+  points: number;             // cumulative points this session
+  createdAt: string;          // ISO timestamp
+  updatedAt: string;          // ISO timestamp
+}
+
+// ============================================
+// PHASE 17: LIVE SESSION
+// ============================================
+
+export type SessionTheme = 'space' | 'ocean' | 'farm' | 'desert' | 'city';
+
+export type BehaviorDeductionType = 'out-to-lunch' | 'chatterbox' | 'disruptive';
+
+export interface TreasureChestReward {
+  amount: number;
+  timestamp: string;
+}
+
+export interface WowReward {
+  timestamp: string;
+}
+
+export interface OopsieEvent {
+  timestamp: string;
+}
+
+export interface BehaviorDeduction {
+  type: BehaviorDeductionType;
+  amount: number;  // negative value (-2, -3, -5)
+  timestamp: string;
+}
+
+export interface SessionVocabulary {
+  word: string;
+  meaning: string;
+  timestamp: string;
+}
+
+export interface SessionGrammar {
+  point: string;
+  example: string;
+  timestamp: string;
+}
+
+export interface SessionPhonics {
+  sound: string;
+  examples: string[];
+  timestamp: string;
+}
+
+export interface SessionProgress {
+  id: string;
+  sessionInstanceId: string;
+  studentId: string;
+  teacherId: string;
+  
+  sessionQuestion: string;
+  sessionAim: string;
+  xpTarget: number;
+  theme: SessionTheme;
+  
+  treasureChests: TreasureChestReward[];
+  wows: WowReward[];
+  oopsies: OopsieEvent[];
+  behaviorDeductions: BehaviorDeduction[];
+  
+  vocabulary: SessionVocabulary[];
+  grammar: SessionGrammar[];
+  phonics: SessionPhonics[];
+  
+  totalXpEarned: number;
+  
+  magicWord?: string;
+  
+  status: 'active' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+}
+
+export const BEHAVIOR_DEDUCTIONS: Record<BehaviorDeductionType, { label: string; emoji: string; amount: number }> = {
+  'out-to-lunch': { label: 'Out to lunch!', emoji: '😴', amount: -3 },
+  'chatterbox': { label: 'Chatterbox!', emoji: '🗣️', amount: -2 },
+  'disruptive': { label: 'Not cool!', emoji: '😬', amount: -5 },
+};

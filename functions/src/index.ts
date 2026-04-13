@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 
 // Initialize Firebase Admin
@@ -96,6 +97,115 @@ export const checkExpiredPackages = onSchedule(
       logger.info(`checkExpiredPackages: Sent ${notifications.length} expiry notification(s)`);
     } else {
       logger.info('checkExpiredPackages: No packages expired today');
+    }
+  }
+);
+
+/**
+ * backfillXpSpentField
+ *
+ * One-time Cloud Function to add missing xpSpent field to all petland profiles.
+ * Callable via HTTPS (requires authentication).
+ *
+ * Admin-only function (checks if user is jwag.lang@gmail.com).
+ * Returns { success: boolean, message: string, updatedCount: number }
+ */
+export const backfillXpSpentField = onCall(
+  {
+    enforceAppCheck: false,
+    cors: true,
+  },
+  async (request) => {
+    const uid = request.auth?.uid;
+    const email = request.auth?.token?.email;
+
+    // Admin check
+    if (email !== 'jwag.lang@gmail.com') {
+      throw new Error('Unauthorized: Admin only');
+    }
+
+    logger.info('backfillXpSpentField: Starting backfill', { email });
+
+    try {
+      // Query all students
+      const studentsSnapshot = await db.collection('students').get();
+
+      if (studentsSnapshot.empty) {
+        logger.info('backfillXpSpentField: No students found');
+        return {
+          success: true,
+          message: 'No students found',
+          updatedCount: 0,
+        };
+      }
+
+      let updatedCount = 0;
+      const batch = db.batch();
+      let batchOperations = 0;
+      const maxBatchSize = 500; // Firestore batch limit
+
+      for (const studentDoc of studentsSnapshot.docs) {
+        const studentId = studentDoc.id;
+
+        // Get petland profile
+        const profileRef = db
+          .collection('students')
+          .doc(studentId)
+          .collection('petland')
+          .doc('profile');
+
+        const profileDoc = await profileRef.get();
+
+        if (!profileDoc.exists) {
+          // Profile doesn't exist, skip this student
+          continue;
+        }
+
+        const data = profileDoc.data();
+
+        // Check if xpSpent field is missing
+        if (data && data.xpSpent === undefined) {
+          batch.update(profileRef, {
+            xpSpent: 0,
+            updatedAt: admin.firestore.Timestamp.now(),
+          });
+
+          batchOperations++;
+          updatedCount++;
+
+          // Commit batch if it reaches size limit
+          if (batchOperations >= maxBatchSize) {
+            await batch.commit();
+            logger.info('backfillXpSpentField: Committed batch', {
+              operations: batchOperations,
+            });
+            batchOperations = 0; // Reset for new batch
+          }
+        }
+      }
+
+      // Commit remaining operations
+      if (batchOperations > 0) {
+        await batch.commit();
+        logger.info('backfillXpSpentField: Committed final batch', {
+          operations: batchOperations,
+        });
+      }
+
+      logger.info('backfillXpSpentField: Backfill complete', {
+        updatedCount,
+      });
+
+      return {
+        success: true,
+        message: `Successfully updated ${updatedCount} petland profiles with xpSpent field`,
+        updatedCount,
+      };
+    } catch (error) {
+      logger.error('backfillXpSpentField: Error during backfill', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error(`Backfill failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 );

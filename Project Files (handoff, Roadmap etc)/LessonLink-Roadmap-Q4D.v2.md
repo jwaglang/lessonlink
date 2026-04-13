@@ -1,4 +1,4 @@
-# LessonLink | Complete Roadmap (Q4D — April 13, 2026)
+# LessonLink | Complete Roadmap (Q4D — April 13, 2026, Updated)
 
 ---
 
@@ -700,23 +700,65 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 ### 🔧 Phase 17: Live Session Background (Classroom Immersion)
 
-**Goal:** Build real-time visual feedback during live sessions where students see teacher rewards (stars ⭐, wow 💫, brainfart 🧠), current lesson vocabulary/grammar/phonics, and session score in real-time.
+**Goal:** Full-screen display page T shows via ManyCam during live sessions. T's webcam overlays the center; rewards, vocabulary, grammar, phonics, session goals, and XP progress animate around the edges. Kids aged 5-12 see a fun, immersive game screen — not a dashboard.
 
-**Status:** Not started. **NEW PRIORITY** as of April 12, 2026.
+**Status:** Spec and mockup complete (Q4D). Build in progress.
 
-**Implementation:**
+**Spec Document:** `LessonLink-Phase17-LiveSession-Spec-Q4D.md`
+**Visual Mockup:** `LessonLink-Phase17-LiveSession-Mockup-Q4D.html`
 
-- [ ] Create `/s-portal/petland/session/[sessionId]/background` route OR modal overlay on existing session page
-- [ ] Real-time Firestore listeners for teacher rewards (multi-reward support)
-- [ ] Display vocabulary/grammar/phonics items added by teacher in real-time
-- [ ] Show session score/progress bar (cumulative points earned this session)
-- [ ] Beautiful full-screen design matching Kiddoland aesthetic
-- [ ] Smooth animations/celebrations when new rewards appear
-- [ ] `sessionProgress` collection structure: `{sessionId, studentId, teacherId, rewards: [], vocabulary: [], grammar: [], phonics: [], points: number}`
-- [ ] Teacher-side quick-add interface for vocabulary/grammar/phonics during session (buttons in T-side session panel)
-- [ ] Real-time sync: when T clicks "Star", immediately visible on L background
+**Route:** `/t-portal/sessions/live/[sessionInstanceId]` (T-only, no L-side route — ManyCam shares T's screen)
 
-**Key Decision:** This is the visual centerpiece of the classroom experience. Drives student engagement during lessons and sets the foundation for end-of-session scoring.
+**Reward System (Updated Q4D — replaces old stars/brainfarts):**
+
+| Reward | Emoji | XP Effect | Animation |
+|--------|-------|-----------|-----------|
+| **Treasure Chest** | 🧰 | T sets amount (+5/+10/+15/+20/custom) | Chest shakes → opens → coins fly → amount revealed |
+| **Wow** | ✨ | No XP | Full-screen purple/gold flash + sound (the showstopper) |
+| **Oopsie** | 👀 | No XP, no penalty | Gentle wobble, "No worries!" |
+| **Out-to-lunch** | 😴 | -3 XP | Brief pink flash |
+| **Chatterbox** | 🗣️ | -2 XP | Brief pink flash |
+| **Disruptive** | 😬 | -5 XP | Brief pink flash |
+
+Stars are retired. Brainfarts renamed to Oopsies.
+
+**Treasure Chest visual tiers** (auto-selected by XP amount):
+- Copper chest: 5-10 XP (small, copper coins)
+- Silver chest: 15-25 XP (medium, silver coins, shinier)
+- Gold chest: 30-50 XP (large, gold coins, full fireworks)
+
+**Five Animated Themed Backgrounds** (T selects at session start, 50% opacity loop):
+- 🌌 Space — twinkling stars, comets, meteors, nebula
+- 🌊 Ocean — swimming fish, bubbles, swaying seaweed
+- 🌾 Farm — grazing animals, drifting clouds, pecking chickens
+- 🏜️ Desert — camels, tumbleweeds, heat shimmer
+- 🏙️ City — building window lights, taxis, neon signs
+
+**Layout:** Top bar (session goal + XP counter), left panel (rewards), center (clear for webcam), right panel (vocabulary/grammar/phonics cards), bottom bar (progress dragon + magic word slot).
+
+**Session Goals:** Pulled from lesson plan data (LQ + aims), T-editable at session start.
+
+**Magic Word:** T sets at session end. L must remember it for next session's opening question.
+
+**End-of-Session Flow:** Summary overlay with total XP, reward breakdown, words learned, quick flashcard recap (T-controlled, no L interaction).
+
+**Implementation (12 steps):**
+1. Types in `src/lib/types.ts`
+2. Route + page shell
+3. Theme backgrounds (5 components)
+4. Display layout (top/left/right/bottom/center)
+5. Control panel (T's buttons, below fold or drawer)
+6. Reward animations (Wow flash, Treasure opening, Oopsie wobble, behavior flash)
+7. Content addition dialogs (vocab/grammar/phonics quick-add)
+8. Firestore integration (`sessionProgress` collection)
+9. Session initialization (link to lesson plan data)
+10. End-of-session summary
+11. Magic Word input + reveal animation
+12. Polish (sound slots, responsive, ManyCam testing)
+
+**Database:** New `sessionProgress` collection. See spec for full schema.
+
+**Estimated sessions:** 3-5
 
 ---
 
@@ -753,7 +795,7 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 **Implementation:**
 
 - [ ] Scoreboard page/modal triggered on session close
-- [ ] Display total points + breakdown (vocabulary mastery, grammar accuracy, phonics fluency, participation/stars, wow count, brainfart recovery)
+- [ ] Display total points + breakdown (Treasure Chest earnings, Wow count, Oopsie count, behavior deductions, vocabulary added, grammar points, phonics sounds)
 - [ ] Celebrate high scores with animations
 - [ ] Show comparison to last 3 sessions (optional badge if beating personal record)
 - [ ] Link to continue/return dashboard
@@ -861,6 +903,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - `/t-portal/settings/profile` — Public profile editor
 - `/t-portal/packages` — Package management [How]
 - `/t-portal/reports` — Reports
+- `/t-portal/sessions/live/[sessionInstanceId]` — Live Session Page (Phase 17, ManyCam display)
 
 ### Student Portal Routes
 
@@ -962,9 +1005,75 @@ When a previously working feature starts failing:
 
 ---
 
+## XP BUDGET PER LEVEL (Established Q4D)
+
+**Minimum 5,000 XP to complete one level.** 60% Engagement / 40% Mastery. Time (200 hours) is a gate, not an XP source. Progress = total XP ever earned. Spending Dorks never reduces progress.
+
+**Three Pillars of Progress:**
+- **Time:** 200 hrs/level (45 hrs in-class + 155 hrs out-of-class). Gate only — no XP from attendance.
+- **Engagement (60%):** In-session Treasure Chests + Petland SRS practice.
+- **Mastery (40%):** Homework accuracy + evaluations.
+
+**Per Academic Year (1 level):** 20 units, ~90 sessions.
+
+**Assessment structure:** 20 TBLT evaluations (60% of mastery) + midterm (20%) + final (20%).
+
+| Source | Pillar | Max XP | % of Total | Mechanism |
+|--------|--------|--------|------------|-----------|
+| Treasure Chests (in-session) | Engagement | ~1,800 | 30% | T-controlled, ~20 XP avg/session × 90 sessions |
+| Petland SRS practice | Engagement | ~1,200+ | 20%+ | Memory Match: matched pairs × 5 XP. Uncapped. |
+| Homework | Mastery | ~800 | 13% | 20 XP × completion rate, auto-awarded on submission |
+| TBLT evaluations (×20) | Mastery | ~720 | 12% | 36 XP × score/100 per unit evaluation |
+| Midterm evaluation | Mastery | ~240 | 4% | 240 × score/100 |
+| Final evaluation | Mastery | ~240 | 4% | 240 × score/100 |
+
+**Learner Profiles:**
+- Perfect L: ~5,000 XP
+- Engaged L with daily Petland: ~5,500-6,500 XP (surplus for Dork spending)
+- Bare minimum L: ~3,000-3,500 XP (does not complete level)
+
+**Homework XP Rule:** Auto-awarded instantly on submission. Formula: 20 × (completedActivities / totalActivities). T still grades for feedback and records, but grading does not adjust XP already earned.
+
+**Treasure Chest Guideline:** ~20 XP per session average across 90 sessions. Soft reminder in Live Session UI suggested.
+
+---
+
+## DORK ECONOMY (Established Q4D)
+
+**XP** = progress (report card). Total ever earned. Never decreases. Tracks toward level completion.
+
+**Dorks** = spending money (pocket money). Converted from XP by player choice at the Cash-In Station. Spent in Pet Shop, Blasters arcade, Travel Agent.
+
+**Conversion:**
+
+| XP | Copper | Silver | Gold |
+|----|--------|--------|------|
+| 1 | 1 | — | — |
+| 10 | 10 | 1 | — |
+| 100 | 100 | 10 | 1 |
+| 1,000 | 1,000 | 100 | 10 |
+
+All balances stored in Firestore as integers (Copper). Gold/Silver/Copper is a display layer only.
+
+**Pet Shop:** All prices in Dorks (not XP). Purchases deduct from `dorkBalance`. Price tag denomination communicates value visually — Copper = cheap impulse buy, Silver = nice treat, Gold = save-up goal.
+
+**Pet Egg Recovery Cost:** 500 Copper (5 Gold) for new egg + 100 Copper (1 Gold) to hatch.
+
+**Treasure Chest visual tiers** tie to Dork denominations — Copper/Silver/Gold coins fly out matching the XP amount given.
+
+**Petland XP Conflict Resolved (Q4D):** Old Game Mechanics doc had Wow = +5 XP, Treasure Chest = +10-50 random. Current system: Wows = no XP (behavioral only), Treasure Chests = T-controlled amount. Stars retired. Brainfarts renamed to Oopsies (data only, no penalty). Petland codebase updated to match.
+
+---
+
 ## CURRENT STATUS (April 13, 2026)
 
 - ✅ **Phases 1–16:** Complete and production-ready
+- ✅ **Dork Economy:** Complete — Cash-In Station, Pet Shop migrated to Dorks, denomination display
+- ✅ **XP Budget:** Finalized — 5,000 XP/level, 60/40 Engagement/Mastery split
+- ✅ **Reward System:** Updated — Treasure Chests (XP), Wows (behavioral), Oopsies (data), behavior deductions. Stars retired.
+- ✅ **Phase 17 Spec + Mockup:** Complete — `LessonLink-Phase17-LiveSession-Spec-Q4D.md` + `LessonLink-Phase17-LiveSession-Mockup-Q4D.html`
 - 🔴 **Blocker:** xpSpent backfill required before Phase 17
-- 🔧 **Next Priority:** Phase 17 (Live Session Background)
+- 🔧 **Next Priority:** Phase 17 build (Live Session Background)
 - ⬜ **Stacked:** Phases A/B/C (Curriculum AI), Phases 17B/17C, Phases 18–23
+- **Next:** Phase 17 build → Phase 17B (session items → Petland SRS) → Phase 17C (scoreboard) → Phase A (types + CRUD) → Phase B (AI layer) → Phase C (template UI) → Unified Session History → Course Page Architecture
+- **Estimated sessions for Phase 17:** 3–5
