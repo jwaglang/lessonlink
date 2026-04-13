@@ -824,8 +824,7 @@ export default function LiveSessionPage() {
                   fontWeight: 'bold',
                   cursor: 'pointer',
                   fontFamily: 'Contrail One',
-                `
-              }}>
+                }}>
                 Save Note
               </button>
             </div>
