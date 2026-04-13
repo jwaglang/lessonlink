@@ -4,7 +4,7 @@
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/t-app-sidebar';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { getTeacherProfileByEmail } from '@/lib/firestore';
 import { Loader } from 'lucide-react';
@@ -18,8 +18,12 @@ export default function TeacherPortalLayout({
 }) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+
+  // Check if this is a live session page (no sidebar)
+  const isLiveSession = pathname.includes('/sessions/live/');
 
   useEffect(() => {
     if (authLoading) {
@@ -72,6 +76,15 @@ export default function TeacherPortalLayout({
   if (!isAuthorized) {
     // Should have been redirected, but as a fallback, show nothing
     return null;
+  }
+
+  // For live session pages, render full-screen without sidebar
+  if (isLiveSession) {
+    return (
+      <main style={{ width: '100%', height: '100vh' }}>
+        {children}
+      </main>
+    );
   }
   
   return (
