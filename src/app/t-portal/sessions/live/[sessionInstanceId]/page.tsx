@@ -734,23 +734,36 @@ export default function LiveSessionPage() {
 
         {/* LANGUAGE DIARY PANEL - Right Side Overlay */}
         {showLanguageDiary && (
-          <div style={{
-            position: 'absolute',
-            top: '65px',
-            right: '10px',
-            width: '280px',
-            maxHeight: 'calc(100% - 130px)',
-            background: 'linear-gradient(135deg, rgba(226,214,244,0.12), rgba(138,43,226,0.12))',
-            border: '2.5px solid rgba(226,214,244,0.4)',
-            borderRadius: '20px',
-            padding: '14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            backdropFilter: 'blur(8px)',
-            zIndex: 8,
-            overflow: 'hidden',
-          }}>
+          <>
+            {/* Click-outside backdrop */}
+            <div
+              onClick={() => setShowLanguageDiary(false)}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 7,
+              }}
+            />
+            {/* Diary Panel */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute',
+                top: '65px',
+                right: '10px',
+                width: '280px',
+                maxHeight: 'calc(100% - 130px)',
+                background: 'linear-gradient(135deg, rgba(226,214,244,0.12), rgba(138,43,226,0.12))',
+                border: '2.5px solid rgba(226,214,244,0.4)',
+                borderRadius: '20px',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                backdropFilter: 'blur(8px)',
+                zIndex: 8,
+                overflow: 'hidden',
+              }}>
             <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--k-lavender)', fontFamily: 'Contrail One' }}>
               📖 Language Diary
             </div>
@@ -856,7 +869,8 @@ export default function LiveSessionPage() {
                   </div>
                 ))}
             </div>
-          </div>
+            </div>
+          </>
         )}
 
         {/* BOTTOM BAR - PROGRESS & MAGIC WORD */}
