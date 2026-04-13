@@ -241,10 +241,11 @@ export default function SessionPrepPage() {
         console.log('✓ Magic word set');
       }
 
-      console.log('✓ All prep data saved, navigating to live session');
+      console.log('✓ All prep data saved, opening live session in new tab');
 
-      // Navigate to live session page
-      router.push(`/t-portal/sessions/live/${sessionId}`);
+      // Open live session in new tab (full screen, no sidebar)
+      const liveSessionUrl = `/t-portal/sessions/live/${sessionId}`;
+      window.open(liveSessionUrl, '_blank');
     } catch (err) {
       console.error('=== LAUNCH SESSION ERROR ===');
       console.error('Error:', err);

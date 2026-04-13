@@ -33,6 +33,11 @@ import { useToast } from '@/hooks/use-toast';
 import type { SessionInstance, Student, SessionProgress as Phase17SessionProgress } from '@/lib/types';
 import type { PetlandProfile } from '@/modules/petland/types';
 
+// Google Fonts - Contrail One + Poppins
+const fontLink = `
+  @import url('https://fonts.googleapis.com/css2?family=Contrail+One&family=Poppins:wght@400;500;600;700&display=swap');
+`;
+
 export default function LiveSessionPage() {
   const { sessionInstanceId } = useParams() as { sessionInstanceId: string };
   const router = useRouter();
@@ -64,6 +69,16 @@ export default function LiveSessionPage() {
   const [targetXp, setTargetXp] = useState(60);
   const [sessionQuestion, setSessionQuestion] = useState('');
   const [treasureAmount, setTreasureAmount] = useState(5);
+
+  // Language Diary
+  const [showLanguageDiary, setShowLanguageDiary] = useState(false);
+  const [diaryTab, setDiaryTab] = useState<'vocab' | 'grammar' | 'phonics'>('vocab');
+  const [diaryNotes, setDiaryNotes] = useState('');
+  const [diaryEntries, setDiaryEntries] = useState<Array<{
+    type: 'vocab' | 'grammar' | 'phonics';
+    content: string;
+    timestamp: Date;
+  }>>([]);
 
   // Load initial data
   useEffect(() => {
@@ -242,6 +257,23 @@ export default function LiveSessionPage() {
     }
   };
 
+  const handleAddDiaryEntry = () => {
+    if (!diaryNotes.trim()) {
+      toast({ title: 'Please enter some notes', variant: 'destructive' });
+      return;
+    }
+    
+    const newEntry = {
+      type: diaryTab,
+      content: diaryNotes,
+      timestamp: new Date(),
+    };
+    
+    setDiaryEntries([...diaryEntries, newEntry]);
+    setDiaryNotes('');
+    toast({ title: `${diaryTab.charAt(0).toUpperCase() + diaryTab.slice(1)} note saved` });
+  };
+
   const handleEndSession = async () => {
     if (!progress) return;
     try {
@@ -285,333 +317,738 @@ export default function LiveSessionPage() {
   const xpPercentage = Math.min((totalXpEarned / progress.xpTarget) * 100, 100);
 
   return (
-    <div className="w-full h-screen flex flex-col overflow-hidden">
-      {/* ANIMATED THEME BACKGROUND */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
-        {/* Space theme stars and animations */}
-        <div className="absolute inset-0 opacity-50">
-          {/* Twinkling stars */}
-          {Array.from({ length: 50 }).map((_, i) => (
+    <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        ${fontLink}
+        
+        :root {
+          --k-navy: #404376;
+          --k-slate: #686ea8;
+          --k-orange: #f2811d;
+          --k-pink: #fe598b;
+          --k-peach: #f8dab9;
+          --k-ice-blue: #dcebf4;
+          --k-lavender: #e2d6f4;
+        }
+
+        * { font-family: 'Poppins', sans-serif; }
+        .display-font { font-family: 'Contrail One', cursive; }
+
+        @keyframes twinkle {
+          0% { opacity: 0.2; transform: scale(0.8); }
+          100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        @keyframes cometFly {
+          0% { transform: translateX(0) translateY(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateX(-600px) translateY(200px); opacity: 0; }
+        }
+
+        @keyframes nebulaPulse {
+          0% { opacity: 0.5; transform: scale(1); }
+          100% { opacity: 1; transform: scale(1.1); }
+        }
+
+        @keyframes cardSlideIn {
+          0% { transform: translateX(40px); opacity: 0; }
+          70% { transform: translateX(-4px); }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes wowPulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(138,43,226,0.3); }
+          50% { box-shadow: 0 0 40px rgba(138,43,226,0.6); }
+        }
+
+        @keyframes chestWobble {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-5deg); }
+          75% { transform: rotate(5deg); }
+        }
+      `}</style>
+
+      {/* DISPLAY CONTAINER - 16:9 RATIO */}
+      <div style={{
+        position: 'relative',
+        flex: 1,
+        aspectRatio: '16/9',
+        background: 'linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 30%, #2a1a4e 60%, #0a0a2e 100%)',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        margin: '10px',
+      }}>
+        
+        {/* SPACE THEME BACKGROUND - 50% opacity */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: 0.5,
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}>
+          {/* Stars */}
+          {[
+            { size: 3, top: '5%', left: '20%', delay: '0s' },
+            { size: 4, top: '12%', left: '75%', delay: '0.8s' },
+            { size: 2, top: '22%', left: '45%', delay: '1.5s' },
+            { size: 3, top: '35%', left: '8%', delay: '0.3s' },
+            { size: 3, top: '55%', left: '92%', delay: '2s' },
+            { size: 2, top: '68%', left: '30%', delay: '1.2s' },
+            { size: 2, top: '78%', left: '65%', delay: '0.6s' },
+            { size: 3, top: '88%', left: '15%', delay: '1.8s' },
+          ].map((star, i) => (
             <div
               key={`star-${i}`}
-              className="absolute rounded-full bg-white animate-pulse"
-              // eslint-disable-next-line
               style={{
-                width: Math.random() > 0.7 ? '3px' : '1px',
-                height: Math.random() > 0.7 ? '3px' : '1px',
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDuration: `${1 + Math.random() * 3}s`,
-                transitionProperty: 'none',
+                position: 'absolute',
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                background: 'white',
+                borderRadius: '50%',
+                top: star.top,
+                left: star.left,
+                animation: `twinkle 3s ease-in-out infinite alternate`,
+                animationDelay: star.delay,
               }}
             />
           ))}
-          
-          {/* Comets */}
-          {/* eslint-disable-next-line */}
-          <div className="absolute top-20 left-10 w-1 h-1 bg-white rounded-full shadow-lg opacity-0 animate-[float_3s_ease-in-out_infinite]"
-            style={{
-              boxShadow: '0 0 20px rgba(255,255,255,0.8)',
-            }}
-          />
-          
-          {/* Nebula gradient */}
-          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-gradient-radial from-purple-500/20 to-transparent rounded-full blur-3xl"></div>
-        </div>
-      </div>
 
-      {/* DISPLAY AREA - 16:9 RATIO */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Comet */}
+          <div style={{
+            position: 'absolute',
+            top: '18%',
+            left: '70%',
+            animation: 'cometFly 8s linear infinite',
+          }}>
+            <div style={{
+              width: '80px',
+              height: '2px',
+              background: 'linear-gradient(90deg, transparent, rgba(226,214,244,0.6), rgba(226,214,244,0.9))',
+              borderRadius: '2px',
+              transform: 'rotate(-25deg)',
+              position: 'relative',
+            }}>
+              <div style={{
+                width: '5px',
+                height: '5px',
+                background: 'var(--k-lavender)',
+                borderRadius: '50%',
+                position: 'absolute',
+                right: '-2px',
+                top: '-1.5px',
+              }} />
+            </div>
+          </div>
+
+          {/* Nebula */}
+          <div style={{
+            position: 'absolute',
+            top: '25%',
+            left: '38%',
+            width: '180px',
+            height: '120px',
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse, rgba(138,43,226,0.1) 0%, transparent 70%)',
+            animation: 'nebulaPulse 6s ease-in-out infinite alternate',
+          }} />
+
+          {/* Planet */}
+          <div style={{
+            position: 'absolute',
+            top: '62%',
+            left: '5%',
+            width: '26px',
+            height: '26px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 40% 35%, var(--k-slate), var(--k-navy))',
+          }} />
+        </div>
+
         {/* TOP BAR */}
-        <div className="bg-black/40 border-b border-white/10 px-6 py-3 flex items-center justify-between text-white">
-          <div className="flex-1">
-            <p className="text-sm font-medium opacity-75">🚀 Session</p>
-            <p className="text-lg font-bold">{progress.sessionQuestion || 'Live Session'}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-medium opacity-75">⚡ XP</p>
-            <p className="text-2xl font-bold">{totalXpEarned}</p>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          padding: '12px 16px',
+          zIndex: 10,
+        }}>
+          <div>
+            <div style={{
+              background: 'linear-gradient(135deg, var(--k-orange), var(--k-pink))',
+              borderRadius: '24px',
+              padding: '8px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 4px 20px rgba(242,129,29,0.4)',
+            }}>
+              <span style={{ fontSize: '20px' }}>🚀</span>
+              <span className="display-font" style={{ fontSize: '18px', color: 'white' }}>
+                {progress?.sessionQuestion || 'Live Session'}
+              </span>
+              <span style={{ fontSize: '20px' }}>🚀</span>
+            </div>
+            <div style={{
+              textAlign: 'center',
+              marginTop: '4px',
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.4)',
+            }}>
+              {progress?.sessionAim}
+            </div>
           </div>
         </div>
 
-        {/* MAIN DISPLAY AREA */}
-        <div className="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
-          {/* LEFT PANEL - REWARDS */}
-          <div className="col-span-2 space-y-3 overflow-y-auto">
-            {/* Treasure Chests */}
-            <div className="bg-yellow-900/30 border border-yellow-500/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs font-bold text-yellow-200 mb-2">🧰 TREASURES</p>
-              <p className="text-2xl font-bold text-yellow-300">{progress.treasureChests?.length || 0}</p>
-            </div>
+        {/* THEME BADGE - Top Left */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          left: '14px',
+          background: 'rgba(0,0,0,0.4)',
+          borderRadius: '12px',
+          padding: '4px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          fontSize: '11px',
+          color: 'rgba(255,255,255,0.5)',
+          zIndex: 10,
+        }}>
+          🌌 {progress?.theme || 'space'}
+        </div>
 
-            {/* Wows */}
-            <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs font-bold text-purple-200 mb-2">✨ WOWS</p>
-              <p className="text-2xl font-bold text-purple-300">{progress.wows?.length || 0}</p>
-            </div>
+        {/* XP COUNTER - Top Right */}
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          right: '14px',
+          background: 'rgba(0,0,0,0.4)',
+          borderRadius: '20px',
+          padding: '6px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          border: '2.5px solid rgba(255,215,0,0.5)',
+          zIndex: 10,
+        }}>
+          <div style={{ fontSize: '26px', lineHeight: 1, fontFamily: 'Contrail One' }}>
+            {progress?.totalXpEarned || 0}
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>XP</div>
+        </div>
 
-            {/* Oopsies */}
-            <div className="bg-orange-900/30 border border-orange-500/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs font-bold text-orange-200 mb-2">👀 OOPSIES</p>
-              <p className="text-2xl font-bold text-orange-300">{progress.oopsies?.length || 0}</p>
-            </div>
+        {/* LANGUAGE DIARY BUTTON - Top Right Below XP */}
+        <button
+          onClick={() => setShowLanguageDiary(!showLanguageDiary)}
+          style={{
+            position: 'absolute',
+            top: '50px',
+            right: '14px',
+            background: showLanguageDiary ? 'linear-gradient(135deg, var(--k-lavender), var(--k-pink))' : 'rgba(0,0,0,0.4)',
+            border: '2.5px solid rgba(226,214,244,0.4)',
+            borderRadius: '16px',
+            padding: '8px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '13px',
+            color: showLanguageDiary ? 'white' : 'rgba(255,255,255,0.7)',
+            cursor: 'pointer',
+            backdropFilter: 'blur(4px)',
+            zIndex: 10,
+            transition: 'all 0.3s ease',
+            fontFamily: 'Contrail One',
+          }}>
+          📔 Diary
+        </button>
 
-            {/* Behavior Deductions */}
-            <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-3 backdrop-blur-sm">
-              <p className="text-xs font-bold text-red-200 mb-2">⚠️ DEDUCTIONS</p>
-              <p className="text-2xl font-bold text-red-300">{progress.behaviorDeductions?.length || 0}</p>
+        {/* LEFT PANEL - REWARDS */}
+        <div style={{
+          position: 'absolute',
+          top: '65px',
+          left: '10px',
+          width: '135px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          zIndex: 5,
+        }}>
+          {/* Treasure */}
+          <div style={{
+            borderRadius: '20px',
+            padding: '10px',
+            textAlign: 'center',
+            backdropFilter: 'blur(4px)',
+            background: 'rgba(255,215,0,0.12)',
+            border: '2.5px solid rgba(255,215,0,0.35)',
+          }}>
+            <div style={{ fontSize: '30px', lineHeight: 1.1 }}>💎</div>
+            <div className="display-font" style={{ fontSize: '16px', marginTop: '4px', color: '#FFD700' }}>
+              TREASURE
+            </div>
+            <div style={{ fontSize: '11px', marginTop: '2px', color: 'rgba(255,215,0,0.5)' }}>
+              {progress?.treasureChests?.length || 0}
             </div>
           </div>
 
-          {/* CENTER - WEBCAM ZONE (EMPTY FOR ManyCam) */}
-          <div className="col-span-8 bg-gradient-to-b from-slate-700/50 to-slate-800/50 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl opacity-30 mb-2">📹</div>
-              <p className="text-white/40 text-sm">ManyCam Capture Zone</p>
-              <p className="text-white/30 text-xs mt-1">Teacher's video appears here</p>
+          {/* Wow */}
+          <div style={{
+            borderRadius: '20px',
+            padding: '10px',
+            textAlign: 'center',
+            backdropFilter: 'blur(4px)',
+            background: 'rgba(138,43,226,0.12)',
+            border: '2.5px solid rgba(180,130,255,0.35)',
+          }}>
+            <div style={{ fontSize: '30px', lineHeight: 1.1 }}>⭐</div>
+            <div className="display-font" style={{ fontSize: '16px', marginTop: '4px', color: '#d4a5ff' }}>
+              WOW!
+            </div>
+            <div style={{ fontSize: '11px', marginTop: '2px', color: 'rgba(180,130,255,0.5)' }}>
+              {progress?.wows?.length || 0}
             </div>
           </div>
 
-          {/* RIGHT PANEL - CONTENT CARDS */}
-          <div className="col-span-2 space-y-2 overflow-y-auto">
-            {/* Vocabulary Cards */}
-            {progress.vocabulary?.map((vocab, i) => (
-              <div key={`vocab-${i}`} className="bg-gradient-to-r from-indigo-600/30 to-indigo-700/30 border border-indigo-400/50 rounded-lg p-2 backdrop-blur-sm">
-                <p className="text-xs font-bold text-indigo-200 truncate">{vocab.word}</p>
-                <p className="text-xs text-indigo-100/70 truncate">{vocab.meaning}</p>
-              </div>
-            ))}
+          {/* Oopsie */}
+          <div style={{
+            borderRadius: '20px',
+            padding: '10px',
+            textAlign: 'center',
+            backdropFilter: 'blur(4px)',
+            background: 'rgba(255,255,255,0.05)',
+            border: '2px dashed rgba(255,255,255,0.12)',
+          }}>
+            <div style={{ fontSize: '24px', lineHeight: 1.1 }}>👀</div>
+            <div className="display-font" style={{ fontSize: '14px', marginTop: '4px', color: 'rgba(255,255,255,0.35)' }}>
+              OOPSIE
+            </div>
+            <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(255,255,255,0.2)' }}>
+              {progress?.oopsies?.length || 0}
+            </div>
+          </div>
 
-            {/* Grammar Cards */}
-            {progress.grammar?.map((gram, i) => (
-              <div key={`grammar-${i}`} className="bg-gradient-to-r from-cyan-600/30 to-cyan-700/30 border border-cyan-400/50 rounded-lg p-2 backdrop-blur-sm">
-                <p className="text-xs font-bold text-cyan-200 truncate">{gram.point}</p>
-                <p className="text-xs text-cyan-100/70 truncate">{gram.example}</p>
-              </div>
-            ))}
-
-            {/* Phonics Cards */}
-            {progress.phonics?.map((phonics, i) => (
-              <div key={`phonics-${i}`} className="bg-gradient-to-r from-green-600/30 to-green-700/30 border border-green-400/50 rounded-lg p-2 backdrop-blur-sm">
-                <p className="text-xs font-bold text-green-200 truncate">{phonics.sound}</p>
-                <p className="text-xs text-green-100/70 truncate">{phonics.examples?.[0]}</p>
-              </div>
-            ))}
+          {/* Behavior */}
+          <div style={{
+            borderRadius: '20px',
+            padding: '10px',
+            textAlign: 'center',
+            backdropFilter: 'blur(4px)',
+            background: 'rgba(134,239,172,0.08)',
+            border: '2px solid rgba(134,239,172,0.2)',
+          }}>
+            <div style={{ fontSize: '22px', lineHeight: 1.1 }}>🎯</div>
+            <div className="display-font" style={{ fontSize: '13px', marginTop: '4px', color: 'rgba(134,239,172,0.6)' }}>
+              BEHAVIOR
+            </div>
+            <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(134,239,172,0.4)' }}>
+              -{progress?.behaviorDeductions?.length || 0}
+            </div>
           </div>
         </div>
+
+        {/* CENTER - WEBCAM ZONE */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '260px',
+          height: '200px',
+          border: '2px dashed rgba(255,255,255,0.06)',
+          borderRadius: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+        }}>
+          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.08)', textAlign: 'center' }}>
+            📹 ManyCam Zone
+          </div>
+        </div>
+
+        {/* RIGHT PANEL - CONTENT CARDS */}
+        <div style={{
+          position: 'absolute',
+          top: '65px',
+          right: '10px',
+          width: '158px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '7px',
+          zIndex: 5,
+          maxHeight: 'calc(100% - 100px)',
+          overflowY: 'auto',
+        }}>
+          {/* Vocabulary Cards */}
+          {progress?.vocabulary?.map((vocab, i) => (
+            <div key={`vocab-${i}`} style={{
+              borderRadius: '18px',
+              padding: '10px 12px',
+              border: '2.5px solid rgba(226,214,244,0.25)',
+              background: 'linear-gradient(135deg, rgba(226,214,244,0.18), rgba(138,43,226,0.1))',
+              animation: 'cardSlideIn 0.5s ease-out',
+            }}>
+              <div className="display-font" style={{ fontSize: '20px', lineHeight: 1, color: 'var(--k-lavender)' }}>
+                {vocab.word}
+              </div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px' }}>
+                {vocab.meaning}
+              </div>
+            </div>
+          ))}
+
+          {/* Grammar Cards */}
+          {progress?.grammar?.map((gram, i) => (
+            <div key={`grammar-${i}`} style={{
+              background: 'rgba(242,129,29,0.1)',
+              border: '2.5px solid rgba(242,129,29,0.25)',
+              borderRadius: '18px',
+              padding: '10px 12px',
+              marginTop: '3px',
+            }}>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>Grammar</div>
+              <div className="display-font" style={{
+                fontSize: '15px',
+                color: 'var(--k-peach)',
+                lineHeight: 1.3,
+                marginTop: '3px',
+              }}>
+                {gram.point}
+              </div>
+            </div>
+          ))}
+
+          {/* Phonics Cards */}
+          {progress?.phonics?.map((phonics, i) => (
+            <div key={`phonics-${i}`} style={{
+              background: 'rgba(220,235,244,0.08)',
+              border: '2.5px solid rgba(220,235,244,0.18)',
+              borderRadius: '18px',
+              padding: '8px 12px',
+            }}>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>Sound</div>
+              <div className="display-font" style={{
+                fontSize: '18px',
+                color: 'var(--k-ice-blue)',
+                lineHeight: 1,
+              }}>
+                {phonics.sound}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* LANGUAGE DIARY PANEL - Right Side Overlay */}
+        {showLanguageDiary && (
+          <div style={{
+            position: 'absolute',
+            top: '65px',
+            right: '10px',
+            width: '280px',
+            maxHeight: 'calc(100% - 130px)',
+            background: 'linear-gradient(135deg, rgba(226,214,244,0.12), rgba(138,43,226,0.12))',
+            border: '2.5px solid rgba(226,214,244,0.4)',
+            borderRadius: '20px',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            backdropFilter: 'blur(8px)',
+            zIndex: 8,
+            overflow: 'hidden',
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--k-lavender)', fontFamily: 'Contrail One' }}>
+              📖 Language Diary
+            </div>
+
+            {/* Diary Tabs */}
+            <div style={{ display: 'flex', gap: '6px', borderBottom: '2px solid rgba(226,214,244,0.2)' }}>
+              {(['vocab', 'grammar', 'phonics'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setDiaryTab(tab)}
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: '10px',
+                    fontWeight: diaryTab === tab ? 'bold' : 'normal',
+                    color: diaryTab === tab ? 'var(--k-lavender)' : 'rgba(255,255,255,0.4)',
+                    background: diaryTab === tab ? 'rgba(138,43,226,0.3)' : 'transparent',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontFamily: 'Contrail One',
+                    transition: 'all 0.2s',
+                  }}>
+                  {tab === 'vocab' && '📚 Vocab'}
+                  {tab === 'grammar' && '✍️ Grammar'}
+                  {tab === 'phonics' && '🔤 Phonics'}
+                </button>
+              ))}
+            </div>
+
+            {/* Notes Input */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <textarea
+                value={diaryNotes}
+                onChange={(e) => setDiaryNotes(e.target.value)}
+                placeholder={`Add ${diaryTab} notes here...`}
+                style={{
+                  padding: '8px',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(226,214,244,0.3)',
+                  background: 'rgba(0,0,0,0.3)',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontFamily: 'Poppins',
+                  resize: 'vertical',
+                  minHeight: '60px',
+                  maxHeight: '80px',
+                  overflow: 'auto',
+                }}
+              />
+              <button
+                onClick={handleAddDiaryEntry}
+                style={{
+                  padding: '6px 12px',
+                  background: 'linear-gradient(135deg, var(--k-orange), var(--k-pink))',
+                  border: 'none',
+                  borderRadius: '10px',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontFamily: 'Contrail One',
+                `
+              }}>
+                Save Note
+              </button>
+            </div>
+
+            {/* Recent Entries */}
+            <div style={{
+              fontSize: '12px',
+              fontWeight: 'bold',
+              color: 'rgba(255,255,255,0.6)',
+              fontFamily: 'Contrail One',
+            }}>
+              Recent Entries
+            </div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              maxHeight: '120px',
+              overflowY: 'auto',
+            }}>
+              {diaryEntries
+                .filter(e => e.type === diaryTab)
+                .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+                .slice(0, 5)
+                .map((entry, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: '8px',
+                      background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '8px',
+                      fontSize: '10px',
+                      color: 'rgba(255,255,255,0.8)',
+                      lineHeight: 1.3,
+                      borderLeft: '3px solid var(--k-lavender)',
+                    }}>
+                    {entry.content}
+                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', marginTop: '3px' }}>
+                      {entry.timestamp.toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* BOTTOM BAR - PROGRESS & MAGIC WORD */}
-        <div className="bg-black/40 border-t border-white/10 px-6 py-3 flex items-center justify-between text-white">
-          <div className="flex-1">
-            <p className="text-xs opacity-75">🐉 Progress</p>
-            <div className="bg-slate-700 rounded-full h-6 mt-1 overflow-hidden">
-              {/* eslint-disable-next-line */}
-              <div
-                className="bg-gradient-to-r from-green-400 to-emerald-500 h-full flex items-center justify-center text-xs font-bold text-white transition-all"
-                style={{ width: `${xpPercentage}%` }}
-              >
-                {xpPercentage > 20 && <span>{Math.round(xpPercentage)}%</span>}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '10px 16px',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          zIndex: 10,
+        }}>
+          {/* Progress */}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <div style={{
+                flex: 1,
+                height: '16px',
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: '10px',
+                overflow: 'visible',
+                position: 'relative',
+              }}>
+                <div style={{
+                  width: `${Math.min((progress?.totalXpEarned || 0) / (progress?.xpTarget || 60) * 100, 100)}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, var(--k-orange), var(--k-pink), var(--k-lavender))',
+                  borderRadius: '10px',
+                  position: 'relative',
+                  transition: 'width 0.5s ease-out',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  right: '-10px',
+                  top: '-10px',
+                  fontSize: '28px',
+                  lineHeight: 1,
+                }}>
+                  🐉
+                </div>
               </div>
+              <div style={{ fontSize: '26px', marginLeft: '6px' }}>🏆</div>
             </div>
-            <p className="text-xs mt-1 opacity-75">{totalXpEarned} / {progress.xpTarget} XP</p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: '3px',
+              fontSize: '11px',
+              color: 'rgba(255,255,255,0.3)',
+            }}>
+              <span className="display-font">{progress?.totalXpEarned || 0}</span>
+              <span>/ {progress?.xpTarget || 60} XP</span>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs opacity-75">✨ Magic Word</p>
-            <p className="text-lg font-bold">{progress.magicWord ? '***' : '???'}</p>
+
+          {/* Magic Word */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(226,214,244,0.12), rgba(138,43,226,0.12))',
+            border: '2.5px dashed rgba(226,214,244,0.4)',
+            borderRadius: '18px',
+            padding: '6px 18px',
+            textAlign: 'center',
+            minWidth: '120px',
+          }}>
+            <div style={{
+              fontSize: '11px',
+              color: 'rgba(255,255,255,0.35)',
+            }}>
+              Magic Word
+            </div>
+            <div className="display-font" style={{
+              fontSize: '20px',
+              color: 'var(--k-lavender)',
+              letterSpacing: '0.12em',
+            }}>
+              {progress?.magicWord ? '****' : '????'}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* TEACHER CONTROL PANEL - Below fold, scrollable */}
-      <div className="bg-slate-900 border-t border-white/10 p-4 max-h-48 overflow-y-auto">
-        <div className="space-y-3">
-          {/* Reward Buttons */}
-          <div className="grid grid-cols-5 gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleTreasureChest(5)}
-              className="text-xs"
-            >
-              🧰 +5
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleTreasureChest(10)}
-              className="text-xs"
-            >
-              🧰 +10
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleTreasureChest(15)}
-              className="text-xs"
-            >
-              🧰 +15
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleTreasureChest(20)}
-              className="text-xs"
-            >
-              🧰 +20
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAddVocab(true)}
-              className="text-xs"
-            >
-              🧰 Amt
-            </Button>
-          </div>
-
-          {/* More Reward Buttons */}
-          <div className="grid grid-cols-5 gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleWow}
-              className="text-xs bg-purple-600/20 hover:bg-purple-600/30 border-purple-500"
-            >
-              ✨ WOW!
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleOopsie}
-              className="text-xs bg-orange-600/20 hover:bg-orange-600/30 border-orange-500"
-            >
-              👀 Oops
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleBehavior('out-to-lunch')}
-              className="text-xs"
-            >
-              😴 -3
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleBehavior('chatterbox')}
-              className="text-xs"
-            >
-              🗣️ -2
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleBehavior('disruptive')}
-              className="text-xs"
-            >
-              😬 -5
-            </Button>
-          </div>
-
-          {/* Content Buttons */}
-          <div className="grid grid-cols-5 gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAddVocab(true)}
-              className="text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Vocab
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAddGrammar(true)}
-              className="text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Gram
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAddPhonics(true)}
-              className="text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Phon
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowSettings(true)}
-              className="text-xs"
-            >
-              ⚙️ Set
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={handleEndSession}
-              className="text-xs"
-            >
-              🏁 End
-            </Button>
-          </div>
+      {/* CONTROL PANEL - Below display */}
+      <div style={{
+        background: 'rgba(26, 26, 46, 0.8)',
+        borderTop: '1px solid rgba(226,214,244,0.1)',
+        padding: '12px 16px',
+        maxHeight: '120px',
+        overflowY: 'auto',
+      }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+          <Button size="sm" onClick={() => handleTreasureChest(5)} variant="outline" className="text-xs">
+            🧰 +5
+          </Button>
+          <Button size="sm" onClick={() => handleTreasureChest(10)} variant="outline" className="text-xs">
+            🧰 +10
+          </Button>
+          <Button size="sm" onClick={() => handleTreasureChest(15)} variant="outline" className="text-xs">
+            🧰 +15
+          </Button>
+          <Button size="sm" onClick={() => handleTreasureChest(20)} variant="outline" className="text-xs">
+            🧰 +20
+          </Button>
+          <Button size="sm" onClick={handleWow} variant="outline" className="text-xs bg-purple-600/20">
+            ✨ WOW
+          </Button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' }}>
+          <Button size="sm" onClick={handleOopsie} variant="outline" className="text-xs bg-orange-600/20">
+            👀 Oops
+          </Button>
+          <Button size="sm" onClick={() => handleBehavior('out-to-lunch')} variant="outline" className="text-xs">
+            😴 -3
+          </Button>
+          <Button size="sm" onClick={() => handleBehavior('chatterbox')} variant="outline" className="text-xs">
+            🗣️ -2
+          </Button>
+          <Button size="sm" onClick={() => handleBehavior('disruptive')} variant="outline" className="text-xs">
+            😬 -5
+          </Button>
+          <Button size="sm" variant="destructive" onClick={handleEndSession} className="text-xs">
+            🏁 End
+          </Button>
         </div>
       </div>
 
-      {/* DIALOGS */}
-      {/* Add Vocabulary Dialog */}
+      {/* Add Content Dialogs */}
       {showAddVocab && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 border border-white/20 rounded-lg p-4 w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-white">Add Vocabulary</h3>
-              <button
-                onClick={() => setShowAddVocab(false)}
-                aria-label="Close dialog"
-                title="Close dialog"
-              >
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+        }}>
+          <div style={{
+            background: '#1a1a2e',
+            border: '1px solid rgba(226,214,244,0.2)',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '384px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', fontFamily: 'Contrail One' }}>
+                Add Vocabulary
+              </h3>
+              <button onClick={() => setShowAddVocab(false)} aria-label="Close">
                 <X className="h-4 w-4 text-white" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <Label htmlFor="vocab-word" className="text-sm text-white">
-                  Word
-                </Label>
+                <Label className="text-white">Word</Label>
                 <Input
-                  id="vocab-word"
                   value={vocabWord}
                   onChange={(e) => setVocabWord(e.target.value)}
                   className="mt-1 bg-slate-700 border-white/20"
                 />
               </div>
               <div>
-                <Label htmlFor="vocab-meaning" className="text-sm text-white">
-                  Meaning
-                </Label>
+                <Label className="text-white">Meaning</Label>
                 <Input
-                  id="vocab-meaning"
                   value={vocabMeaning}
                   onChange={(e) => setVocabMeaning(e.target.value)}
                   className="mt-1 bg-slate-700 border-white/20"
                 />
               </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowAddVocab(false)}
-                >
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <Button variant="outline" size="sm" onClick={() => setShowAddVocab(false)}>
                   Cancel
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleAddVocab}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  style={{ background: 'linear-gradient(135deg, #8a5cf6, #a78bfa)' }}
                 >
                   Add
                 </Button>
@@ -623,53 +1060,55 @@ export default function LiveSessionPage() {
 
       {/* Add Grammar Dialog */}
       {showAddGrammar && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 border border-white/20 rounded-lg p-4 w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-white">Add Grammar</h3>
-              <button
-                onClick={() => setShowAddGrammar(false)}
-                aria-label="Close dialog"
-                title="Close dialog"
-              >
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+        }}>
+          <div style={{
+            background: '#1a1a2e',
+            border: '1px solid rgba(226,214,244,0.2)',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '384px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', fontFamily: 'Contrail One' }}>
+                Add Grammar
+              </h3>
+              <button onClick={() => setShowAddGrammar(false)} aria-label="Close">
                 <X className="h-4 w-4 text-white" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <Label htmlFor="grammar-point" className="text-sm text-white">
-                  Point
-                </Label>
+                <Label className="text-white">Point</Label>
                 <Input
-                  id="grammar-point"
                   value={grammarPoint}
                   onChange={(e) => setGrammarPoint(e.target.value)}
                   className="mt-1 bg-slate-700 border-white/20"
                 />
               </div>
               <div>
-                <Label htmlFor="grammar-example" className="text-sm text-white">
-                  Example
-                </Label>
+                <Label className="text-white">Example</Label>
                 <Input
-                  id="grammar-example"
                   value={grammarExample}
                   onChange={(e) => setGrammarExample(e.target.value)}
                   className="mt-1 bg-slate-700 border-white/20"
                 />
               </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowAddGrammar(false)}
-                >
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <Button variant="outline" size="sm" onClick={() => setShowAddGrammar(false)}>
                   Cancel
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleAddGrammar}
-                  className="bg-cyan-600 hover:bg-cyan-700"
+                  style={{ background: 'linear-gradient(135deg, #f2811d, #f8dab9)' }}
                 >
                   Add
                 </Button>
@@ -681,150 +1120,60 @@ export default function LiveSessionPage() {
 
       {/* Add Phonics Dialog */}
       {showAddPhonics && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 border border-white/20 rounded-lg p-4 w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-white">Add Phonics</h3>
-              <button
-                onClick={() => setShowAddPhonics(false)}
-                aria-label="Close dialog"
-                title="Close dialog"
-              >
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+        }}>
+          <div style={{
+            background: '#1a1a2e',
+            border: '1px solid rgba(226,214,244,0.2)',
+            borderRadius: '12px',
+            padding: '20px',
+            width: '384px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', fontFamily: 'Contrail One' }}>
+                Add Phonics
+              </h3>
+              <button onClick={() => setShowAddPhonics(false)} aria-label="Close">
                 <X className="h-4 w-4 text-white" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <Label htmlFor="phonics-sound" className="text-sm text-white">
-                  Sound
-                </Label>
+                <Label className="text-white">Sound</Label>
                 <Input
-                  id="phonics-sound"
                   value={phonicsSound}
                   onChange={(e) => setPhonicsSound(e.target.value)}
                   className="mt-1 bg-slate-700 border-white/20"
                 />
               </div>
               <div>
-                <Label htmlFor="phonics-examples" className="text-sm text-white">
-                  Examples (comma separated)
-                </Label>
+                <Label className="text-white">Examples (comma separated)</Label>
                 <Input
-                  id="phonics-examples"
                   value={phonicsExamples}
                   onChange={(e) => setPhonicsExamples(e.target.value)}
                   className="mt-1 bg-slate-700 border-white/20"
-                  placeholder="apple, ant, awesome"
                 />
               </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowAddPhonics(false)}
-                >
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <Button variant="outline" size="sm" onClick={() => setShowAddPhonics(false)}>
                   Cancel
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleAddPhonics}
-                  className="bg-green-600 hover:bg-green-700"
+                  style={{ background: 'linear-gradient(135deg, #86efac, #dcebf4)' }}
                 >
                   Add
                 </Button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Session Settings Dialog */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 border border-white/20 rounded-lg p-4 w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-white">Session Settings</h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                aria-label="Close dialog"
-                title="Close dialog"
-              >
-                <X className="h-4 w-4 text-white" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="session-question" className="text-sm text-white">
-                  Session Question
-                </Label>
-                <Input
-                  id="session-question"
-                  value={sessionQuestion}
-                  onChange={(e) => setSessionQuestion(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div>
-                <Label htmlFor="target-xp" className="text-sm text-white">
-                  Target XP
-                </Label>
-                <Input
-                  id="target-xp"
-                  type="number"
-                  value={targetXp}
-                  onChange={(e) => setTargetXp(Number(e.target.value))}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div>
-                <Label htmlFor="magic-word-input" className="text-sm text-white">
-                  Magic Word
-                </Label>
-                <Input
-                  id="magic-word-input"
-                  value={magicWordInput}
-                  onChange={(e) => setMagicWordInput(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowSettings(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveSettings}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* WOW ANIMATION */}
-      {wowActive && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="text-center animate-ping">
-            <div className="text-9xl font-bold bg-gradient-to-r from-purple-400 to-yellow-300 text-transparent bg-clip-text">
-              WOW!
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TREASURE ANIMATION */}
-      {treasureActive && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="text-center animate-bounce">
-            <div className="text-8xl mb-4">📦</div>
-            <div className="text-4xl">✨ +{treasureAmount} XP!</div>
           </div>
         </div>
       )}
