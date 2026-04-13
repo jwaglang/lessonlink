@@ -523,50 +523,58 @@ export default function LiveSessionPage() {
           🌌 {progress?.theme || 'space'}
         </div>
 
-        {/* XP COUNTER - Top Right */}
+        {/* RIGHT PANEL - CONTROLS (XP, DIARY) */}
         <div style={{
           position: 'absolute',
-          top: '10px',
-          right: '14px',
-          background: 'rgba(0,0,0,0.4)',
-          borderRadius: '20px',
-          padding: '6px 16px',
+          top: '65px',
+          right: '10px',
+          width: '135px',
           display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          border: '2.5px solid rgba(255,215,0,0.5)',
-          zIndex: 10,
+          flexDirection: 'column',
+          gap: '8px',
+          zIndex: 5,
         }}>
-          <div style={{ fontSize: '26px', lineHeight: 1, fontFamily: 'Contrail One' }}>
-            {progress?.totalXpEarned || 0}
-          </div>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)' }}>XP</div>
-        </div>
-
-        {/* LANGUAGE DIARY BUTTON - Top Right Below XP */}
-        <button
-          onClick={() => setShowLanguageDiary(!showLanguageDiary)}
-          style={{
-            position: 'absolute',
-            top: '50px',
-            right: '14px',
-            background: showLanguageDiary ? 'linear-gradient(135deg, var(--k-lavender), var(--k-pink))' : 'rgba(0,0,0,0.4)',
-            border: '2.5px solid rgba(226,214,244,0.4)',
-            borderRadius: '16px',
-            padding: '8px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '13px',
-            color: showLanguageDiary ? 'white' : 'rgba(255,255,255,0.7)',
-            cursor: 'pointer',
+          {/* XP COUNTER */}
+          <div style={{
+            borderRadius: '20px',
+            padding: '10px',
+            textAlign: 'center',
             backdropFilter: 'blur(4px)',
-            zIndex: 10,
-            transition: 'all 0.3s ease',
-            fontFamily: 'Contrail One',
+            background: 'rgba(255,215,0,0.12)',
+            border: '2.5px solid rgba(255,215,0,0.35)',
           }}>
-          📔 Diary
-        </button>
+            <div style={{ fontSize: '30px', lineHeight: 1.1 }}>⭐</div>
+            <div className="display-font" style={{ fontSize: '16px', marginTop: '4px', color: '#FFD700' }}>
+              {progress?.totalXpEarned || 0}
+            </div>
+            <div style={{ fontSize: '11px', marginTop: '2px', color: 'rgba(255,215,0,0.5)' }}>XP</div>
+          </div>
+
+          {/* LANGUAGE DIARY BUTTON */}
+          <button
+            onClick={() => setShowLanguageDiary(!showLanguageDiary)}
+            style={{
+              borderRadius: '20px',
+              padding: '10px',
+              textAlign: 'center',
+              backdropFilter: 'blur(4px)',
+              background: showLanguageDiary ? 'linear-gradient(135deg, rgba(138,43,226,0.3), rgba(226,214,244,0.2))' : 'rgba(226,214,244,0.08)',
+              border: showLanguageDiary ? '2.5px solid rgba(226,214,244,0.6)' : '2.5px solid rgba(226,214,244,0.25)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: 'white',
+              fontFamily: 'Contrail One',
+              transition: 'all 0.3s ease',
+            }}>
+            <div style={{ fontSize: '24px', lineHeight: 1.1 }}>📔</div>
+            <div className="display-font" style={{ fontSize: '14px', marginTop: '4px', color: 'var(--k-lavender)' }}>
+              DIARY
+            </div>
+            <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(226,214,244,0.5)' }}>
+              {diaryEntries.length}
+            </div>
+          </button>
+        </div>
 
         {/* LEFT PANEL - REWARDS */}
         <div style={{
@@ -931,21 +939,24 @@ export default function LiveSessionPage() {
           <div style={{
             background: 'linear-gradient(135deg, rgba(226,214,244,0.12), rgba(138,43,226,0.12))',
             border: '2.5px dashed rgba(226,214,244,0.4)',
-            borderRadius: '18px',
-            padding: '6px 18px',
+            borderRadius: '20px',
+            padding: '10px',
             textAlign: 'center',
+            backdropFilter: 'blur(4px)',
             minWidth: '120px',
           }}>
             <div style={{
               fontSize: '11px',
               color: 'rgba(255,255,255,0.35)',
+              fontFamily: 'Contrail One',
             }}>
-              Magic Word
+              MAGIC
             </div>
             <div className="display-font" style={{
               fontSize: '20px',
               color: 'var(--k-lavender)',
               letterSpacing: '0.12em',
+              marginTop: '4px',
             }}>
               {progress?.magicWord ? '****' : '????'}
             </div>
