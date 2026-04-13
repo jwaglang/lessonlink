@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { PetShopItem } from '@/modules/petland/types';
+import { formatDorks } from '@/modules/petland/types';
 import { getPetShopItems, updatePetShopItem, deletePetShopItem } from '@/lib/firestore';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -548,7 +549,7 @@ export default function PetShopPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-price">Price (XP)</Label>
+                  <Label htmlFor="edit-price">Price (Dorks - Copper)</Label>
                   <Input
                     id="edit-price"
                     type="number"
@@ -786,7 +787,7 @@ export default function PetShopPage() {
                             <div className="flex gap-3">
                               <div>
                                 <p className="text-xs text-muted-foreground">Price</p>
-                                <p className="font-semibold text-sm">{typeof item.price === 'number' ? item.price : 0} XP</p>
+                                <p className="font-semibold text-sm">{formatDorks(typeof item.price === 'number' ? item.price : 0)}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-muted-foreground">Stock</p>

@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 17 Live Session Page — Visual Mockup (Q4D)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Contrail+One&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --k-navy: #404376;
+      --k-slate: #686ea8;
+      --k-orange: #f2811d;
+      --k-pink: #fe598b;
+      --k-peach: #f8dab9;
+      --k-ice-blue: #dcebf4;
+      --k-shell-pink: #f4d8da;
+      --k-rose: #efb8bf;
+      --k-lavender: #e2d6f4;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #1a1a2e; color: white; }
+    .font-display { font-family: 'Contrail One', cursive; }
+
+    /* ========== MAIN DISPLAY (16:9) ========== */
+    .display-container {
+      position: relative;
+      width: 100%;
+      max-width: 960px;
+      margin: 20px auto;
+      aspect-ratio: 16/9;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 30%, #2a1a4e 60%, #0a0a2e 100%);
+    }
+
+    /* ========== SPACE THEME BACKGROUND (50% opacity) ========== */
+    .theme-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      animation: twinkle 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.2; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .comet {
+      position: absolute;
+      animation: cometFly 8s linear infinite;
+    }
+
+    @keyframes cometFly {
+      0% { transform: translateX(0) translateY(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateX(-600px) translateY(200px); opacity: 0; }
+    }
+
+    .comet-trail {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(226,214,244,0.6), rgba(226,214,244,0.9));
+      border-radius: 2px;
+      transform: rotate(-25deg);
+    }
+
+    .comet-head {
+      width: 5px;
+      height: 5px;
+      background: var(--k-lavender);
+      border-radius: 50%;
+      position: absolute;
+      right: -2px;
+      top: -1.5px;
+    }
+
+    .nebula {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(138,43,226,0.1) 0%, transparent 70%);
+      animation: nebulaPulse 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes nebulaPulse {
+      0% { opacity: 0.5; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .planet {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, var(--k-slate), var(--k-navy));
+    }
+
+    .planet-ring {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(226,214,244,0.15);
+      transform: rotate(-15deg);
+    }
+
+    .meteor {
+      position: absolute;
+      animation: meteorStreak 5s linear infinite;
+    }
+
+    @keyframes meteorStreak {
+      0% { transform: translateX(0) translateY(0); opacity: 0; }
+      5% { opacity: 1; }
+      15% { opacity: 0; }
+      100% { transform: translateX(-300px) translateY(150px); opacity: 0; }
+    }
+
+    /* ========== TOP BAR ========== */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 12px 16px;
+      z-index: 3;
+    }
+
+    .session-banner {
+      background: linear-gradient(135deg, var(--k-orange), var(--k-pink));
+      border-radius: 24px;
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(242,129,29,0.4);
+    }
+
+    .session-banner .question {
+      font-family: 'Contrail One', cursive;
+      font-size: 18px;
+      color: white;
+    }
+
+    .session-aim {
+      text-align: center;
+      margin-top: 4px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .theme-badge {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .xp-counter {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 20px;
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 2.5px solid rgba(255,215,0,0.5);
+    }
+
+    .xp-counter .xp-number {
+      font-family: 'Contrail One', cursive;
+      font-size: 26px;
+      color: #FFD700;
+      line-height: 1;
+    }
+
+    .xp-counter .xp-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* ========== LEFT PANEL: REWARDS ========== */
+    .left-panel {
+      position: absolute;
+      top: 65px;
+      left: 10px;
+      width: 135px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .reward-box {
+      border-radius: 20px;
+      padding: 10px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .reward-box .reward-icons {
+      font-size: 30px;
+      line-height: 1.1;
+    }
+
+    .reward-box .reward-label {
+      font-family: 'Contrail One', cursive;
+      font-size: 16px;
+      margin-top: 4px;
+    }
+
+    .reward-box .reward-sub {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .treasure-box {
+      background: rgba(255,215,0,0.12);
+      border: 2.5px solid rgba(255,215,0,0.35);
+    }
+    .treasure-box .reward-label { color: #FFD700; }
+    .treasure-box .reward-sub { color: rgba(255,215,0,0.5); }
+
+    .wow-box {
+      background: rgba(138,43,226,0.12);
+      border: 2.5px solid rgba(180,130,255,0.35);
+    }
+    .wow-box .reward-label { color: #d4a5ff; }
+    .wow-box .reward-sub { color: rgba(180,130,255,0.5); }
+
+    .oopsie-box {
+      background: rgba(255,255,255,0.05);
+      border: 2px dashed rgba(255,255,255,0.12);
+    }
+    .oopsie-box .reward-icons { font-size: 24px; }
+    .oopsie-box .reward-label { color: rgba(255,255,255,0.35); font-size: 14px; }
+    .oopsie-box .reward-sub { color: rgba(255,255,255,0.2); font-size: 10px; }
+
+    .behavior-box {
+      background: rgba(134,239,172,0.08);
+      border: 2px solid rgba(134,239,172,0.2);
+    }
+    .behavior-box .reward-icons { font-size: 22px; }
+    .behavior-box .reward-label { color: rgba(134,239,172,0.6); font-size: 13px; }
+
+    /* ========== CENTER: WEBCAM ZONE ========== */
+    .webcam-zone {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px;
+      height: 200px;
+      border: 2px dashed rgba(255,255,255,0.06);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    .webcam-zone span {
+      font-size: 12px;
+      color: rgba(255,255,255,0.08);
+    }
+
+    /* ========== RIGHT PANEL: CONTENT CARDS ========== */
+    .right-panel {
+      position: absolute;
+      top: 65px;
+      right: 10px;
+      width: 158px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      z-index: 2;
+    }
+
+    .panel-header {
+      text-align: center;
+      font-family: 'Contrail One', cursive;
+      font-size: 16px;
+      color: var(--k-peach);
+    }
+
+    .word-card {
+      border-radius: 18px;
+      padding: 10px 12px;
+      border-width: 2.5px;
+      border-style: solid;
+      animation: cardSlideIn 0.5s ease-out;
+    }
+
+    @keyframes cardSlideIn {
+      0% { transform: translateX(40px); opacity: 0; }
+      70% { transform: translateX(-4px); }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    .word-card .word {
+      font-family: 'Contrail One', cursive;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .word-card .meaning {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 3px;
+    }
+
+    .card-lavender {
+      background: linear-gradient(135deg, rgba(226,214,244,0.18), rgba(138,43,226,0.1));
+      border-color: rgba(226,214,244,0.25);
+    }
+    .card-lavender .word { color: var(--k-lavender); }
+
+    .card-orange {
+      background: linear-gradient(135deg, rgba(242,129,29,0.14), rgba(248,218,185,0.1));
+      border-color: rgba(242,129,29,0.25);
+    }
+    .card-orange .word { color: var(--k-peach); }
+
+    .card-green {
+      background: linear-gradient(135deg, rgba(134,239,172,0.1), rgba(220,235,244,0.1));
+      border-color: rgba(134,239,172,0.2);
+    }
+    .card-green .word { color: #86efac; }
+
+    .grammar-card {
+      background: rgba(242,129,29,0.1);
+      border: 2.5px solid rgba(242,129,29,0.25);
+      border-radius: 18px;
+      padding: 10px 12px;
+      margin-top: 3px;
+    }
+
+    .grammar-card .label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .grammar-card .example {
+      font-family: 'Contrail One', cursive;
+      font-size: 15px;
+      color: var(--k-peach);
+      line-height: 1.3;
+      margin-top: 3px;
+    }
+
+    .grammar-card .highlight { color: var(--k-orange); font-size: 17px; }
+
+    .phonics-card {
+      background: rgba(220,235,244,0.08);
+      border: 2.5px solid rgba(220,235,244,0.18);
+      border-radius: 18px;
+      padding: 8px 12px;
+    }
+
+    .phonics-card .label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .phonics-card .sound {
+      font-family: 'Contrail One', cursive;
+      font-size: 18px;
+      color: var(--k-ice-blue);
+      line-height: 1;
+    }
+
+    .phonics-card .examples {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ========== BOTTOM BAR ========== */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 16px;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 3;
+    }
+
+    .progress-container { flex: 1; }
+
+    .progress-track {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .progress-bar-bg {
+      flex: 1;
+      height: 16px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      overflow: visible;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      width: 75%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--k-orange), var(--k-pink), var(--k-lavender));
+      border-radius: 10px;
+      position: relative;
+      transition: width 0.5s ease-out;
+    }
+
+    .progress-dragon {
+      position: absolute;
+      right: -10px;
+      top: -10px;
+      font-size: 28px;
+      line-height: 1;
+      transition: all 0.5s ease-out;
+    }
+
+    .progress-trophy { font-size: 26px; margin-left: 6px; }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3px;
+    }
+
+    .progress-labels span {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .progress-labels .left { font-family: 'Contrail One', cursive; }
+
+    .magic-word {
+      background: linear-gradient(135deg, rgba(226,214,244,0.12), rgba(138,43,226,0.12));
+      border: 2.5px dashed rgba(226,214,244,0.4);
+      border-radius: 18px;
+      padding: 6px 18px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .magic-word .label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .magic-word .word {
+      font-family: 'Contrail One', cursive;
+      font-size: 20px;
+      color: var(--k-lavender);
+      letter-spacing: 0.12em;
+    }
+
+    /* ========== ANIMATION PREVIEWS ========== */
+    .previews-section {
+      max-width: 960px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    .previews-section h2 {
+      font-family: 'Contrail One', cursive;
+      font-size: 20px;
+      color: var(--k-peach);
+      margin-bottom: 12px;
+    }
+
+    .previews-grid {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .preview-card {
+      position: relative;
+      width: 160px;
+      height: 100px;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-card .preview-label {
+      position: absolute;
+      bottom: 4px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Wow preview */
+    .preview-wow {
+      background: radial-gradient(circle, rgba(138,43,226,0.9) 0%, rgba(64,67,118,0.95) 60%, #0a0a2e 100%);
+      animation: wowPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes wowPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(138,43,226,0.3); }
+      50% { box-shadow: 0 0 40px rgba(138,43,226,0.6); }
+    }
+
+    .preview-wow .emoji { font-size: 38px; }
+    .preview-wow .text { font-family: 'Contrail One', cursive; font-size: 24px; color: white; text-shadow: 0 0 20px rgba(180,130,255,0.8); }
+
+    /* Treasure preview */
+    .preview-treasure {
+      background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, rgba(64,67,118,0.95) 60%, #0a0a2e 100%);
+    }
+    .preview-treasure .emoji { font-size: 36px; animation: chestWobble 1s ease-in-out infinite; }
+    .preview-treasure .text { font-family: 'Contrail One', cursive; font-size: 18px; color: #FFD700; margin-top: 2px; }
+
+    @keyframes chestWobble {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-5deg); }
+      75% { transform: rotate(5deg); }
+    }
+
+    /* Oopsie preview */
+    .preview-oopsie { background: rgba(64,67,118,0.6); }
+    .preview-oopsie .emoji { font-size: 36px; animation: oopsieWobble 1.5s ease-in-out infinite; }
+    .preview-oopsie .text { font-family: 'Contrail One', cursive; font-size: 15px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+    @keyframes oopsieWobble {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(3deg) scale(1.05); }
+    }
+
+    /* Behavior preview */
+    .preview-behavior { background: rgba(254,89,139,0.15); border: 2px solid rgba(254,89,139,0.3); }
+    .preview-behavior .emoji { font-size: 30px; }
+    .preview-behavior .text { font-family: 'Contrail One', cursive; font-size: 13px; color: var(--k-pink); margin-top: 2px; }
+
+    /* ========== THEME SELECTOR ========== */
+    .theme-section {
+      max-width: 960px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    .theme-section h2 {
+      font-family: 'Contrail One', cursive;
+      font-size: 20px;
+      color: var(--k-peach);
+      margin-bottom: 12px;
+    }
+
+    .theme-grid {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .theme-option {
+      border-radius: 14px;
+      padding: 8px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .theme-option:hover {
+      transform: scale(1.05);
+    }
+
+    .theme-option.active {
+      box-shadow: 0 0 16px rgba(226,214,244,0.4);
+    }
+
+    .theme-option .emoji { font-size: 22px; }
+    .theme-option .name { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; font-family: 'Poppins', sans-serif; }
+
+    .theme-space { background: linear-gradient(135deg, #0a0a2e, #2a1a4e); border: 2.5px solid rgba(226,214,244,0.3); }
+    .theme-ocean { background: linear-gradient(135deg, #0a3d6b, #1a6ea8); border: 2px solid rgba(220,235,244,0.2); opacity: 0.6; }
+    .theme-farm { background: linear-gradient(135deg, #4a7a2e, #6a9a4e); border: 2px solid rgba(134,239,172,0.2); opacity: 0.6; }
+    .theme-desert { background: linear-gradient(135deg, #c4a35a, #8a6a2a); border: 2px solid rgba(248,218,185,0.3); opacity: 0.6; }
+    .theme-city { background: linear-gradient(135deg, #1a1a3a, #3a3a5a); border: 2px solid rgba(226,214,244,0.15); opacity: 0.6; }
+
+    /* ========== NOTES ========== */
+    .notes-section {
+      max-width: 960px;
+      margin: 32px auto;
+      padding: 20px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .notes-section h2 {
+      font-family: 'Contrail One', cursive;
+      font-size: 18px;
+      color: var(--k-orange);
+      margin-bottom: 12px;
+    }
+
+    .notes-section p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+
+    .notes-section strong { color: rgba(255,255,255,0.7); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== MAIN DISPLAY ========== -->
+  <div class="display-container">
+
+    <!-- Space Theme Background -->
+    <div class="theme-bg">
+      <div class="star" style="width:3px; height:3px; background:white; top:5%; left:20%; animation-delay:0s;"></div>
+      <div class="star" style="width:4px; height:4px; background:#e2d6f4; top:12%; left:75%; animation-delay:0.8s;"></div>
+      <div class="star" style="width:2px; height:2px; background:white; top:22%; left:45%; animation-delay:1.5s;"></div>
+      <div class="star" style="width:3px; height:3px; background:#f8dab9; top:35%; left:8%; animation-delay:0.3s;"></div>
+      <div class="star" style="width:3px; height:3px; background:white; top:55%; left:92%; animation-delay:2s;"></div>
+      <div class="star" style="width:2px; height:2px; background:#fe598b; top:68%; left:30%; animation-delay:1.2s;"></div>
+      <div class="star" style="width:2px; height:2px; background:white; top:78%; left:65%; animation-delay:0.6s;"></div>
+      <div class="star" style="width:3px; height:3px; background:#e2d6f4; top:88%; left:15%; animation-delay:1.8s;"></div>
+      <div class="star" style="width:2px; height:2px; background:white; top:42%; left:55%; animation-delay:2.5s;"></div>
+      <div class="star" style="width:2px; height:2px; background:#f2811d; top:15%; left:38%; animation-delay:0.4s;"></div>
+      <div class="star" style="width:3px; height:3px; background:white; top:60%; left:12%; animation-delay:1.1s;"></div>
+      <div class="star" style="width:2px; height:2px; background:#e2d6f4; top:28%; left:85%; animation-delay:1.7s;"></div>
+      <div class="star" style="width:4px; height:4px; background:#FFD700; top:48%; left:3%; animation-delay:2.2s;"></div>
+      <div class="star" style="width:2px; height:2px; background:white; top:82%; left:48%; animation-delay:0.9s;"></div>
+      <div class="star" style="width:3px; height:3px; background:#fe598b; top:8%; left:58%; animation-delay:1.4s;"></div>
+
+      <!-- Comet -->
+      <div class="comet" style="top:18%; left:70%;">
+        <div class="comet-trail">
+          <div class="comet-head"></div>
+        </div>
+      </div>
+
+      <!-- Second comet (delayed) -->
+      <div class="comet" style="top:65%; left:85%; animation-delay: 4s;">
+        <div class="comet-trail" style="width:50px; transform:rotate(-35deg);">
+          <div class="comet-head" style="width:4px; height:4px; background:var(--k-orange);"></div>
+        </div>
+      </div>
+
+      <!-- Nebula -->
+      <div class="nebula" style="top:25%; left:38%; width:180px; height:120px;"></div>
+
+      <!-- Planet -->
+      <div class="planet" style="top:62%; left:5%; width:26px; height:26px;"></div>
+      <div class="planet-ring" style="top:72%; left:1%; width:48px; height:7px;"></div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div>
+        <div class="session-banner">
+          <span style="font-size:20px;">&#128640;</span>
+          <span class="question">What makes a good friend?</span>
+          <span style="font-size:20px;">&#128640;</span>
+        </div>
+        <div class="session-aim">describe qualities using adjectives + because</div>
+      </div>
+    </div>
+
+    <div class="theme-badge">
+      <span>&#127756;</span>
+      <span>SPACE</span>
+    </div>
+
+    <div class="xp-counter">
+      <span style="font-size:24px;">&#9889;</span>
+      <div>
+        <div class="xp-number">45</div>
+        <div class="xp-label">of 60 XP</div>
+      </div>
+    </div>
+
+    <!-- Left Panel: Rewards -->
+    <div class="left-panel">
+      <div class="reward-box treasure-box">
+        <div class="reward-icons">&#129520;&#129520;&#129520;</div>
+        <div class="reward-label font-display">3 Treasures!</div>
+        <div class="reward-sub">+35 XP earned</div>
+      </div>
+
+      <div class="reward-box wow-box">
+        <div class="reward-icons">&#10024;&#10024;</div>
+        <div class="reward-label font-display">2 Wows!</div>
+        <div class="reward-sub">amazing work!</div>
+      </div>
+
+      <div class="reward-box oopsie-box">
+        <div class="reward-icons">&#128064;</div>
+        <div class="reward-label font-display">1 Oopsie</div>
+        <div class="reward-sub">no worries!</div>
+      </div>
+
+      <div class="reward-box behavior-box">
+        <div class="reward-icons">&#11088;</div>
+        <div class="reward-label font-display">Great behavior!</div>
+      </div>
+    </div>
+
+    <!-- Center: Webcam Zone -->
+    <div class="webcam-zone">
+      <span>teacher webcam area</span>
+    </div>
+
+    <!-- Right Panel: Content Cards -->
+    <div class="right-panel">
+      <div class="panel-header">&#128218; New words!</div>
+
+      <div class="word-card card-lavender">
+        <div class="word">kind</div>
+        <div class="meaning">nice and helpful</div>
+      </div>
+
+      <div class="word-card card-orange" style="animation-delay: 0.1s;">
+        <div class="word">brave</div>
+        <div class="meaning">not scared!</div>
+      </div>
+
+      <div class="word-card card-green" style="animation-delay: 0.2s;">
+        <div class="word">share</div>
+        <div class="meaning">give to a friend</div>
+      </div>
+
+      <div class="grammar-card">
+        <div class="label">&#128161; sentence tip</div>
+        <div class="example">She is kind <span class="highlight">because</span> she helps.</div>
+      </div>
+
+      <div class="phonics-card">
+        <div class="label">&#127925; sound</div>
+        <div class="sound">/sh/</div>
+        <div class="examples">share, she, fish</div>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+      <div class="progress-container">
+        <div class="progress-track">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill">
+              <div class="progress-dragon">&#128009;</div>
+            </div>
+          </div>
+          <span class="progress-trophy">&#127942;</span>
+        </div>
+        <div class="progress-labels">
+          <span class="left font-display">keep going!</span>
+          <span>45 / 60 XP</span>
+        </div>
+      </div>
+
+      <div class="magic-word">
+        <div class="label">&#10024; magic word &#10024;</div>
+        <div class="word font-display">? ? ?</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== REWARD ANIMATION PREVIEWS ========== -->
+  <div class="previews-section">
+    <h2>Reward animations (what each looks like when triggered)</h2>
+    <div class="previews-grid">
+      <div class="preview-card preview-wow">
+        <div class="emoji">&#10024;</div>
+        <div class="text">WOW!</div>
+        <div class="preview-label">full-screen flash + sound</div>
+      </div>
+
+      <div class="preview-card preview-treasure">
+        <div class="emoji">&#129520;</div>
+        <div class="text">+15 XP!</div>
+        <div class="preview-label">chest opens + coins fly</div>
+      </div>
+
+      <div class="preview-card preview-oopsie">
+        <div class="emoji">&#128064;</div>
+        <div class="text">Oopsie!</div>
+        <div class="preview-label">gentle wobble, no penalty</div>
+      </div>
+
+      <div class="preview-card preview-behavior">
+        <div class="emoji">&#128556;</div>
+        <div class="text">Chatterbox! -2 XP</div>
+        <div class="preview-label">brief flash, XP ticks down</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== THEME SELECTOR ========== -->
+  <div class="theme-section">
+    <h2>Animated background themes (T selects at session start)</h2>
+    <div class="theme-grid">
+      <div class="theme-option theme-space active">
+        <div class="emoji">&#127756;</div>
+        <div class="name">space</div>
+      </div>
+      <div class="theme-option theme-ocean">
+        <div class="emoji">&#127754;</div>
+        <div class="name">ocean</div>
+      </div>
+      <div class="theme-option theme-farm">
+        <div class="emoji">&#127806;</div>
+        <div class="name">farm</div>
+      </div>
+      <div class="theme-option theme-desert">
+        <div class="emoji">&#127796;</div>
+        <div class="name">desert</div>
+      </div>
+      <div class="theme-option theme-city">
+        <div class="emoji">&#127961;</div>
+        <div class="name">city</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== BUILD NOTES ========== -->
+  <div class="notes-section">
+    <h2>Build notes for VS Code Claude</h2>
+    <p><strong>This is a visual reference mockup.</strong> Open in a browser to see the intended design. The full build spec with types, schema, file structure, and implementation order is in <strong>LessonLink-Phase17-LiveSession-Spec-Q4D.md</strong>.</p>
+    <p><strong>Fonts:</strong> Contrail One (display/headings) + Poppins (body). Both loaded via Google Fonts.</p>
+    <p><strong>Palette:</strong> Kiddoland brand colors — navy (#404376), slate (#686ea8), orange (#f2811d), pink (#fe598b), peach (#f8dab9), lavender (#e2d6f4), ice-blue (#dcebf4).</p>
+    <p><strong>Key principle:</strong> This is for kids aged 5-12. Big type, round corners, chunky borders, warm language, celebration everywhere. Not a dashboard — a game screen.</p>
+    <p><strong>Animations shown here are simplified.</strong> The real build needs: twinkling stars (CSS pulse), moving comets (CSS translate), the full Wow screen-flash, Treasure Chest open sequence, and smooth card slide-ins.</p>
+    <p><strong>The center zone must stay empty</strong> — T's webcam sits there via ManyCam.</p>
+  </div>
+
+</body>
+</html>

@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import type { PetlandProfile, Vocabulary, PetShopItem, GeneratedComposite } from '../types';
+import { formatDorks, getDorkDenominations } from '../types';
 import { PlaceHolderImages } from '../placeholder-images';
 import { mockShopItems, mockBrochures } from '../data';
 import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD } from '../utils';
 import { FeedbackOverlay } from './feedback-overlay';
 import { HungerAlerts } from './hunger-alerts';
+import { CashInStation } from './cash-in-station';
 import { generatePetImage, editPetImage, composeAccessoryOnPet } from '../ai/generate-pet-image-flow';
 
 const FAT_PROMPT =
@@ -102,6 +104,7 @@ import {
   Droplet,
   Zap,
   Package,
+  Circle,
 } from 'lucide-react';
 
 // --- STORAGE HELPER ---
@@ -700,6 +703,37 @@ function HatchPet({ onHatch, isHatching }: { onHatch: (wish: string) => void; is
   );
 }
 
+// --- DORK ICON DISPLAY ---
+
+function DorkIconDisplay({ copperAmount, size = 'lg' }: { copperAmount: number; size?: 'lg' | 'xl' }) {
+  const dorks = getDorkDenominations(copperAmount);
+  const textSize = size === 'xl' ? 'text-2xl' : 'text-lg';
+  const iconSize = size === 'xl' ? 'w-6 h-6' : 'w-5 h-5';
+
+  return (
+    <div className={`flex items-center gap-3 flex-wrap ${textSize} font-bold text-yellow-700`}>
+      {dorks.gold > 0 && (
+        <div className="flex items-center gap-1">
+          <Circle className={`${iconSize} fill-yellow-500 text-yellow-500`} />
+          <span>{dorks.gold}</span>
+        </div>
+      )}
+      {dorks.silver > 0 && (
+        <div className="flex items-center gap-1">
+          <Circle className={`${iconSize} fill-gray-400 text-gray-400`} />
+          <span>{dorks.silver}</span>
+        </div>
+      )}
+      {(dorks.copper > 0 || copperAmount === 0) && (
+        <div className="flex items-center gap-1">
+          <Circle className={`${iconSize} fill-amber-700 text-amber-700`} />
+          <span>{dorks.copper}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- PET STATUS ---
 
 function PetStatus({
@@ -711,6 +745,7 @@ function PetStatus({
   isHatching,
   onBuyEgg,
   onStoreYourBling,
+  onCashInClick,
 }: {
   profile: PetlandProfile;
   previewImageUrl: string | null;
@@ -720,6 +755,7 @@ function PetStatus({
   onBuyEgg: () => void;
   isHatching: boolean;
   onStoreYourBling: () => void;
+  onCashInClick: () => void;
 }) {
   const eggImage = PlaceHolderImages.find((img) => img.id === 'pet-egg');
   const defaultHatchedImage = PlaceHolderImages.find((img) => img.id === 'pet-hatched');
@@ -853,30 +889,41 @@ function PetStatus({
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-muted/50 border space-y-2">
-            <Label className="font-bold text-muted-foreground text-sm">XP & Coins (Dorks)</Label>
-            <div className="flex items-center gap-2 font-semibold">
-              <Sparkles className="h-5 w-5 text-yellow-500" />
-              <span>{profile.xp} XP</span>
+          <div className="p-4 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-300 space-y-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Coins className="h-5 w-5 text-purple-600" />
+                <Label className="font-bold text-purple-900 text-sm">Dorks</Label>
+              </div>
+              <Button
+                onClick={onCashInClick}
+                className="text-xs h-7 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold border-0"
+              >
+                💰 Cash-In
+              </Button>
             </div>
-            <div className="flex items-center gap-4 font-semibold text-sm">
-              <Coins className="h-5 w-5 text-yellow-600" />
-              <div className="flex gap-3">
-                <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600" />
-                  {profile.dorks?.gold || 0}
-                </span>
-                <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-gray-400 border border-gray-600" />
-                  {profile.dorks?.silver || 0}
-                </span>
-                <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-amber-700 border border-amber-900" />
-                  {profile.dorks?.copper || 0}
-                </span>
+            
+            {/* Three XP Stats - no boxes */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <p className="text-xs font-bold text-purple-700 mb-1">Earned</p>
+                <p className="text-base font-bold text-purple-900">{(profile.xp ?? 0) + (profile.xpSpent ?? 0)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-bold text-pink-700 mb-1">Spent</p>
+                <p className="text-base font-bold text-pink-900">{profile.xpSpent ?? 0}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-bold text-orange-700 mb-1">Current</p>
+                <p className="text-base font-bold text-orange-900">{profile.xp ?? 0}</p>
               </div>
             </div>
-            <div className="text-xs text-muted-foreground italic border-t pt-2 mt-2">Dork Dividend: 10%</div>
+
+            {/* Wallet */}
+            <div className="flex items-center gap-2 font-semibold bg-white rounded px-2 py-1.5 border border-yellow-300">
+              <Coins className="h-4 w-4 text-yellow-600" />
+              <DorkIconDisplay copperAmount={profile.dorkBalance ?? 0} size="lg" />
+            </div>
           </div>
 
           {profile.petState === 'egg' && !previewImageUrl && (
@@ -1143,9 +1190,10 @@ interface StudentDashboardProps {
 
 const DEFAULT_PROFILE: PetlandProfile = {
   xp: 0,
+  xpSpent: 0,
   hp: 100,
   maxHp: 100,
-  dorks: { gold: 0, silver: 0, copper: 0 },
+  dorkBalance: 10,
   lastHpUpdate: new Date().toISOString(),
   lastChallengeDate: '',
   isFat: false,
@@ -1178,6 +1226,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const [shopViewBy, setShopViewBy] = useState<'items' | 'collections' | 'price'>('items');
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set());
   const [collectionMetadata, setCollectionMetadata] = useState<Record<string, string>>({});
+  const [showCashInStation, setShowCashInStation] = useState(false);
 
   const profileRef = doc(db, 'students', learnerId, 'petland', 'profile');
   const hasAppliedDecayRef = useRef(false);
@@ -1352,6 +1401,16 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   );
 
   const handleHatch = async (wish: string) => {
+    const hatchCost = 100; // 1 Gold
+    if (!profile || (profile.dorkBalance ?? 0) < hatchCost) {
+      toast({
+        title: 'Not enough Dorks',
+        description: `You need ${formatDorks(hatchCost)} to hatch. Visit Cash-In to convert XP!`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsHatching(true);
     setPendingWish(wish);
     try {
@@ -1382,11 +1441,13 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
 
   const handleNamePet = () => {
     if (!previewImageUrl || !petNameInput || !profile) return;
+    const hatchCost = 100; // 1 Gold
     const updates: Partial<PetlandProfile> = {
       petState: 'hatched',
       petName: petNameInput.trim(),
       petImageUrl: previewImageUrl,
       petWish: pendingWish,
+      dorkBalance: (profile.dorkBalance ?? 0) - hatchCost,
     };
     if (isRecoveryHatch) {
       updates.xp = Math.max(0, profile.xp - 100);
@@ -1420,9 +1481,17 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   };
 
   const handleBuyEgg = async () => {
-    if (!profile || profile.xp < 500) return;
+    const eggCost = 500; // 5 Silver
+    if (!profile || (profile.dorkBalance ?? 0) < eggCost) {
+      toast({
+        title: 'Not enough Dorks',
+        description: `You need ${formatDorks(eggCost)} to buy a new pet. Visit Cash-In to convert XP!`,
+        variant: 'destructive',
+      });
+      return;
+    }
     await updateDoc(profileRef, {
-      xp: profile.xp - 500,
+      dorkBalance: (profile.dorkBalance ?? 0) - eggCost,
       petState: 'egg',
       petName: '',
       petImageUrl: null,
@@ -1483,10 +1552,10 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
 
     const itemPrice = getPrice(item.price);
 
-    if (profile.xp < itemPrice) {
+    if ((profile.dorkBalance ?? 0) < itemPrice) {
       toast({
-        title: 'Not enough XP',
-        description: `You need ${itemPrice} XP but only have ${profile.xp}`,
+        title: 'Not enough Dorks',
+        description: `You need ${formatDorks(itemPrice)} but only have ${formatDorks(profile.dorkBalance ?? 0)}. Visit Cash-In to convert XP!`,
         variant: 'destructive',
       });
       return;
@@ -1528,7 +1597,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
         createdAt: new Date().toISOString(),
       };
       const updatedProfile: Partial<PetlandProfile> = {
-        xp: profile.xp - itemPrice,
+        dorkBalance: (profile.dorkBalance ?? 0) - itemPrice,
         activePetImageUrl: compositeUrl,
         ownedAccessories: [...(profile.ownedAccessories || []), accessoryId],
         generatedComposites: [...(profile.generatedComposites || []), newComposite],
@@ -1876,6 +1945,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             onReject={handleRejectPet}
             onBuyEgg={handleBuyEgg}
             onStoreYourBling={handleStoreYourBling}
+            onCashInClick={() => setShowCashInStation(!showCashInStation)}
           />
           {(profile.generatedComposites || []).length > 0 && (
             <>
@@ -1944,6 +2014,16 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                   });
               }}
               onSimulateAccessoryPurchase={handleSimulateAccessoryPurchase}
+            />
+          )}
+
+          {showCashInStation && profile && (
+            <CashInStation
+              learnerId={learnerId}
+              currentXp={profile.xp}
+              xpSpent={profile.xpSpent ?? 0}
+              currentDorkBalance={profile.dorkBalance ?? 0}
+              onConversionComplete={() => setShowCashInStation(false)}
             />
           )}
         </TabsContent>
@@ -2054,7 +2134,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                         const itemPrice = typeof item.price === 'number' ? item.price : 0;
                         const isOwned = profile.ownedAccessories?.includes(item.id);
                         const isOutOfStock = item.stock <= 0;
-                        const canBuy = profile.xp >= itemPrice && !isOutOfStock;
+                        const canBuy = (profile.dorkBalance ?? 0) >= itemPrice && !isOutOfStock;
 
                         return (
                           <Card key={item.id} className="flex flex-col overflow-hidden">
@@ -2084,7 +2164,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                                 <div className="flex items-center gap-1">
                                   <Coins className="w-4 h-4 text-yellow-500" />
                                   <span className="font-semibold text-yellow-600">
-                                    {itemPrice} XP
+                                    {formatDorks(itemPrice)}
                                   </span>
                                 </div>
                                 <Badge
@@ -2175,7 +2255,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                                     const itemPrice = typeof item.price === 'number' ? item.price : 0;
                                     const isOwned = profile.ownedAccessories?.includes(item.id);
                                     const isOutOfStock = item.stock <= 0;
-                                    const canBuy = profile.xp >= itemPrice && !isOutOfStock;
+                                    const canBuy = (profile.dorkBalance ?? 0) >= itemPrice && !isOutOfStock;
 
                                     return (
                                       <Card key={item.id} className="flex flex-col overflow-hidden">
@@ -2205,7 +2285,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                                             <div className="flex items-center gap-1">
                                               <Coins className="w-4 h-4 text-yellow-500" />
                                               <span className="font-semibold text-yellow-600">
-                                                {itemPrice} XP
+                                                {formatDorks(itemPrice)}
                                               </span>
                                             </div>
                                             <Badge
@@ -2273,7 +2353,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                           const itemPrice = typeof item.price === 'number' ? item.price : 0;
                           const isOwned = profile.ownedAccessories?.includes(item.id);
                           const isOutOfStock = item.stock <= 0;
-                          const canBuy = profile.xp >= itemPrice && !isOutOfStock;
+                          const canBuy = (profile.dorkBalance ?? 0) >= itemPrice && !isOutOfStock;
 
                           return (
                             <Card key={item.id} className="flex flex-col overflow-hidden">
@@ -2303,7 +2383,7 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                                   <div className="flex items-center gap-1">
                                     <Coins className="w-4 h-4 text-yellow-500" />
                                     <span className="font-semibold text-yellow-600">
-                                      {itemPrice} XP
+                                      {formatDorks(itemPrice)}
                                     </span>
                                   </div>
                                   <Badge

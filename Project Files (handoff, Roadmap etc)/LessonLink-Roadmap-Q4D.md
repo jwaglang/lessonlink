@@ -1,4 +1,4 @@
-# LessonLink | Complete Roadmap
+# LessonLink | Complete Roadmap (Q4D — April 13, 2026)
 
 ---
 
@@ -318,7 +318,7 @@ Teachers create lesson plans, homeworks, and assessments, then recreate them man
 
 - **Dynamic `price_data`** — pricing engine in code, NO pre-created Stripe products
 - **One T profile page** (`/t/[slug]`) — auth-aware, shows purchase UI for logged-in S
-- **Two payment paths:** Stripe Checkout redirect (default) + email payment link (fallback for China/WeChat)
+- **Two payment paths:** Stripe Checkout redirect (default) + email payment link (fallover for China/WeChat)
 - **3% processing fee** shown to S, baked into calculated total
 - **Purchase and booking stay separate** (Variant-1 compliant)
 - **NO Stripe Connect** (single-teacher, not needed)
@@ -359,7 +359,7 @@ Teachers create lesson plans, homeworks, and assessments, then recreate them man
 
 ---
 
-### ✅ Phase 15/16: Session Feedback & Email Delivery
+### ✅ Phase 15/15&16: Session Feedback & Email Delivery
 
 **Goal:** Automated session feedback pipeline with AI generation and email delivery to parents.
 
@@ -583,11 +583,13 @@ Teachers create lesson plans, homeworks, and assessments, then recreate them man
 
 ---
 
-### ✅ Phase 16: Petland Pet Shop Integration
+### ✅ Phase 16: Petland Pet Shop & Dork Economy
 
-**Goal:** Build end-to-end pet shop system for Petland reward integration where teachers create Studio Ghibli-style accessories (via AI) that students purchase with XP and wear on their pets.
+**Goal:** Build end-to-end pet shop system with Dork Economy (XP ↔ Dorks conversion) for Petland reward integration where teachers create Studio Ghibli-style accessories (via AI) that students purchase with XP and wear on their pets.
 
-**Completed:** April 12, 2026. All features end-to-end tested and production-ready.
+**Completed:** April 12–13, 2026. All features end-to-end tested and production-ready.
+
+#### Part A: Pet Shop Core (April 12, 2026)
 
 **Implementation Summary:**
 
@@ -613,7 +615,7 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 **Status:** Complete and production-ready. All three initial accessories working (2 AI-generated, 1 manual with auto-signing).
 
-#### Phase 16 Enhancement: Collection Management System (April 12, 2026)
+#### Part B: Collection Management System (April 12, 2026)
 
 **New Features Added:**
 - ✅ **14-Icon Theme System** — Expanded from 10 to 14 icon options (sparkles, wind, wand, rocket, flame, droplet, zap, star, heart, leaf, tree, bug, bird, default)
@@ -637,6 +639,62 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 `petShopCollections` collection: `{name, iconType, createdDate}`
 
 **Status:** Complete and production-ready. Collection management fully integrated and tested. Database cleaned and consolidated.
+
+#### Part C: Dork Economy System (April 13, 2026)
+
+**Goal:** Implement XP ↔ Dorks conversion system where students convert earned XP into collectable denominations (Copper, Silver, Gold) to purchase pet shop accessories and build wealth systems.
+
+**Completed:** April 13, 2026. All math verified, critical bug fixed, user experience complete.
+
+**Architecture:**
+
+**Currency Model:**
+- 1 XP = 1 Copper (atomic unit)
+- 10 Copper = 1 Silver
+- 100 Copper = 1 Gold
+- All balances stored in Firestore as integers (Copper)
+- Display via denomination breakdown: "1 Gold, 5 Silver, 0 Copper" → 🟡 1  ⚪ 5  🟤 0
+
+**PetlandProfile Fields:**
+- `xp: number` — lifetime earned XP (immutable downward, increases only)
+- `xpSpent: number` — total XP converted to Dorks (NEW field, tracking only)
+- `dorkBalance: number` — wallet balance in Copper units
+
+**Helper Functions:**
+- `formatDorks(copperTotal: number): string` — converts 150 → "1 Gold, 5 Silver" (text display)
+- `getDorkDenominations(copperTotal: number): Dorks` — returns {gold, silver, copper} object (for icons)
+
+**UI Components:**
+- `DorkIconDisplay` — Icon-based dork rendering (🟡 ⚪ 🟤) with configurable sizes
+- `CashInStation` — Full XP ↔ Dorks conversion interface with:
+  - Quick buttons (10/50/100/500 XP)
+  - Slider for custom amounts
+  - Live preview with DorkIconDisplay
+  - Conversion Rates table (10:1, 100:1)
+  - XP Current stats card (Earned/Spent/Current)
+
+**Critical Bug Fixed (April 13):**
+- **Issue:** Math completely broken. Max had 150 Copper in wallet but xp still 383, xpSpent still 0
+- **Root Cause:** `handleConvert` calculated `newCurrentXp` but didn't include `xp: newCurrentXp` in Firestore updateDoc()
+- **Fix:** Added `xp: newCurrentXp` to updateDoc call so XP decreases properly on conversions
+- **Verification:** Max's profile manually updated (xp=233, xpSpent=150, dorkBalance=150); conversion math verified working
+
+**Files Modified:**
+- `src/modules/petland/types.ts` — Added `getDorkDenominations()` function and `Dorks` interface
+- `src/modules/petland/components/cash-in-station.tsx` — **CRITICAL FIX:** Added xp field to Firestore update, created DorkIconDisplay component, moved Conversion Rates table
+- `src/modules/petland/components/student-dashboard.tsx` — Added DorkIconDisplay component, imported Circle icon, updated passport card wallet display to use icons
+- `/t-portal/petland/pet-shop/page.tsx` (Teacher Portal) — Uses formatDorks() for all price displays
+
+**Kiddoland Design Applied:**
+- Colors: 🟡 Gold (yellow-500), ⚪ Silver (gray-400), 🟤 Copper (amber-700)
+- Card gradient: from-purple-100 via-pink-50 to-orange-50
+- Large Cash-In button on passport card
+- Three XP stats replacing single display (Earned, Spent, Current)
+
+**Status:** ✅ 100% complete and verified working. Math tested with Max profile. Both portals synchronized on identical logic.
+
+**BLOCKER FOR PHASE 17:** 
+🔴 **New Task Identified:** Backfill `xpSpent: 0` field to all existing learner profiles (most missing this new field). Required before Phase 17 can begin. Suggested approach: Cloud Function or batch REST API script.
 
 ---
 
@@ -733,84 +791,9 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 ---
 
-### ⬜ Phase 19: Transactional Email System
+### ⬜ Phase 19–23: Email System, Onboarding, Mobile, Hardening, Advanced
 
-**Goal:** Automated email delivery for all system events.
-
-**Implementation:**
-
-- [ ] Email provider integration (SendGrid or Mailgun)
-- [ ] Welcome email on S signup
-- [ ] Payment receipt after Stripe purchase
-- [ ] Session reminder (24 hours before)
-- [ ] Session completion summary (for parent)
-- [ ] Homework delivery email with link to submission
-- [ ] Feedback report delivery
-- [ ] Package expiration warning (7 days before)
-- [ ] Progress report (monthly or per-unit)
-
----
-
-### ⬜ Phase 20: Onboarding & First-Time Experience
-
-**Goal:** Guided flow from signup to first booked session.
-
-**Implementation:**
-
-- [ ] S signup → welcome screen with next steps
-- [ ] T profile auto-creation on first login (currently manual)
-- [ ] Guided first purchase flow (S lands on T profile → selects package → Stripe → confirmation)
-- [ ] First session booking prompt after purchase
-- [ ] T onboarding: profile setup wizard, first unit creation, first S invitation
-- [ ] Empty state handling across all pages (no sessions yet, no packages, no units)
-
----
-
-### ⬜ Phase 21: Mobile Responsiveness
-
-**Goal:** Full mobile support for S-portal (parents checking on phones, especially in WeChat browser).
-
-**Implementation:**
-
-- [ ] Responsive audit of all S-portal pages
-- [ ] Responsive audit of T-portal pages
-- [ ] WeChat in-app browser testing (critical for Chinese customers)
-- [ ] Touch-friendly interactions (calendar, booking, chat)
-- [ ] Mobile navigation pattern (bottom nav or hamburger)
-
----
-
-### ⬜ Phase 22: Platform Hardening
-
-**Goal:** Production-readiness: error handling, edge cases, admin tools, legal.
-
-**Implementation:**
-
-- [ ] Error boundaries on all major pages
-- [ ] Payment failure handling (Stripe webhook retry, failed payment UI)
-- [ ] Missed webhook recovery (manual reconciliation tool for T or admin)
-- [ ] Admin dashboard: user management, revenue overview, system health
-- [ ] Firestore backup strategy (scheduled exports)
-- [ ] Data export for T (student records, payment history)
-- [ ] Terms of Service page
-- [ ] Privacy Policy page
-- [ ] Rate limiting on API routes
-
----
-
-### ⬜ Phase 23: Advanced Features
-
-**Potential Future Enhancements:**
-
-- Multi-teacher platform support
-- Teacher discovery and selection flow
-- Multi-currency support with currency conversion
-- Advanced analytics dashboard with business intelligence
-- Automated reminders via email and SMS
-- Mobile app for on-the-go management
-- Google Calendar API integration (auto-sync sessions)
-- In-class performance tracking (post-class surveys)
-- AI-powered curriculum recommendations
+*(See full roadmap archive for detailed specs.)*
 
 ---
 
@@ -851,7 +834,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 
 ---
 
-## ROUTES STRUCTURE
+## ROUTES STRUCTURE (Full Detail)
 
 | Route            | Purpose                          | Access                          |
 | ---------------- | -------------------------------- | ------------------------------- |
@@ -914,107 +897,6 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 
 ---
 
-## PACKAGE STRUCTURE
-
-**Based on documented pricing scheme:**
-
-| Package Type             | Description                  | Content                     | Discount | Use Case                                        |
-| ------------------------ | ---------------------------- | --------------------------- | -------- | ------------------------------------------------ |
-| **Single Session**       | Trial or makeup              | 1 session                   | 0%       | New students, one-off makeup                     |
-| **10-Pack**              | Short-term commitment        | 10 hours = 4 units          | 10%      | Most common package                              |
-| **Full Course (60 hrs)** | Complete proficiency level   | 60 hours = 24 units         | 20%      | Serious learners completing A1, A2, B1, etc.     |
-
-**Kiddoland Unit Plan (Structured Learning):**
-
-- Each unit = 4-5 sessions (30-min sessions, so 2-2.5 hours per unit)
-- 10-pack = 10 hours = 4 units
-- Full course (60 hours) = 24 units = complete proficiency level (A1, A2, etc.)
-- 60-75 hours per level (varies by student)
-- ~200 hours total per level (sessions + independent practice via Petland)
-
----
-
-## CURRENT STATUS
-
-- **Phase 12:** ✅ Complete (February 15, 2026)
-- **Phase 13:** ✅ Complete (February 18, 2026). Stripe checkout + webhook E2E verified. Firebase Admin SDK added for server-side writes. **Webhook production fix March 1** (Node version).
-- **Phase 14:** ✅ Complete. Parent report fully wired with AI generation, translation, email delivery.
-- **Phase 15/16:** ✅ Complete. Session feedback pipeline + Resend email integration. Duplicate bug fixed (Feb 23).
-- **Phase 15-C:** ✅ Admin import tools (Obsidian + UPT).
-- **Phase 15-D:** ✅ iCal calendar export.
-- **Phase 15-E:** ✅ Complete (February 24, 2026). L Settings page built, Firestore rules fixed, profile completion path works.
-- **Booking Gate Rewrite:** ✅ Complete (March 3, 2026). Unit-assignment gate replaced with T-L relationship + credit check. `reserveCredit()` wired into booking flow.
-- **T-Selection & Approval Flow:** ✅ Built (March 3, 2026). Browse Tutors → Request as My Tutor → T Approves → `assignedTeacherId` set. E2E retest pending.
-- **Phase 15-B:** ✅ Complete (March 24, 2026). T assigns homework, L/T uploads JSON, T grades. Client-side Firestore pattern. teacherInstructions field added. **Email attachment added April 1** — T can attach HTML workbook/worksheet to homework email. File size guard at 6MB. Email failure warning toast. Status flips to 'delivered' on successful email send.
-- **Phase 16: Petland Pet Shop Integration:** ✅ Complete (April 12, 2026). **Collection Management System** — Teachers create, edit, delete collections with 14 icon themes. Students toggle three-view modes (Items | Collections | Price). Collapsible collections with real-time icon syncing. Database-driven architecture: `petShopCollections` collection stores name + iconType. All API CRUD endpoints working (GET, POST, PATCH, DELETE). Collections expand/collapse on both T and L sides. Icon picker dropdown in dialogs. Collection cleanup scripts resolved spacing inconsistencies and consolidated duplicates. System production-ready.
-- **Curriculum-AI Architecture Spec:** ✅ Complete (March 23, 2026). Homework templates, AI integration layer, AI content generation, AI advisor, vocabulary mastery tracker.
-- **Module Architecture (KTFT/KCBT/KUPT):** ✅ Spec complete (March 29, 2026). Three-module design: KTFT (reference + developmental sequences), KCBT (per-course blueprint), KUPT (unit design, stacked). All modules inside LL.
-- **Kiddoland Template Updates:** ✅ All four templates updated to Export Standard v1 (Song Worksheet and Sentence Switcher applied post-April 1).
-- **Content Production Pipeline:** 🔧 Clone-and-reskin workflow established for song worksheets (April 1). **Homework Generator spec complete (April 4)** — standalone HTML tool covering Workbooks (WHITE), Song Worksheets, Phonics Workbooks. Build planned for next session. LL module (Option B) stacked for after AI layer.
-- **Course Architecture + Session History:** 🔧 Both specs complete (Feb 23). Build after Phases A/B/C.
-- **Calendar:** ✅ Availability delay fixed (writeBatch), column-fill drag, Schedule Template feature (save/load/apply weekly patterns). Feb 23.
-- **TypeScript:** ✅ 0 errors (55 resolved Feb 23).
-- **S-Portal:** Major redesign — permanent top bar (Book/Top Up), restructured sidebar, enhanced dashboard with credit/progress/rewards cards, Calendar Availability tab, Browse Tutors refactor. Top Up page built (Feb 24).
-- **AI APIs:** ✅ Live. DeepSeek primary with failover chain. `AI_USE_MOCK=false`.
-- **Email:** ✅ Resend domain verified. Sending operational from `notifications@updates.kiddoland.co`.
-- **Next:** Live Session Background (real-time teacher feedback + vocabulary display) → Review System Integration (session items → Petland spaced repetition) → End-of-Session Scoreboard → Phase A (types + CRUD + seed data) → Phase B (AI layer) → Phase C (template UI + KTFT page + KCBT UI) → Unified Session History → Course Page Architecture
-- **Estimated sessions for Live Session Background + Review System + Scoreboard:** 3–5 | **Estimated sessions for A+B+C:** 8–10
-
-**Repository:** https://github.com/jwaglang/lessonlink
-
-**Admin Email:** jwag.lang@gmail.com
-
-**Hexdate Naming Convention:** All project files use hexdate format: `[Year][Month][Day]` in base-36. Year: A=2010, B=2011... F=2015, Q=2026, R=2027. Month: 1-9=digits, A=10(Oct), B=11(Nov), C=12(Dec). Day: 1-9=digits, A=10, B=11... P=25, T=29, V=31. Examples: March 1, 2026 = Q31. March 29, 2026 = Q3T. Christmas 2015 = FCP. December 31, 2031 = VCV.
-
-**Dev Environment:** VSCode + MiniMax M2.5 (via Kilo Code) for codebase searches and edits. Claude (Anthropic) for planning and architecture. Qwen 3.5 Plus for template execution tasks. WARNING: Kilo Code will edit files unprompted — only paste SEARCH ONLY prompts.
-
-**Local Testing:** Stripe CLI installed at `C:\Users\joner\Desktop\stripe_1.37.1_windows_x86_64\stripe.exe` for local webhook testing. Use `stripe listen --forward-to localhost:9002/api/stripe/webhook` + update `.env.local` STRIPE_WEBHOOK_SECRET with CLI's temporary whsec_ value. Remember to restore production whsec_ value after local testing.
-
-**External Work:**
-
-- Course curriculum being built in separate "kiddoland tools" sessions
-- Petland reward system is separate Firebase app (sends data to LL via webhook — Phase 17)
-- Kiddoland Export Standard v1: WHITE and PHONICS templates updated. Song Worksheet and Sentence Switcher pending (prompts written).
-- Content production workflow: clone-and-reskin from TEACHER_AtTheNorthPole.html reference. Qwen 3.5 Plus for execution, Claude for planning.
-- Song Worksheet Generator Tool stacked (Option A standalone, Option B LL module)
-
-**Known Issues:**
-
-- ✅ ~~AI_USE_MOCK~~ — **AI_USE_MOCK=false**. DeepSeek live in production. Failover chain: DeepSeek → MiniMax → Claude.
-- ✅ ~~Resend domain verification~~ — DNS fully verified (DKIM + SPF + MX). Sending operational.
-- ✅ ~~Session feedback duplicate creation~~ — Fixed Feb 23. useEffect loads existing feedback on dialog open.
-- ✅ ~~55 pre-existing TypeScript errors~~ — All resolved Feb 23. 0 errors.
-- ✅ ~~Calendar availability delay~~ — Fixed Feb 23. writeBatch replaces sequential toggles. Column-fill drag replaces diagonal.
-- ✅ ~~`.toFixed` bug~~ — Confirmed non-existent Feb 24. Removed.
-- ✅ ~~L Settings save errors~~ — Fixed Feb 24. Conditional spread pattern + cleanContact() helper + Firestore rules update.
-- ✅ ~~Stripe webhook 500 errors~~ — Fixed March 1. Root cause: Node.js auto-updated to v27 via Glary Utilities, breaking `buffer-equal-constant-time` package used by Firebase Admin SDK. Fix: downgraded to Node 24 LTS, pinned via `.node-version` file in project root. See ENVIRONMENT SAFETY RULES below.
-- ✅ ~~Email attachment for homework assignment~~ — Implemented April 1. Resend attachment with 6MB file size guard. Email failure warning toast. Status flips to 'delivered'.
-- ⚠️ **Booking flow requires courseId** — L calendar booking still requires courseId/unitId/sessionId in URL params. Top Up credit works but L must select a course to book. Correct behavior, but UX from Top Up → Book not seamless yet.
-- ⚠️ **Calendar tab-switch refresh** — Availability doesn't re-fetch when switching tabs (Schedule ↔ Availability). Requires page reload.
-- ⚠️ **T calendar optimistic UI** — Slots flip after Firestore confirms, not instantly. Minor delay.
-- ⚠️ **MiniMax returns empty responses** — likely balance/credits issue. Not blocking (DeepSeek is primary).
-- ⚠️ **No Anthropic API key** — Claude failover target inactive without `ANTHROPIC_API_KEY` in env.
-- ⚠️ **Session reminder trigger** — Email template built but no cron/scheduled function to fire it.
-- ⚠️ **T profile purchase flow** — Auth-aware but doesn't show L's current course context.
-- ⚠️ **Firestore rules for scheduleTemplates** — currently `allow read, write: if true`. Tighten to `request.auth != null` when stable.
-- ⚠️ **ParentContact.relationship type mismatch** — `types.ts` uses lowercase (`mother`, `father`), L Settings dialog uses title-case (`Mother`, `Father`). Non-blocking — saves fine, cosmetic only.
-- ⚠️ **Old teacherProfile `A9YKGu2jOgRAEVtR8n0E`** — stacked, contains seed data for migration. Disabled in Firestore.
-- ⚠️ **`isPublished` on teacherProfiles** must be boolean `true`, not string `"true"` — fixed March 3
-- ⚠️ **Dead API routes** — `/api/homework/[id]/upload-results` and `/api/homework/[id]/grade` are unused (homework-tab does both client-side). Deletion pending.
-- ⚠️ **Song Worksheet Generator Tool** needed for mass production. Stacked as Option A (standalone HTML) and Option B (LL module after AI layer).
-- ⚠️ **KTFT needs "Copy Level Only" button** — currently requires track selection to export, but track data is irrelevant for song worksheets. Stacked.
-- ⚠️ **YELLOW/ORANGE/GREEN workbook templates** need design — different activity types per level, not just harder content. Design project not started.
-- ⚠️ **E2E homework upload/grade flow** needs testing (blocked on v1 template updates for Song/Sentence Switcher)
-- ✅ **Petland Stage 1 complete** — integrated into LL repo as `src/modules/petland/`. Student page at `/s-portal/petland`. Petland tab (Tab 5) on T-portal Learner Profile. Activation flow, feedback buttons, vocab CRUD all working. Firestore rules updated. Stage 2 (platform shell restructure) stacked.
-- ✅ **Petland SRS complete (Q46)** — Leitner 5-box system. Memory Match (exposure, stamps `lastReviewDate`) → Flashcard Review (assessment, drives `srsLevel`). HP decay on login. Death + recovery flow (500 XP egg + 100 XP hatch). `petWish` stored at hatch.
-- ✅ **Petland body condition variants (Q47)** — Three AI-generated variant images via `gemini-2.5-flash-image`. Fat (user-triggered), thin (HP < 50), starving (HP < 20). All cached — generated once. Image priority: dead > fat > starving > thin > healthy.
-- ✅ **Petland body condition redesign (Q48)** — Removed `isSick`. Replaced with `isFat` (boolean). Fat clears automatically on next login when HP decay fires. Thin/starving remain pure HP thresholds (no flags). Firestore vocabulary update rule fixed — learners can now write `lastReviewDate`/`srsLevel` (was teacher-only, causing permissions error on every game complete). Dev panel expanded: Fake Match + Simulate Decay buttons. ⚠️ Firestore rules need `firebase deploy --only firestore:rules` to take effect in production. Testing pass required.
-- ✅ **Petland Playground SRS complete (Q46)** — Full Leitner 5-box system. Memory Match = exposure (stamps `lastReviewDate`, awards XP + HP daily). Flashcard Review = assessment (self-reported Knew it / Didn't know it, drives srsLevel). Daily HP guard. HP decay on login (client-side). Death state + recovery flow (500 XP egg + 100 XP hatch). Fat pet generation via Imagen when overfeeding detected. HungerAlerts with personality copy. `sessionInstanceId` stamped on vocab docs. XP constants in utils.ts. Needs testing pass before next build.
-- ✅ **Petland Pet Shop complete (Q46)** — Teachers create Studio Ghibli-style accessories via AI image generation. Students browse Pet Shop, purchase with XP, wear accessories on pets via Gemini 2.5 Flash dual-image composition. Accessories stored in global `petShopItems` Firestore collection. Full CRUD + AI composition + image upload infrastructure. Dev panel test button for Max (simulate purchase without XP cost). Firestore + Storage rules updated. UI: responsive grid (2-5 columns), purchase flow, "Store your bling!" reversion button. All tested and production-ready.
-- ⚠️ **YELLOW/ORANGE/GREEN workbook activity design** — needed before generator can produce higher-level workbooks. Design session planned.
-
----
-
 ## ENVIRONMENT SAFETY RULES
 
 ⛔ **NEVER update Node.js, npm, Python, or any system-level tool without checking compatibility first.**
@@ -1044,6 +926,45 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 12, 2026 (Q4C)
+## KNOWN ISSUES & WORKAROUNDS
 
-**Version:** Q4C (6.5) — Pet Shop collection management system complete. 14-icon theme system, three-view toggle (Items | Collections | Price), collapsible collections, full CRUD endpoints. NEW PRIORITIES identified: Phase 17 (Live Session Background), Phase 17B (Review System Integration), Phase 17C (End-of-Session Scoreboard). Session Handoff Q4Cb documents all work. Ready for Phase 17 build.
+- ✅ ~~AI_USE_MOCK~~ — **AI_USE_MOCK=false**. DeepSeek live in production. Failover chain: DeepSeek → MiniMax → Claude.
+- ✅ ~~Resend domain verification~~ — DNS fully verified (DKIM + SPF + MX). Sending operational.
+- ✅ ~~Session feedback duplicate creation~~ — Fixed Feb 23. useEffect loads existing feedback on dialog open.
+- ✅ ~~55 pre-existing TypeScript errors~~ — All resolved Feb 23. 0 errors.
+- ✅ ~~Calendar availability delay~~ — Fixed Feb 23. writeBatch replaces sequential toggles. Column-fill drag replaces diagonal.
+- ✅ ~~`.toFixed` bug~~ — Confirmed non-existent Feb 24. Removed.
+- ✅ ~~L Settings save errors~~ — Fixed Feb 24. Conditional spread pattern + cleanContact() helper + Firestore rules update.
+- ✅ ~~Stripe webhook 500 errors~~ — Fixed March 1. Root cause: Node.js auto-updated to v27 via Glary Utilities, breaking `buffer-equal-constant-time` package used by Firebase Admin SDK. Fix: downgraded to Node 24 LTS, pinned via `.node-version` file in project root.
+- ✅ ~~Email attachment for homework assignment~~ — Implemented April 1. Resend attachment with 6MB file size guard. Email failure warning toast. Status flips to 'delivered'.
+- ⚠️ **Booking flow requires courseId** — L calendar booking still requires courseId/unitId/sessionId in URL params. Top Up credit works but L must select a course to book. Correct behavior, but UX from Top Up → Book not seamless yet.
+- ⚠️ **Calendar tab-switch refresh** — Availability doesn't re-fetch when switching tabs (Schedule ↔ Availability). Requires page reload.
+- ⚠️ **T calendar optimistic UI** — Slots flip after Firestore confirms, not instantly. Minor delay.
+- ⚠️ **MiniMax returns empty responses** — likely balance/credits issue. Not blocking (DeepSeek is primary).
+- ⚠️ **No Anthropic API key** — Claude failover target inactive without `ANTHROPIC_API_KEY` in env.
+- ⚠️ **Session reminder trigger** — Email template built but no cron/scheduled function to fire it.
+- ⚠️ **T profile purchase flow** — Auth-aware but doesn't show L's current course context.
+- ⚠️ **Firestore rules for scheduleTemplates** — currently `allow read, write: if true`. Tighten to `request.auth != null` when stable.
+- ⚠️ **ParentContact.relationship type mismatch** — `types.ts` uses lowercase (`mother`, `father`), L Settings dialog uses title-case (`Mother`, `Father`). Non-blocking — saves fine, cosmetic only.
+- ⚠️ **Old teacherProfile `A9YKGu2jOgRAEVtR8n0E`** — stacked, contains seed data for migration. Disabled in Firestore.
+- ⚠️ **`isPublished` on teacherProfiles** must be boolean `true`, not string `"true"` — fixed March 3
+- ⚠️ **Dead API routes** — `/api/homework/[id]/upload-results` and `/api/homework/[id]/grade` are unused (homework-tab does both client-side). Deletion pending.
+
+---
+
+## PACKAGE STRUCTURE
+
+| Package Type             | Description                  | Content                     | Discount | Use Case                                        |
+| ------------------------ | ---------------------------- | --------------------------- | -------- | ------------------------------------------------ |
+| **Single Session**       | Trial or makeup              | 1 session                   | 0%       | New students, one-off makeup                     |
+| **10-Pack**              | Short-term commitment        | 10 hours = 4 units          | 10%      | Most common package                              |
+| **Full Course (60 hrs)** | Complete proficiency level   | 60 hours = 24 units         | 20%      | Serious learners completing A1, A2, B1, etc.     |
+
+---
+
+## CURRENT STATUS (April 13, 2026)
+
+- ✅ **Phases 1–16:** Complete and production-ready
+- 🔴 **Blocker:** xpSpent backfill required before Phase 17
+- 🔧 **Next Priority:** Phase 17 (Live Session Background)
+- ⬜ **Stacked:** Phases A/B/C (Curriculum AI), Phases 17B/17C, Phases 18–23

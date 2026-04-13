@@ -18,10 +18,11 @@ export interface GeneratedComposite {
 }
 
 export interface PetlandProfile {
-  xp: number;
+  xp: number;                   // lifetime XP earned, never decreases (progress tracker)
+  xpSpent: number;              // total XP converted to Dorks (for display purposes)
   hp: number;
   maxHp: number;
-  dorks: Dorks;
+  dorkBalance: number;          // wallet balance in Copper (1 XP = 1 Copper, converted at Cash-In station)
   lastHpUpdate: string;        // ISO 8601 timestamp
   lastChallengeDate: string;   // YYYY-MM-DD
   isFat?: boolean;              // true when overfed; clears automatically on next HP decay
@@ -72,7 +73,7 @@ export interface PetShopItem {
   name: string;
   description: string;        // original prompt used to generate the accessory
   imageUrl: string;           // AI-generated accessory image
-  price: number;              // price in XP
+  price: number;              // price in Dorks (Copper equivalent, 1:1 with old XP values)
   stock: number;              // quantity available in shop
   collection: string;         // collection name (e.g., "Wizard Collection", "Space Collection")
   createdBy: string;          // teacher UID who created this
@@ -84,4 +85,28 @@ export interface Brochure {
   name: string;
   image: string;
   imageHint: string;
+}
+
+// ============================================
+// DORK DENOMINATION HELPER
+// ============================================
+
+export function formatDorks(copperTotal: number): string {
+  const gold = Math.floor(copperTotal / 100);
+  const silver = Math.floor((copperTotal % 100) / 10);
+  const copper = copperTotal % 10;
+
+  const parts: string[] = [];
+  if (gold > 0) parts.push(`${gold} Gold`);
+  if (silver > 0) parts.push(`${silver} Silver`);
+  if (copper > 0 || parts.length === 0) parts.push(`${copper} Copper`);
+  return parts.join(', ');
+}
+
+export function getDorkDenominations(copperTotal: number): Dorks {
+  return {
+    gold: Math.floor(copperTotal / 100),
+    silver: Math.floor((copperTotal % 100) / 10),
+    copper: copperTotal % 10,
+  };
 }
