@@ -660,26 +660,6 @@ export default function LiveSessionPage() {
           </div>
         </div>
 
-        {/* CENTER - WEBCAM ZONE */}
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '260px',
-          height: '200px',
-          border: '2px dashed rgba(255,255,255,0.06)',
-          borderRadius: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2,
-        }}>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.08)', textAlign: 'center' }}>
-            📹 ManyCam Zone
-          </div>
-        </div>
-
         {/* RIGHT PANEL - CONTENT CARDS */}
         <div style={{
           position: 'absolute',
