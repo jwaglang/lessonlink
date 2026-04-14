@@ -28,6 +28,7 @@ import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Loader2, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { SessionInstance, Student, SessionProgress as Phase17SessionProgress } from '@/lib/types';
@@ -53,6 +54,9 @@ export default function LiveSessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [wowActive, setWowActive] = useState(false);
   const [treasureActive, setTreasureActive] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [activeAnimation, setActiveAnimation] = useState<{ type: string; amount?: number } | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [showAddVocab, setShowAddVocab] = useState(false);
   const [showAddGrammar, setShowAddGrammar] = useState(false);
   const [showAddPhonics, setShowAddPhonics] = useState(false);
@@ -79,6 +83,90 @@ export default function LiveSessionPage() {
     content: string;
     timestamp: Date;
   }>>([]);
+
+  // Single active comet at a time - no repeated vectors
+  const [activeComet, setActiveComet] = useState<{
+    left: string;
+    top: string;
+    duration: number;
+    angle: number;
+    tailSize: number;
+    isActive: boolean;
+  } | null>(null);
+
+  const cometTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAngleRef = useRef<number>(0);
+
+  // Single comet timer - one at a time, completely random, no repeated vectors
+  useEffect(() => {
+    const startNextComet = (isFirst = false) => {
+      // First comet appears quickly (0.5-2s), subsequent ones wait 10-20s
+      const waitTime = isFirst ? (0.5 + Math.random() * 1.5) : (10 + Math.random() * 10);
+      
+      cometTimerRef.current = setTimeout(() => {
+        // Generate angle, ensuring it's different from last comet
+        let newAngle = 170 + Math.random() * 100; // 170-270deg
+        while (Math.abs(newAngle - lastAngleRef.current) < 30) {
+          newAngle = 170 + Math.random() * 100; // Ensure at least 30deg difference
+        }
+        lastAngleRef.current = newAngle;
+
+        // Random start position (can come from any edge/corner)
+        const startEdge = Math.random();
+        let startX, startY;
+
+        if (startEdge < 0.25) {
+          // Top edge
+          startX = (10 + Math.random() * 80) + '%';
+          startY = '-20%';
+        } else if (startEdge < 0.5) {
+          // Right edge
+          startX = '105%';
+          startY = (Math.random() * 80) + '%';
+        } else if (startEdge < 0.75) {
+          // Bottom edge
+          startX = (10 + Math.random() * 80) + '%';
+          startY = '105%';
+        } else {
+          // Left edge
+          startX = '-5%';
+          startY = (Math.random() * 80) + '%';
+        }
+
+        const duration = 1 + Math.random() * 5; // 1-6s speed
+        const tailSize = 40 + Math.random() * 100; // 40-140px tail length
+
+        const newComet = {
+          left: startX,
+          top: startY,
+          duration,
+          angle: newAngle,
+          tailSize,
+          isActive: true,
+        };
+        
+        console.log('Comet appearing:', newComet);
+        setActiveComet(newComet);
+        
+        // Hide after animation and start next wait
+        const animTime = duration * 1000;
+        cometTimerRef.current = setTimeout(() => {
+          console.log('Comet disappearing');
+          setActiveComet(null);
+          startNextComet(false); // Loop with longer wait
+        }, animTime);
+      }, waitTime * 1000);
+    };
+
+    console.log('Comet effect mounted, starting first timer');
+    startNextComet(true); // Start with first=true for quick appearance
+
+    return () => {
+      if (cometTimerRef.current) {
+        clearTimeout(cometTimerRef.current);
+      }
+    };
+  }, []);
 
   // Load initial data
   useEffect(() => {
@@ -207,42 +295,24 @@ export default function LiveSessionPage() {
 
   const handleTreasureChest = async (amount: number) => {
     if (!progress) return;
-    setTreasureActive(true);
-    try {
-      await addTreasureChest(progress.id, amount);
-    } catch (err) {
-      toast({ title: 'Error awarding treasure', variant: 'destructive' });
-    }
-    setTimeout(() => setTreasureActive(false), 3000);
+    const action = `treasure-${amount}`;
+    setSelectedAction(selectedAction === action ? null : action);
   };
 
   const handleWow = async () => {
     if (!progress) return;
-    setWowActive(true);
-    try {
-      await addWow(progress.id);
-    } catch (err) {
-      toast({ title: 'Error awarding wow', variant: 'destructive' });
-    }
-    setTimeout(() => setWowActive(false), 2000);
+    setSelectedAction(selectedAction === 'wow' ? null : 'wow');
   };
 
   const handleOopsie = async () => {
     if (!progress) return;
-    try {
-      await addOopsie(progress.id);
-    } catch (err) {
-      toast({ title: 'Error recording oopsie', variant: 'destructive' });
-    }
+    setSelectedAction(selectedAction === 'oopsie' ? null : 'oopsie');
   };
 
   const handleBehavior = async (type: 'out-to-lunch' | 'chatterbox' | 'disruptive') => {
     if (!progress) return;
-    try {
-      await addBehaviorDeduction(progress.id, type);
-    } catch (err) {
-      toast({ title: 'Error recording behavior', variant: 'destructive' });
-    }
+    const action = `behavior-${type}`;
+    setSelectedAction(selectedAction === action ? null : action);
   };
 
   const handleSaveSettings = async () => {
@@ -272,6 +342,82 @@ export default function LiveSessionPage() {
     setDiaryEntries([...diaryEntries, newEntry]);
     setDiaryNotes('');
     toast({ title: `${diaryTab.charAt(0).toUpperCase() + diaryTab.slice(1)} note saved` });
+  };
+
+  const playSound = (type: string) => {
+    // Using Web Audio API to generate simple beeps for now (can be stacked)
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const now = audioContext.currentTime;
+    
+    if (type === 'wow') {
+      // Wow sound: ascending notes
+      const notes = [262, 294, 330, 392]; // C, D, E, G
+      notes.forEach((freq, idx) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, now + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.2);
+        osc.start(now + idx * 0.1);
+        osc.stop(now + idx * 0.1 + 0.2);
+      });
+    } else if (type === 'treasure') {
+      // Treasure sound: higher ascending beeps
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'oopsie') {
+      // Oopsie sound: descending sad notes
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.4);
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    }
+  };
+
+  const handleBoom = async () => {
+    if (!selectedAction || !progress) return;
+    
+    const action = selectedAction;
+    playSound(action);
+    setActiveAnimation({ type: action });
+    
+    try {
+      if (action === 'wow') {
+        await addWow(progress.id);
+      } else if (action.startsWith('treasure-')) {
+        const amount = parseInt(action.split('-')[1]);
+        await addTreasureChest(progress.id, amount);
+      } else if (action === 'oopsie') {
+        await addOopsie(progress.id);
+      } else if (action.startsWith('behavior-')) {
+        const behaviorType = action.split('-').slice(1).join('-') as 'out-to-lunch' | 'chatterbox' | 'disruptive';
+        await addBehaviorDeduction(progress.id, behaviorType);
+      }
+    } catch (err) {
+      toast({ title: 'Error committing action', variant: 'destructive' });
+    }
+    
+    setSelectedAction(null);
+    setTimeout(() => setActiveAnimation(null), 2000);
   };
 
   const handleEndSession = async () => {
@@ -346,6 +492,38 @@ export default function LiveSessionPage() {
           100% { transform: translateX(-600px) translateY(200px); opacity: 0; }
         }
 
+        @keyframes comet0 {
+          0% { transform: rotate(201deg) translate(0, 0); opacity: 0; }
+          1.2% { opacity: 0.9; }
+          32% { opacity: 0.5; }
+          40% { transform: rotate(201deg) translate(0, -700px); opacity: 0; }
+          100% { transform: rotate(201deg) translate(0, -700px); opacity: 0; }
+        }
+
+        @keyframes comet1 {
+          0% { transform: rotate(219deg) translate(0, 0); opacity: 0; }
+          1.2% { opacity: 0.85; }
+          32% { opacity: 0.5; }
+          40% { transform: rotate(219deg) translate(0, -650px); opacity: 0; }
+          100% { transform: rotate(219deg) translate(0, -650px); opacity: 0; }
+        }
+
+        @keyframes comet2 {
+          0% { transform: rotate(195deg) translate(0, 0); opacity: 0; }
+          1.2% { opacity: 0.9; }
+          32% { opacity: 0.5; }
+          40% { transform: rotate(195deg) translate(0, -720px); opacity: 0; }
+          100% { transform: rotate(195deg) translate(0, -720px); opacity: 0; }
+        }
+
+        @keyframes comet3 {
+          0% { transform: rotate(211deg) translate(0, 0); opacity: 0; }
+          1.2% { opacity: 0.85; }
+          32% { opacity: 0.5; }
+          40% { transform: rotate(211deg) translate(0, -680px); opacity: 0; }
+          100% { transform: rotate(211deg) translate(0, -680px); opacity: 0; }
+        }
+
         @keyframes nebulaPulse {
           0% { opacity: 0.5; transform: scale(1); }
           100% { opacity: 1; transform: scale(1.1); }
@@ -367,6 +545,49 @@ export default function LiveSessionPage() {
           25% { transform: rotate(-5deg); }
           75% { transform: rotate(5deg); }
         }
+
+        @keyframes wowExplosion {
+          0% { transform: scale(0.3); opacity: 0; }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes circleOrbit {
+          0% { transform: rotate(0deg) translateX(100px) rotate(0deg); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: rotate(360deg) translateX(100px) rotate(-360deg); opacity: 0; }
+        }
+
+        @keyframes starBurst {
+          0% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; }
+          100% { opacity: 0; transform: scale(1); }
+        }
+
+        @keyframes treasureSpray {
+          0% { transform: translateY(0) rotate(0); opacity: 1; }
+          100% { transform: translateY(-200px) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes oopsieShake {
+          0%, 100% { transform: translateX(0) rotate(0); }
+          10% { transform: translateX(-20px) rotate(-5deg); }
+          20% { transform: translateX(20px) rotate(5deg); }
+          30% { transform: translateX(-15px) rotate(-3deg); }
+          40% { transform: translateX(15px) rotate(3deg); }
+          50% { transform: translateX(-10px) rotate(-2deg); }
+          60% { transform: translateX(10px) rotate(2deg); }
+          70% { transform: translateX(-5px) rotate(-1deg); }
+          80% { transform: translateX(5px) rotate(1deg); }
+        }
+
+        @keyframes eyesCenterBehind {
+          0% { transform: rotate(0deg) translateX(120px) rotate(0deg); opacity: 1; }
+          60% { transform: rotate(180deg) translateX(120px) rotate(-180deg); opacity: 1; }
+          75% { transform: rotate(180deg) translateX(0px) rotate(-180deg); opacity: 1; }
+          100% { transform: rotate(180deg) translateX(0px) rotate(-180deg); opacity: 0; }
+        }
       `}</style>
 
       {/* DISPLAY CONTAINER - 16:9 RATIO */}
@@ -375,9 +596,8 @@ export default function LiveSessionPage() {
         flex: 1,
         aspectRatio: '16/9',
         background: 'linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 30%, #2a1a4e 60%, #0a0a2e 100%)',
-        borderRadius: '16px',
+        borderRadius: '0px',
         overflow: 'hidden',
-        margin: '10px',
       }}>
         
         {/* SPACE THEME BACKGROUND - 50% opacity */}
@@ -388,16 +608,51 @@ export default function LiveSessionPage() {
           pointerEvents: 'none',
           zIndex: 0,
         }}>
-          {/* Stars */}
+          {/* Stars — doubled, varied sizes, opacities, twinkle rates */}
           {[
-            { size: 3, top: '5%', left: '20%', delay: '0s' },
-            { size: 4, top: '12%', left: '75%', delay: '0.8s' },
-            { size: 2, top: '22%', left: '45%', delay: '1.5s' },
-            { size: 3, top: '35%', left: '8%', delay: '0.3s' },
-            { size: 3, top: '55%', left: '92%', delay: '2s' },
-            { size: 2, top: '68%', left: '30%', delay: '1.2s' },
-            { size: 2, top: '78%', left: '65%', delay: '0.6s' },
-            { size: 3, top: '88%', left: '15%', delay: '1.8s' },
+            { size: 2, top: '5%', left: '20%', opacity: 0.6, twinkleDuration: 2.5 },
+            { size: 4, top: '12%', left: '75%', opacity: 0.9, twinkleDuration: 3.5 },
+            { size: 3, top: '22%', left: '45%', opacity: 0.5, twinkleDuration: 2 },
+            { size: 2, top: '35%', left: '8%', opacity: 0.7, twinkleDuration: 4 },
+            { size: 5, top: '55%', left: '92%', opacity: 0.8, twinkleDuration: 2.8 },
+            { size: 2, top: '68%', left: '30%', opacity: 0.4, twinkleDuration: 3.2 },
+            { size: 3, top: '78%', left: '65%', opacity: 0.9, twinkleDuration: 2.2 },
+            { size: 2, top: '88%', left: '15%', opacity: 0.6, twinkleDuration: 3.8 },
+            { size: 3, top: '8%', left: '60%', opacity: 0.7, twinkleDuration: 3 },
+            { size: 2, top: '18%', left: '35%', opacity: 0.5, twinkleDuration: 2.6 },
+            { size: 4, top: '42%', left: '82%', opacity: 0.8, twinkleDuration: 3.3 },
+            { size: 2, top: '50%', left: '12%', opacity: 0.6, twinkleDuration: 2.4 },
+            { size: 3, top: '62%', left: '70%', opacity: 0.9, twinkleDuration: 3.6 },
+            { size: 2, top: '72%', left: '48%', opacity: 0.5, twinkleDuration: 2.1 },
+            { size: 5, top: '85%', left: '38%', opacity: 0.7, twinkleDuration: 3.9 },
+            { size: 2, top: '28%', left: '88%', opacity: 0.8, twinkleDuration: 2.7 },
+          ].map((star, i) => (
+            <style key={`twinkle-${i}`}>
+              {`
+                @keyframes twinkle-${i} {
+                  0% { opacity: ${star.opacity * 0.2}; }
+                  100% { opacity: ${star.opacity}; }
+                }
+              `}
+            </style>
+          ))}
+          {[
+            { size: 2, top: '5%', left: '20%', opacity: 0.6, twinkleDuration: 2.5 },
+            { size: 4, top: '12%', left: '75%', opacity: 0.9, twinkleDuration: 3.5 },
+            { size: 3, top: '22%', left: '45%', opacity: 0.5, twinkleDuration: 2 },
+            { size: 2, top: '35%', left: '8%', opacity: 0.7, twinkleDuration: 4 },
+            { size: 5, top: '55%', left: '92%', opacity: 0.8, twinkleDuration: 2.8 },
+            { size: 2, top: '68%', left: '30%', opacity: 0.4, twinkleDuration: 3.2 },
+            { size: 3, top: '78%', left: '65%', opacity: 0.9, twinkleDuration: 2.2 },
+            { size: 2, top: '88%', left: '15%', opacity: 0.6, twinkleDuration: 3.8 },
+            { size: 3, top: '8%', left: '60%', opacity: 0.7, twinkleDuration: 3 },
+            { size: 2, top: '18%', left: '35%', opacity: 0.5, twinkleDuration: 2.6 },
+            { size: 4, top: '42%', left: '82%', opacity: 0.8, twinkleDuration: 3.3 },
+            { size: 2, top: '50%', left: '12%', opacity: 0.6, twinkleDuration: 2.4 },
+            { size: 3, top: '62%', left: '70%', opacity: 0.9, twinkleDuration: 3.6 },
+            { size: 2, top: '72%', left: '48%', opacity: 0.5, twinkleDuration: 2.1 },
+            { size: 5, top: '85%', left: '38%', opacity: 0.7, twinkleDuration: 3.9 },
+            { size: 2, top: '28%', left: '88%', opacity: 0.8, twinkleDuration: 2.7 },
           ].map((star, i) => (
             <div
               key={`star-${i}`}
@@ -409,38 +664,55 @@ export default function LiveSessionPage() {
                 borderRadius: '50%',
                 top: star.top,
                 left: star.left,
-                animation: `twinkle 3s ease-in-out infinite alternate`,
-                animationDelay: star.delay,
+                animation: `twinkle-${i} ${star.twinkleDuration}s ease-in-out infinite alternate`,
               }}
             />
           ))}
 
-          {/* Comet */}
-          <div style={{
-            position: 'absolute',
-            top: '18%',
-            left: '70%',
-            animation: 'cometFly 8s linear infinite',
-          }}>
-            <div style={{
-              width: '80px',
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, rgba(226,214,244,0.6), rgba(226,214,244,0.9))',
-              borderRadius: '2px',
-              transform: 'rotate(-25deg)',
-              position: 'relative',
-            }}>
-              <div style={{
-                width: '5px',
-                height: '5px',
-                background: 'var(--k-lavender)',
-                borderRadius: '50%',
-                position: 'absolute',
-                right: '-2px',
-                top: '-1.5px',
-              }} />
-            </div>
-          </div>
+          {/* Single comet - one at a time, completely random, no repeated vectors */}
+          {activeComet && (
+            <>
+              <style>
+                {`
+                  @keyframes active-comet {
+                    0% { transform: rotate(${activeComet.angle}deg) translate(0, 0); opacity: 0; }
+                    1% { opacity: 0.9; }
+                    80% { opacity: 0.5; }
+                    100% { transform: rotate(${activeComet.angle}deg) translate(0, -${activeComet.tailSize * 1.4}px); opacity: 0; }
+                  }
+                `}
+              </style>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: activeComet.left,
+                  top: activeComet.top,
+                  width: '2px',
+                  height: `${activeComet.tailSize}px`,
+                  background: `linear-gradient(to bottom, white 4px, rgba(226,214,244,0.8) 9px, rgba(226,214,244,0.3) 60%, transparent 100%)`,
+                  borderRadius: '1px',
+                  animation: `active-comet ${activeComet.duration}s linear forwards`,
+                  pointerEvents: 'none',
+                  boxShadow: '0 0 6px 2px rgba(226,214,244,0.4)',
+                  border: '1px solid red',
+                }}
+              />
+            </>
+          )}
+
+          {/* Dynamic keyframe for current comet */}
+          {activeComet && (
+            <style>
+              {`
+                @keyframes active-comet {
+                  0% { transform: rotate(${activeComet.angle}deg) translate(0, 0); opacity: 0; }
+                  1% { opacity: 0.9; }
+                  80% { opacity: 0.5; }
+                  100% { transform: rotate(${activeComet.angle}deg) translate(0, -${activeComet.tailSize * 1.4}px); opacity: 0; }
+                }
+              `}
+            </style>
+          )}
 
           {/* Nebula */}
           <div style={{
@@ -503,24 +775,6 @@ export default function LiveSessionPage() {
               {progress?.sessionAim}
             </div>
           </div>
-        </div>
-
-        {/* THEME BADGE - Top Left */}
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          left: '14px',
-          background: 'rgba(0,0,0,0.4)',
-          borderRadius: '12px',
-          padding: '4px 10px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '5px',
-          fontSize: '11px',
-          color: 'rgba(255,255,255,0.5)',
-          zIndex: 10,
-        }}>
-          🌌 {progress?.theme || 'space'}
         </div>
 
         {/* RIGHT PANEL - CONTROLS (XP, DIARY) */}
@@ -956,48 +1210,294 @@ export default function LiveSessionPage() {
             </div>
           </div>
         </div>
+
+        {/* ANIMATION OVERLAY */}
+        {activeAnimation && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}>
+            {activeAnimation.type === 'wow' && (
+              <>
+                {/* Giant WOW text */}
+                <div style={{
+                  fontSize: '180px',
+                  fontFamily: 'Contrail One',
+                  color: '#8a2be2',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 20px rgba(138,43,226,0.8), 0 0 40px rgba(138,43,226,0.5)',
+                  animation: 'wowExplosion 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  zIndex: 21,
+                }}>
+                  WOW!
+                </div>
+                {/* Circling stars */}
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      fontSize: '40px',
+                      animation: `circleOrbit ${1.5}s linear`,
+                      animationDelay: `${i * 0.125}s`,
+                      transformOrigin: '0 0',
+                    }}>
+                    ⭐
+                  </div>
+                ))}
+              </>
+            )}
+
+            {activeAnimation.type.startsWith('treasure-') && (
+              <>
+                {/* Treasure burst particles */}
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      fontSize: '50px',
+                      transform: `rotate(${(i * 360) / 8}deg) translateX(150px)`,
+                      animation: 'treasureSpray 1s ease-out',
+                      transformOrigin: '0 0',
+                    }}>
+                    💎
+                  </div>
+                ))}
+                <div style={{
+                  fontSize: '120px',
+                  fontFamily: 'Contrail One',
+                  color: '#FFD700',
+                  textShadow: '0 0 30px rgba(255,215,0,0.8)',
+                  animation: 'wowExplosion 0.5s ease-out',
+                }}>
+                  +{activeAnimation.amount}
+                </div>
+              </>
+            )}
+
+            {activeAnimation.type === 'oopsie' && (
+              <>
+                {/* Giant OOPSIE text */}
+                <div style={{
+                  fontSize: '180px',
+                  fontFamily: 'Contrail One',
+                  color: '#f2811d',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 30px rgba(242,129,29,0.9), 0 0 60px rgba(242,129,29,0.6)',
+                  animation: 'wowExplosion 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  zIndex: 21,
+                }}>
+                  OOPSIE!
+                </div>
+                {/* Single eyes circling and stopping behind text */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    fontSize: '60px',
+                    animation: `eyesCenterBehind 2s ease-in-out`,
+                    transformOrigin: '0 0',
+                  }}>
+                  👀
+                </div>
+              </>
+            )}
+
+            {activeAnimation.type.startsWith('behavior-') && (
+              <div style={{
+                fontSize: '100px',
+                fontFamily: 'Contrail One',
+                color: 'var(--k-orange)',
+                animation: 'oopsieShake 0.7s ease-in-out',
+              }}>
+                ⚠️
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* CONTROL PANEL - Below display */}
-      <div style={{
-        background: 'rgba(26, 26, 46, 0.8)',
-        borderTop: '1px solid rgba(226,214,244,0.1)',
-        padding: '12px 16px',
-        maxHeight: '120px',
-        overflowY: 'auto',
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-          <Button size="sm" onClick={() => handleTreasureChest(5)} variant="outline" className="text-xs">
-            🧰 +5
-          </Button>
-          <Button size="sm" onClick={() => handleTreasureChest(10)} variant="outline" className="text-xs">
-            🧰 +10
-          </Button>
-          <Button size="sm" onClick={() => handleTreasureChest(15)} variant="outline" className="text-xs">
-            🧰 +15
-          </Button>
-          <Button size="sm" onClick={() => handleTreasureChest(20)} variant="outline" className="text-xs">
-            🧰 +20
-          </Button>
-          <Button size="sm" onClick={handleWow} variant="outline" className="text-xs bg-purple-600/20">
-            ✨ WOW
-          </Button>
+      <TooltipProvider>
+        <div style={{
+          background: 'rgba(26, 26, 46, 0.8)',
+          borderTop: '1px solid rgba(226,214,244,0.1)',
+          padding: '12px 16px',
+          maxHeight: '120px',
+          overflowY: 'auto',
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={handleWow} 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'wow' ? 'rgba(138,43,226,0.4)' : 'rgba(138,43,226,0.2)',
+                    border: selectedAction === 'wow' ? '2px solid #8a2be2' : undefined,
+                  }}>
+                  ✨ WOW
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Nice Job!</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleTreasureChest(5)} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'treasure-5' ? 'rgba(255,215,0,0.4)' : undefined,
+                    border: selectedAction === 'treasure-5' ? '2px solid #FFD700' : undefined,
+                  }}>
+                  🧰 +5
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Small Treasure</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleTreasureChest(10)} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'treasure-10' ? 'rgba(255,215,0,0.4)' : undefined,
+                    border: selectedAction === 'treasure-10' ? '2px solid #FFD700' : undefined,
+                  }}>
+                  🧰 +10
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Good Effort!</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleTreasureChest(15)} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'treasure-15' ? 'rgba(255,215,0,0.4)' : undefined,
+                    border: selectedAction === 'treasure-15' ? '2px solid #FFD700' : undefined,
+                  }}>
+                  🧰 +15
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Great Work!</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleTreasureChest(20)} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'treasure-20' ? 'rgba(255,215,0,0.4)' : undefined,
+                    border: selectedAction === 'treasure-20' ? '2px solid #FFD700' : undefined,
+                  }}>
+                  🧰 +20
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Excellent!</TooltipContent>
+            </Tooltip>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' }}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={handleOopsie} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'oopsie' ? 'rgba(242,129,29,0.4)' : 'rgba(242,129,29,0.2)',
+                    border: selectedAction === 'oopsie' ? '2px solid #f2811d' : undefined,
+                  }}>
+                  👀 Oopsie!
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Observation</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleBehavior('out-to-lunch')} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'behavior-out-to-lunch' ? 'rgba(200,150,100,0.4)' : undefined,
+                    border: selectedAction === 'behavior-out-to-lunch' ? '2px solid rgba(255,255,255,0.6)' : undefined,
+                  }}>
+                  😴 -3
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Out to Lunch</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleBehavior('chatterbox')} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'behavior-chatterbox' ? 'rgba(200,150,100,0.4)' : undefined,
+                    border: selectedAction === 'behavior-chatterbox' ? '2px solid rgba(255,255,255,0.6)' : undefined,
+                  }}>
+                  🗣️ -2
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Chatterbox</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={() => handleBehavior('disruptive')} 
+                  variant="outline" 
+                  className="text-xs"
+                  style={{
+                    background: selectedAction === 'behavior-disruptive' ? 'rgba(200,150,100,0.4)' : undefined,
+                    border: selectedAction === 'behavior-disruptive' ? '2px solid rgba(255,255,255,0.6)' : undefined,
+                  }}>
+                  😬 -5
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Disruptive</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  onClick={handleBoom}
+                  className="text-xs"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--k-orange), var(--k-pink))',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    cursor: selectedAction ? 'pointer' : 'not-allowed',
+                    filter: selectedAction ? 'brightness(1.5) drop-shadow(0 0 15px rgba(242,129,29,0.8))' : 'none',
+                  }}>
+                  💥 BOOM!
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Commit action</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginTop: '8px' }}>
-          <Button size="sm" onClick={handleOopsie} variant="outline" className="text-xs bg-orange-600/20">
-            👀 Oops
-          </Button>
-          <Button size="sm" onClick={() => handleBehavior('out-to-lunch')} variant="outline" className="text-xs">
-            😴 -3
-          </Button>
-          <Button size="sm" onClick={() => handleBehavior('chatterbox')} variant="outline" className="text-xs">
-            🗣️ -2
-          </Button>
-          <Button size="sm" onClick={() => handleBehavior('disruptive')} variant="outline" className="text-xs">
-            😬 -5
-          </Button>
-        </div>
-      </div>
+      </TooltipProvider>
 
       {/* Add Content Dialogs */}
       {showAddVocab && (
