@@ -587,24 +587,6 @@ export default function LiveSessionPage() {
           gap: '8px',
           zIndex: 5,
         }}>
-          {/* Treasure */}
-          <div style={{
-            borderRadius: '20px',
-            padding: '10px',
-            textAlign: 'center',
-            backdropFilter: 'blur(4px)',
-            background: 'rgba(255,215,0,0.12)',
-            border: '2.5px solid rgba(255,215,0,0.35)',
-          }}>
-            <div style={{ fontSize: '30px', lineHeight: 1.1 }}>💎</div>
-            <div className="display-font" style={{ fontSize: '16px', marginTop: '4px', color: '#FFD700' }}>
-              TREASURE
-            </div>
-            <div style={{ fontSize: '11px', marginTop: '2px', color: 'rgba(255,215,0,0.5)' }}>
-              {progress?.treasureChests?.length || 0}
-            </div>
-          </div>
-
           {/* Wow */}
           <div style={{
             borderRadius: '20px',
@@ -623,21 +605,21 @@ export default function LiveSessionPage() {
             </div>
           </div>
 
-          {/* Oopsie */}
+          {/* Treasure */}
           <div style={{
             borderRadius: '20px',
             padding: '10px',
             textAlign: 'center',
             backdropFilter: 'blur(4px)',
-            background: 'rgba(255,255,255,0.05)',
-            border: '2px dashed rgba(255,255,255,0.12)',
+            background: 'rgba(255,215,0,0.12)',
+            border: '2.5px solid rgba(255,215,0,0.35)',
           }}>
-            <div style={{ fontSize: '24px', lineHeight: 1.1 }}>👀</div>
-            <div className="display-font" style={{ fontSize: '14px', marginTop: '4px', color: 'rgba(255,255,255,0.35)' }}>
-              OOPSIE
+            <div style={{ fontSize: '30px', lineHeight: 1.1 }}>💎</div>
+            <div className="display-font" style={{ fontSize: '16px', marginTop: '4px', color: '#FFD700' }}>
+              TREASURE
             </div>
-            <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(255,255,255,0.2)' }}>
-              {progress?.oopsies?.length || 0}
+            <div style={{ fontSize: '11px', marginTop: '2px', color: 'rgba(255,215,0,0.5)' }}>
+              {progress?.treasureChests?.length || 0}
             </div>
           </div>
 
@@ -656,6 +638,24 @@ export default function LiveSessionPage() {
             </div>
             <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(134,239,172,0.4)' }}>
               -{progress?.behaviorDeductions?.length || 0}
+            </div>
+          </div>
+
+          {/* Oopsie */}
+          <div style={{
+            borderRadius: '20px',
+            padding: '10px',
+            textAlign: 'center',
+            backdropFilter: 'blur(4px)',
+            background: 'rgba(255,255,255,0.05)',
+            border: '2px dashed rgba(255,255,255,0.12)',
+          }}>
+            <div style={{ fontSize: '24px', lineHeight: 1.1 }}>👀</div>
+            <div className="display-font" style={{ fontSize: '14px', marginTop: '4px', color: 'rgba(255,255,255,0.35)' }}>
+              OOPSIE
+            </div>
+            <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(255,255,255,0.2)' }}>
+              {progress?.oopsies?.length || 0}
             </div>
           </div>
         </div>
@@ -995,9 +995,6 @@ export default function LiveSessionPage() {
           </Button>
           <Button size="sm" onClick={() => handleBehavior('disruptive')} variant="outline" className="text-xs">
             😬 -5
-          </Button>
-          <Button size="sm" variant="destructive" onClick={handleEndSession} className="text-xs">
-            🏁 End
           </Button>
         </div>
       </div>
