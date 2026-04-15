@@ -1,4 +1,4 @@
-# LessonLink | Complete Roadmap (Q4D — April 13, 2026, Updated)
+# LessonLink | Complete Roadmap (Q4F — April 15, 2026, Updated)
 
 ---
 
@@ -702,37 +702,33 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 **Goal:** Full-screen display page T shows via ManyCam during live sessions. T's webcam overlays the center; rewards, vocabulary, grammar, phonics, session goals, and XP progress animate around the edges. Kids aged 5-12 see a fun, immersive game screen — not a dashboard.
 
-**Status:** Spec and mockup complete (Q4D). Build in progress.
+**Status:** 🟡 Build in progress — Space background + all reward animations complete. Grammar/phonics diary inputs and session end flow remaining. Last updated Q4F (April 15, 2026).
 
 **Spec Document:** `LessonLink-Phase17-LiveSession-Spec-Q4D.md`
 **Visual Mockup:** `LessonLink-Phase17-LiveSession-Mockup-Q4D.html`
 
 **Route:** `/t-portal/sessions/live/[sessionInstanceId]` (T-only, no L-side route — ManyCam shares T's screen)
 
-**Reward System (Updated Q4D — replaces old stars/brainfarts):**
+**Reward System (Updated Q4F — direct fire, full-screen animations):**
 
 | Reward | Emoji | XP Effect | Animation |
 |--------|-------|-----------|-----------|
-| **Treasure Chest** | 🧰 | T sets amount (+5/+10/+15/+20/custom) | Chest shakes → opens → coins fly → amount revealed |
-| **Wow** | ✨ | No XP | Full-screen purple/gold flash + sound (the showstopper) |
-| **Oopsie** | 👀 | No XP, no penalty | Gentle wobble, "No worries!" |
-| **Out-to-lunch** | 😴 | -3 XP | Brief pink flash |
-| **Chatterbox** | 🗣️ | -2 XP | Brief pink flash |
-| **Disruptive** | 😬 | -5 XP | Brief pink flash |
+| **Treasure Chest** | 🧰 | T sets amount (+5/+10/+15/+20/custom) | Gold glow + 8 rays + 10 coin spray + chest bounce + XP reveal |
+| **Wow** | ✨ | No XP | Rainbow glow + 10 rays + 12 star spray + rainbow "WOW!" text |
+| **Boom** | 💥 | No XP | Full-screen flash + "BOOM!" explosion scale |
+| **Oopsie** | 👀 | No XP, no penalty | Red glow + 9 scattered 👀 popping + shaking "OOPSIE!" |
+| **Out-to-lunch** | 😴 | -3 XP | Screen dim + ZZZs floating + "ZZZZZZ" + -3 XP reveal |
+| **Chatterbox** | 🗣️ | -2 XP | 💬 bubble spray + "SHHH!" + -2 XP reveal |
+| **Disruptive** | 😬 | -5 XP | Red flash × 3 + ⚠️ spray + shaking "NOT COOL!" + -5 XP reveal |
 
-Stars are retired. Brainfarts renamed to Oopsies.
+Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no select-then-boom pattern).
 
-**Treasure Chest visual tiers** (auto-selected by XP amount):
-- Copper chest: 5-10 XP (small, copper coins)
-- Silver chest: 15-25 XP (medium, silver coins, shinier)
-- Gold chest: 30-50 XP (large, gold coins, full fireworks)
-
-**Five Animated Themed Backgrounds** (T selects at session start, 50% opacity loop):
-- 🌌 Space — twinkling stars, comets, meteors, nebula
-- 🌊 Ocean — swimming fish, bubbles, swaying seaweed
-- 🌾 Farm — grazing animals, drifting clouds, pecking chickens
-- 🏜️ Desert — camels, tumbleweeds, heat shimmer
-- 🏙️ City — building window lights, taxis, neon signs
+**Five Animated Themed Backgrounds** (T selects at session start):
+- 🌌 Space — ✅ **COMPLETE** (twinkling stars, comets, 3 planets with Saturn ring illusion, nebulas)
+- 🌊 Ocean — swimming fish, bubbles, swaying seaweed (not started)
+- 🌾 Farm — grazing animals, drifting clouds, pecking chickens (not started)
+- 🏜️ Desert — camels, tumbleweeds, heat shimmer (not started)
+- 🏙️ City — building window lights, taxis, neon signs (not started)
 
 **Layout:** Top bar (session goal + XP counter), left panel (rewards), center (clear for webcam), right panel (vocabulary/grammar/phonics cards), bottom bar (progress dragon + magic word slot).
 
@@ -740,25 +736,32 @@ Stars are retired. Brainfarts renamed to Oopsies.
 
 **Magic Word:** T sets at session end. L must remember it for next session's opening question.
 
-**End-of-Session Flow:** Summary overlay with total XP, reward breakdown, words learned, quick flashcard recap (T-controlled, no L interaction).
+**End-of-Session Flow:** Summary overlay with total XP, reward breakdown, words learned, quick flashcard recap (T-controlled, no L interaction). Not yet built.
 
 **Implementation (12 steps):**
-1. Types in `src/lib/types.ts`
-2. Route + page shell
-3. Theme backgrounds (5 components)
-4. Display layout (top/left/right/bottom/center)
-5. Control panel (T's buttons, below fold or drawer)
-6. Reward animations (Wow flash, Treasure opening, Oopsie wobble, behavior flash)
-7. Content addition dialogs (vocab/grammar/phonics quick-add)
-8. Firestore integration (`sessionProgress` collection)
-9. Session initialization (link to lesson plan data)
-10. End-of-session summary
-11. Magic Word input + reveal animation
-12. Polish (sound slots, responsive, ManyCam testing)
+1. ✅ Types in `src/lib/types.ts`
+2. ✅ Route + page shell
+3. ✅ Theme backgrounds — Space complete; others not started
+4. ✅ Display layout (top/left/right/bottom/center)
+5. ✅ Control panel (T's buttons, integrated into left panel)
+6. ✅ Reward animations — all 7 complete (Q4F)
+7. ✅ Content addition dialogs — vocab wired to Firestore; grammar/phonics still local state
+8. ✅ Firestore integration (`sessionProgress` collection)
+9. ✅ Session initialization (link to lesson plan data, practice mode)
+10. ⬜ End-of-session summary
+11. ✅ Magic Word input (wired to Firestore via `updateSessionGoals`)
+12. ⬜ Polish (sound slots, responsive, ManyCam testing)
+
+**Remaining for Phase 17 completion:**
+- 🟡 Grammar/phonics diary inputs → Firestore (`addSessionGrammar`, `addSessionPhonics`)
+- 🟡 Session End button + `endSession()` flow
+- 🟡 xpSpent backfill (all learner profiles except Max missing this field)
+- ⬜ End-of-session scoreboard/summary overlay
+- ⬜ Ocean/Farm/Desert/City backgrounds
 
 **Database:** New `sessionProgress` collection. See spec for full schema.
 
-**Estimated sessions:** 3-5
+**Estimated sessions to completion:** 1-2 (core flow); additional sessions for other theme backgrounds
 
 ---
 

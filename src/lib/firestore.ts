@@ -2220,7 +2220,8 @@ export async function addBehaviorDeduction(
   if (!progressSnap.exists()) throw new Error('Session progress not found');
 
   const progress = progressSnap.data() as Phase17SessionProgress;
-  const { amount } = BEHAVIOR_DEDUCTIONS[type];
+  const amountMap: Record<string, number> = { 'out-to-lunch': -3, 'chatterbox': -2, 'disruptive': -5 };
+  const amount = amountMap[type] ?? -3;
 
   const newDeduction: BehaviorDeduction = {
     type,
@@ -2279,6 +2280,20 @@ export async function addSessionVocabulary(
   await updateDoc(ref, {
     vocabulary: [...(progress.vocabulary || []), newVocab],
   } as any);
+}
+
+export async function getSessionVocabularyByInstanceId(
+  sessionInstanceId: string
+): Promise<SessionVocabulary[]> {
+  const q = query(
+    sessionProgressCollection,
+    where('sessionInstanceId', '==', sessionInstanceId),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return [];
+  const data = snap.docs[0].data() as Phase17SessionProgress;
+  return data.vocabulary || [];
 }
 
 /**

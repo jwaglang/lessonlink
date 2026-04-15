@@ -2,6 +2,7 @@
 
 import type { Student } from '@/lib/types';
 import StudentDashboard from './student-dashboard';
+import VocabularyManager from './vocabulary-manager';
 
 interface LearnerPetlandTabProps {
   studentId: string;
@@ -9,11 +10,11 @@ interface LearnerPetlandTabProps {
   latestSessionInstanceId?: string;
 }
 
-/**
- * Simplified Petland tab for the student profile page.
- * Shows the student's pet status and dashboard.
- * Refinement and accessory creation have been moved to the main Petland menu.
- */
-export default function LearnerPetlandTab({ studentId, student }: LearnerPetlandTabProps) {
-  return <StudentDashboard learnerId={studentId} learnerName={student.name} />;
+export default function LearnerPetlandTab({ studentId, student, latestSessionInstanceId }: LearnerPetlandTabProps) {
+  return (
+    <div className="flex flex-col gap-8">
+      <VocabularyManager studentId={studentId} latestSessionInstanceId={latestSessionInstanceId} />
+      <StudentDashboard learnerId={studentId} learnerName={student.name} />
+    </div>
+  );
 }

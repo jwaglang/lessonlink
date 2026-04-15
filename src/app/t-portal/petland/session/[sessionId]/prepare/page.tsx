@@ -47,6 +47,7 @@ export default function SessionPrepPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
+  const [isPractice, setIsPractice] = useState(false);
 
   // Session setup
   const [magicWord, setMagicWord] = useState('');
@@ -70,11 +71,20 @@ export default function SessionPrepPage() {
     const loadData = async () => {
       if (!user?.uid || !sessionId) return;
 
+      // Practice mode: no real session needed
+      if (sessionId === 'new') {
+        setIsPractice(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         // Load session
         const sessionData = await getSessionInstance(sessionId);
         if (!sessionData) {
-          setError('Session not found');
+          // Not found — fall into practice mode rather than hard error
+          setIsPractice(true);
+          setLoading(false);
           return;
         }
 
@@ -179,26 +189,19 @@ export default function SessionPrepPage() {
   };
 
   const handleLaunchSession = async () => {
-    if (!sessionId || !session || !student || !user?.uid) return;
+    if (!sessionId || !user?.uid) return;
 
     setLaunching(true);
     try {
-      console.log('=== LAUNCH SESSION DEBUG ===');
-      console.log('User UID:', user.uid);
-      console.log('Student ID:', student.id);
-      console.log('Session ID:', sessionId);
-      console.log('Creating session progress with:',{ sessionInstanceId: sessionId,
-        studentId: student.id,
-        teacherId: user.uid,
-        sessionQuestion: classGoals,
-        sessionAim: classGoals,
-        xpTarget,
-      });
+      const effectiveSessionId = isPractice
+        ? `practice-${user.uid}-${Date.now()}`
+        : sessionId;
+      const effectiveStudentId = student?.id ?? 'practice';
 
       // Create session progress
       const progress = await getOrCreateSessionProgress(
-        sessionId,
-        student.id,
+        effectiveSessionId,
+        effectiveStudentId,
         user.uid,
         {
           sessionQuestion: classGoals,
@@ -208,24 +211,18 @@ export default function SessionPrepPage() {
         }
       );
 
-      console.log('✓ Session progress created:', progress.id);
-
       // Add all prep vocabulary
       for (const vocab of vocabulary) {
         if (vocab.word && vocab.meaning) {
           await addSessionVocabulary(progress.id, vocab.word, vocab.meaning);
         }
       }
-      console.log('✓ Vocabulary added');
-
       // Add all prep grammar
       for (const gram of grammar) {
         if (gram.point && gram.example) {
           await addSessionGrammar(progress.id, gram.point, gram.example);
         }
       }
-      console.log('✓ Grammar added');
-
       // Add all prep phonics
       for (const phon of phonics) {
         if (phon.sound && phon.examples) {
@@ -233,18 +230,13 @@ export default function SessionPrepPage() {
           await addSessionPhonics(progress.id, phon.sound, exampleArray);
         }
       }
-      console.log('✓ Phonics added');
-
       // Set magic word if provided
       if (magicWord.trim()) {
         await setMagicWord(progress.id, magicWord);
-        console.log('✓ Magic word set');
       }
 
-      console.log('✓ All prep data saved, opening live session in new tab');
-
       // Open live session in new tab (full screen, no sidebar)
-      const liveSessionUrl = `/t-portal/sessions/live/${sessionId}`;
+      const liveSessionUrl = `/t-portal/sessions/live/${effectiveSessionId}`;
       window.open(liveSessionUrl, '_blank');
     } catch (err) {
       console.error('=== LAUNCH SESSION ERROR ===');
@@ -291,6 +283,16 @@ export default function SessionPrepPage() {
         </Card>
       )}
 
+      {isPractice && (
+        <Card className="border-yellow-300 bg-yellow-50">
+          <CardContent className="pt-4">
+            <p className="text-sm text-yellow-800 font-medium">
+              Practice mode — no session linked. Content will be saved to a temporary session. You can also use this to prep and copy your setup for a real session later.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Session Overview */}
       <Card>
         <CardHeader>
@@ -301,13 +303,13 @@ export default function SessionPrepPage() {
             <div>
               <Label className="text-xs text-muted-foreground">Student</Label>
               <p className="text-lg font-semibold">
-                {student?.name || student?.email || 'Unknown Student'}
+                {student?.name || student?.email || (isPractice ? 'Practice session' : 'Unknown Student')}
               </p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Date & Time</Label>
               <p className="text-lg font-semibold">
-                {session?.lessonDate?.split('T')[0]} at {session?.startTime}
+                {session ? `${session.lessonDate?.split('T')[0]} at ${session.startTime}` : '—'}
               </p>
             </div>
           </div>
@@ -512,7 +514,7 @@ export default function SessionPrepPage() {
           size="lg"
           className="gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           onClick={handleLaunchSession}
-          disabled={launching || !session || !student}
+          disabled={launching}
         >
           {launching ? (
             <>
