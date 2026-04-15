@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import type { PetlandProfile, Vocabulary, PetShopItem, GeneratedComposite } from '../types';
+import type { PetlandProfile, Vocabulary, PetShopItem, GeneratedComposite, GrammarCard, PhonicsCard } from '../types';
 import { formatDorks, getDorkDenominations } from '../types';
 import { PlaceHolderImages } from '../placeholder-images';
 import { mockShopItems, mockBrochures } from '../data';
@@ -60,7 +60,8 @@ import {
   deleteField,
 } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
-import { getPetShopItems, decrementPetShopItemStock } from '@/lib/firestore';
+import { getPetShopItems, decrementPetShopItemStock, getGrammarCards, getPhonicsCards } from '@/lib/firestore';
+import { UnifiedFlashcardReview, type ReviewCard, type ReviewResult } from './unified-flashcard-review';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1207,6 +1208,8 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const { toast } = useToast();
   const [profile, setProfile] = useState<PetlandProfile | null>(null);
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
+  const [grammarCards, setGrammarCards] = useState<GrammarCard[]>([]);
+  const [phonicsCards, setPhonicsCards] = useState<PhonicsCard[]>([]);
   const [profileLoading, setProfileLoading] = useState(true);
   const [isHatching, setIsHatching] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -1334,6 +1337,12 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
     return () => unsub();
   }, [learnerId]);
 
+  // Load grammar and phonics cards once on mount
+  useEffect(() => {
+    getGrammarCards(learnerId).then(setGrammarCards).catch(console.error);
+    getPhonicsCards(learnerId).then(setPhonicsCards).catch(console.error);
+  }, [learnerId]);
+
   const handleGameComplete = useCallback(
     async (vocabIds: string[]) => {
       if (!profile) return;
@@ -1398,6 +1407,52 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
       });
     },
     [profile, vocabulary, learnerId]
+  );
+
+  const handleUnifiedComplete = useCallback(
+    async (results: ReviewResult[]) => {
+      if (!profile) return;
+      const today = getTodayDateString();
+      const xp = results.length * XP_PER_FLASHCARD;
+
+      const batch = writeBatch(db);
+      for (const result of results) {
+        if (result.kind === 'vocab') {
+          const word = vocabulary.find((v) => v.id === result.id);
+          if (!word) continue;
+          const newSrsLevel = result.knew ? Math.min(5, (word.srsLevel || 1) + 1) : 1;
+          batch.update(doc(db, 'students', learnerId, 'vocabulary', result.id), {
+            srsLevel: newSrsLevel,
+            lastReviewDate: today,
+          });
+        } else if (result.kind === 'grammar') {
+          const card = grammarCards.find((c) => c.id === result.id);
+          if (!card) continue;
+          const newSrsLevel = result.knew ? Math.min(5, (card.srsLevel || 1) + 1) : 1;
+          batch.update(doc(db, 'students', learnerId, 'grammar', result.id), {
+            srsLevel: newSrsLevel,
+            lastReviewDate: today,
+          });
+        } else if (result.kind === 'phonics') {
+          const card = phonicsCards.find((c) => c.id === result.id);
+          if (!card) continue;
+          const newSrsLevel = result.knew ? Math.min(5, (card.srsLevel || 1) + 1) : 1;
+          batch.update(doc(db, 'students', learnerId, 'phonics', result.id), {
+            srsLevel: newSrsLevel,
+            lastReviewDate: today,
+          });
+        }
+      }
+      await batch.commit().catch(console.error);
+      await updateDoc(profileRef, { xp: profile.xp + xp }).catch(console.error);
+
+      const knewCount = results.filter((r) => r.knew).length;
+      toast({
+        title: 'Review done!',
+        description: `${knewCount}/${results.length} known · +${xp} XP`,
+      });
+    },
+    [profile, vocabulary, grammarCards, phonicsCards, learnerId]
   );
 
   const handleHatch = async (wish: string) => {
@@ -1813,8 +1868,15 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
   const today = getTodayDateString();
   // Memory Match: new words only (never reviewed, requires 4+ for game to work)
   const unreviewedVocab = vocabulary.filter((w) => !w.lastReviewDate);
-  // Flashcard: words seen before that are Leitner-due today
+  // Unified flashcard review: vocab SRS-due + all grammar/phonics (new or due)
   const flashcardVocab = vocabulary.filter((w) => w.lastReviewDate && isWordDue(w, today));
+  const grammarDue = grammarCards.filter((c) => !c.lastReviewDate || isWordDue(c as unknown as Vocabulary, today));
+  const phonicsDue = phonicsCards.filter((c) => !c.lastReviewDate || isWordDue(c as unknown as Vocabulary, today));
+  const unifiedDueCards: ReviewCard[] = [
+    ...flashcardVocab.map((c) => ({ kind: 'vocab' as const, id: c.id, card: c })),
+    ...grammarDue.map((c) => ({ kind: 'grammar' as const, id: c.id, card: c })),
+    ...phonicsDue.map((c) => ({ kind: 'phonics' as const, id: c.id, card: c })),
+  ];
 
   if (profileLoading) {
     return (
@@ -2043,10 +2105,10 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
             <>
             <MemoryGame vocabulary={unreviewedVocab} onGameComplete={handleGameComplete} />
             </>
-          ) : flashcardVocab.length > 0 ? (
-            // Leitner-due words — show Flashcard Review
+          ) : unifiedDueCards.length > 0 ? (
+            // Leitner-due vocab + any grammar/phonics cards — unified review
             <>
-            <FlashcardReview vocabulary={flashcardVocab} onComplete={handleFlashcardComplete} />
+            <UnifiedFlashcardReview cards={unifiedDueCards} onComplete={handleUnifiedComplete} />
             </>
           ) : profile.isFat && profile.fatPetImageUrl ? (
             // Fat pet — overfed, come back later
