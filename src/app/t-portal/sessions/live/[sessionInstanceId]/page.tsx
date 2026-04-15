@@ -26,8 +26,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/components/auth-provider';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { Loader2, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -67,9 +65,6 @@ export default function LiveSessionPage() {
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [activeAnimation, setActiveAnimation] = useState<{ type: string; amount?: number } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [showAddVocab, setShowAddVocab] = useState(false);
-  const [showAddGrammar, setShowAddGrammar] = useState(false);
-  const [showAddPhonics, setShowAddPhonics] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   // Form states
@@ -87,13 +82,6 @@ export default function LiveSessionPage() {
   // Language Diary
   const [showLanguageDiary, setShowLanguageDiary] = useState(false);
   const [diaryTab, setDiaryTab] = useState<'vocab' | 'grammar' | 'phonics'>('vocab');
-  const [diaryNotes, setDiaryNotes] = useState('');
-  const [diaryEntries, setDiaryEntries] = useState<Array<{
-    type: 'vocab' | 'grammar' | 'phonics';
-    content: string;
-    detail?: string;
-    timestamp: Date;
-  }>>([]);
 
   const [comets, setComets] = useState<Comet[]>([]);
   const cometIdRef = useRef(0);
@@ -225,19 +213,6 @@ export default function LiveSessionPage() {
         setTargetXp(progressData.xpTarget || 60);
         setMagicWordInput(progressData.magicWord || '');
 
-        // Pre-populate diary from session prep content
-        const initialEntries: Array<{ type: 'vocab' | 'grammar' | 'phonics'; content: string; detail?: string; timestamp: Date }> = [];
-        for (const v of progressData.vocabulary || []) {
-          initialEntries.push({ type: 'vocab', content: v.word, detail: v.meaning, timestamp: new Date() });
-        }
-        for (const g of progressData.grammar || []) {
-          initialEntries.push({ type: 'grammar', content: g.point, detail: g.example, timestamp: new Date() });
-        }
-        for (const p of progressData.phonics || []) {
-          initialEntries.push({ type: 'phonics', content: p.sound, detail: p.examples?.join(', '), timestamp: new Date() });
-        }
-        if (initialEntries.length > 0) setDiaryEntries(initialEntries);
-
         // Subscribe to real-time updates
         const unsubscribe = onSessionProgressUpdate(progressData.id, (updatedProgress) => {
           setProgress(updatedProgress);
@@ -268,7 +243,6 @@ export default function LiveSessionPage() {
       await addSessionVocabulary(progress.id, vocabWord, vocabMeaning);
       setVocabWord('');
       setVocabMeaning('');
-      setShowAddVocab(false);
       toast({ title: 'Vocabulary added' });
     } catch (err) {
       toast({ title: 'Error adding vocabulary', variant: 'destructive' });
@@ -281,7 +255,6 @@ export default function LiveSessionPage() {
       await addSessionGrammar(progress.id, grammarPoint, grammarExample);
       setGrammarPoint('');
       setGrammarExample('');
-      setShowAddGrammar(false);
       toast({ title: 'Grammar added' });
     } catch (err) {
       toast({ title: 'Error adding grammar', variant: 'destructive' });
@@ -295,7 +268,6 @@ export default function LiveSessionPage() {
       await addSessionPhonics(progress.id, phonicsSound, examples);
       setPhonicsSound('');
       setPhonicsExamples('');
-      setShowAddPhonics(false);
       toast({ title: 'Phonics added' });
     } catch (err) {
       toast({ title: 'Error adding phonics', variant: 'destructive' });
@@ -347,23 +319,6 @@ export default function LiveSessionPage() {
     } catch (err) {
       toast({ title: 'Error saving settings', variant: 'destructive' });
     }
-  };
-
-  const handleAddDiaryEntry = () => {
-    if (!diaryNotes.trim()) {
-      toast({ title: 'Please enter some notes', variant: 'destructive' });
-      return;
-    }
-    
-    const newEntry = {
-      type: diaryTab,
-      content: diaryNotes,
-      timestamp: new Date(),
-    };
-    
-    setDiaryEntries([...diaryEntries, newEntry]);
-    setDiaryNotes('');
-    toast({ title: `${diaryTab.charAt(0).toUpperCase() + diaryTab.slice(1)} note saved` });
   };
 
   const playSound = (type: string) => {
@@ -425,7 +380,7 @@ export default function LiveSessionPage() {
     try {
       await endSession(progress.id);
       toast({ title: 'Session ended' });
-      router.push('/t-portal/petland');
+      router.push(`/t-portal/sessions/${sessionInstanceId}/debrief`);
     } catch (err) {
       toast({ title: 'Error ending session', variant: 'destructive' });
     }
@@ -843,7 +798,7 @@ export default function LiveSessionPage() {
               LANGUAGE DIARY
             </div>
             <div style={{ fontSize: '10px', marginTop: '2px', color: 'rgba(226,214,244,0.5)' }}>
-              {diaryEntries.length}
+              {(progress?.vocabulary?.length ?? 0) + (progress?.grammar?.length ?? 0) + (progress?.phonics?.length ?? 0)}
             </div>
           </button>
 
@@ -1045,30 +1000,76 @@ export default function LiveSessionPage() {
                   Add Word
                 </button>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <textarea
-                  value={diaryNotes}
-                  onChange={(e) => setDiaryNotes(e.target.value)}
-                  placeholder={`Add ${diaryTab} notes here...`}
+            ) : diaryTab === 'grammar' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <input
+                  value={grammarPoint}
+                  onChange={(e) => setGrammarPoint(e.target.value)}
+                  placeholder="Grammar role (e.g. present perfect)"
                   style={{
-                    padding: '8px', borderRadius: '10px',
-                    border: '1.5px solid rgba(226,214,244,0.3)',
+                    padding: '8px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(242,129,29,0.35)',
                     background: 'rgba(0,0,0,0.3)', color: 'white',
-                    fontSize: '11px', fontFamily: 'Poppins',
-                    resize: 'vertical', minHeight: '60px', maxHeight: '80px', overflow: 'auto',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none',
+                  }}
+                />
+                <input
+                  value={grammarExample}
+                  onChange={(e) => setGrammarExample(e.target.value)}
+                  placeholder="Open cloze — use ___ for blank"
+                  style={{
+                    padding: '8px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(242,129,29,0.35)',
+                    background: 'rgba(0,0,0,0.3)', color: 'white',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none',
                   }}
                 />
                 <button
-                  onClick={handleAddDiaryEntry}
+                  onClick={handleAddGrammar}
                   style={{
-                    padding: '6px 12px',
+                    padding: '7px 12px',
                     background: 'linear-gradient(135deg, var(--k-orange), var(--k-pink))',
                     border: 'none', borderRadius: '10px', color: 'white',
                     fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
                     fontFamily: 'Contrail One',
                   }}>
-                  Save Note
+                  Add Grammar
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <input
+                  value={phonicsSound}
+                  onChange={(e) => setPhonicsSound(e.target.value)}
+                  placeholder="Keyword (e.g. rock)"
+                  style={{
+                    padding: '8px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(220,235,244,0.3)',
+                    background: 'rgba(0,0,0,0.3)', color: 'white',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none',
+                  }}
+                />
+                <input
+                  value={phonicsExamples}
+                  onChange={(e) => setPhonicsExamples(e.target.value)}
+                  placeholder="Sounds like (e.g. lock)"
+                  style={{
+                    padding: '8px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(220,235,244,0.3)',
+                    background: 'rgba(0,0,0,0.3)', color: 'white',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={handleAddPhonics}
+                  style={{
+                    padding: '7px 12px',
+                    background: 'linear-gradient(135deg, var(--k-orange), var(--k-pink))',
+                    border: 'none', borderRadius: '10px', color: 'white',
+                    fontSize: '11px', fontWeight: 'bold', cursor: 'pointer',
+                    fontFamily: 'Contrail One',
+                  }}>
+                  Add Phonics
                 </button>
               </div>
             )}
@@ -1104,31 +1105,51 @@ export default function LiveSessionPage() {
                     </div>
                   )}
                 </>
-              ) : (
+              ) : diaryTab === 'grammar' ? (
                 <>
-                  {diaryEntries.filter(e => e.type === diaryTab).map((entry, i) => (
+                  {(progress?.grammar ?? []).map((g, i) => (
                     <div key={i} style={{
                       borderRadius: '14px', padding: '9px 12px',
-                      background: diaryTab === 'grammar' ? 'rgba(242,129,29,0.1)' : 'rgba(220,235,244,0.08)',
-                      border: `2px solid ${diaryTab === 'grammar' ? 'rgba(242,129,29,0.25)' : 'rgba(220,235,244,0.18)'}`,
+                      background: 'rgba(242,129,29,0.1)',
+                      border: '2px solid rgba(242,129,29,0.25)',
                       animation: 'cardSlideIn 0.4s ease-out',
                     }}>
-                      <div className="display-font" style={{
-                        fontSize: '15px', lineHeight: 1.1,
-                        color: diaryTab === 'grammar' ? 'var(--k-peach)' : 'var(--k-ice-blue)',
-                      }}>
-                        {entry.content}
+                      <div className="display-font" style={{ fontSize: '13px', lineHeight: 1.2, color: 'var(--k-peach)' }}>
+                        {g.point}
                       </div>
-                      {entry.detail && (
-                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '3px' }}>
-                          {entry.detail}
+                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '3px', fontStyle: 'italic' }}>
+                        {g.example}
+                      </div>
+                    </div>
+                  ))}
+                  {(progress?.grammar ?? []).length === 0 && (
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '8px' }}>
+                      No grammar added yet
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {(progress?.phonics ?? []).map((p, i) => (
+                    <div key={i} style={{
+                      borderRadius: '14px', padding: '9px 12px',
+                      background: 'rgba(220,235,244,0.08)',
+                      border: '2px solid rgba(220,235,244,0.18)',
+                      animation: 'cardSlideIn 0.4s ease-out',
+                    }}>
+                      <div className="display-font" style={{ fontSize: '13px', lineHeight: 1.2, color: 'var(--k-ice-blue)' }}>
+                        {p.sound}
+                      </div>
+                      {p.examples[0] && (
+                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '3px' }}>
+                          sounds like: {p.examples[0]}
                         </div>
                       )}
                     </div>
                   ))}
-                  {diaryEntries.filter(e => e.type === diaryTab).length === 0 && (
+                  {(progress?.phonics ?? []).length === 0 && (
                     <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', textAlign: 'center', marginTop: '8px' }}>
-                      No {diaryTab} entries yet
+                      No phonics added yet
                     </div>
                   )}
                 </>
@@ -1514,8 +1535,8 @@ export default function LiveSessionPage() {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={handleBoom}
                   className="text-xs"
                   style={{
@@ -1529,189 +1550,27 @@ export default function LiveSessionPage() {
               </TooltipTrigger>
               <TooltipContent>Commit action</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={handleEndSession}
+                  variant="outline"
+                  className="text-xs col-span-1"
+                  style={{
+                    borderColor: 'rgba(226,214,244,0.3)',
+                    color: 'rgba(226,214,244,0.7)',
+                    background: 'rgba(0,0,0,0.3)',
+                  }}>
+                  🏁 End
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>End session → debrief</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </TooltipProvider>
 
-      {/* Add Content Dialogs */}
-      {showAddVocab && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-        }}>
-          <div style={{
-            background: '#1a1a2e',
-            border: '1px solid rgba(226,214,244,0.2)',
-            borderRadius: '12px',
-            padding: '20px',
-            width: '384px',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', fontFamily: 'Contrail One' }}>
-                Add Vocabulary
-              </h3>
-              <button onClick={() => setShowAddVocab(false)} aria-label="Close">
-                <X className="h-4 w-4 text-white" />
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <Label className="text-white">Word</Label>
-                <Input
-                  value={vocabWord}
-                  onChange={(e) => setVocabWord(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div>
-                <Label className="text-white">Meaning</Label>
-                <Input
-                  value={vocabMeaning}
-                  onChange={(e) => setVocabMeaning(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <Button variant="outline" size="sm" onClick={() => setShowAddVocab(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleAddVocab}
-                  style={{ background: 'linear-gradient(135deg, #8a5cf6, #a78bfa)' }}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Grammar Dialog */}
-      {showAddGrammar && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-        }}>
-          <div style={{
-            background: '#1a1a2e',
-            border: '1px solid rgba(226,214,244,0.2)',
-            borderRadius: '12px',
-            padding: '20px',
-            width: '384px',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', fontFamily: 'Contrail One' }}>
-                Add Grammar
-              </h3>
-              <button onClick={() => setShowAddGrammar(false)} aria-label="Close">
-                <X className="h-4 w-4 text-white" />
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <Label className="text-white">Point</Label>
-                <Input
-                  value={grammarPoint}
-                  onChange={(e) => setGrammarPoint(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div>
-                <Label className="text-white">Example</Label>
-                <Input
-                  value={grammarExample}
-                  onChange={(e) => setGrammarExample(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <Button variant="outline" size="sm" onClick={() => setShowAddGrammar(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleAddGrammar}
-                  style={{ background: 'linear-gradient(135deg, #f2811d, #f8dab9)' }}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Phonics Dialog */}
-      {showAddPhonics && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-        }}>
-          <div style={{
-            background: '#1a1a2e',
-            border: '1px solid rgba(226,214,244,0.2)',
-            borderRadius: '12px',
-            padding: '20px',
-            width: '384px',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: 'white', fontFamily: 'Contrail One' }}>
-                Add Phonics
-              </h3>
-              <button onClick={() => setShowAddPhonics(false)} aria-label="Close">
-                <X className="h-4 w-4 text-white" />
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <Label className="text-white">Sound</Label>
-                <Input
-                  value={phonicsSound}
-                  onChange={(e) => setPhonicsSound(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div>
-                <Label className="text-white">Examples (comma separated)</Label>
-                <Input
-                  value={phonicsExamples}
-                  onChange={(e) => setPhonicsExamples(e.target.value)}
-                  className="mt-1 bg-slate-700 border-white/20"
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <Button variant="outline" size="sm" onClick={() => setShowAddPhonics(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleAddPhonics}
-                  style={{ background: 'linear-gradient(135deg, #86efac, #dcebf4)' }}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

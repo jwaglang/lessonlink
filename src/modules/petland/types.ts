@@ -59,6 +59,30 @@ export interface Vocabulary {
   createdDate?: string;              // YYYY-MM-DD, when this card was created (searchable)
 }
 
+export interface GrammarCard {
+  id: string;
+  role: string;           // grammar category, e.g. "present perfect"
+  cloze: string;          // AI-generated open cloze sentence, e.g. "I ___ been here before."
+  answer: string;         // correct fill for the blank, e.g. "have"
+  srsLevel: number;       // Leitner box 1–5
+  lastReviewDate?: string | null;    // YYYY-MM-DD
+  sessionInstanceId?: string | null; // source session
+  createdDate?: string;              // YYYY-MM-DD
+}
+
+export interface PhonicsCard {
+  id: string;
+  keyword: string;        // e.g. "rock"
+  pairWord: string;       // e.g. "lock" (the minimal pair seed T entered)
+  targetIPA: string;      // e.g. "/r/" — AI-transcribed
+  pairIPA: string;        // e.g. "/l/" — AI-transcribed
+  minimalPairs: Array<{ word1: string; word2: string }>;  // 6–10 pairs for Leitner drilling
+  srsLevel: number;
+  lastReviewDate?: string | null;
+  sessionInstanceId?: string | null;
+  createdDate?: string;
+}
+
 export interface ShopItem {
   id: string;
   name: string;

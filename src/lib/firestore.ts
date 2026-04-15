@@ -67,9 +67,6 @@ import type {
   ScheduleTemplate,
   HomeworkAssignment,
   Reward,
-  VocabProgress,
-  GrammarPoint,
-  PhonicsItem,
   SessionProgress as Phase17SessionProgress,
   BehaviorDeductionType,
   TreasureChestReward,
@@ -81,7 +78,7 @@ import type {
   SessionPhonics,
   BEHAVIOR_DEDUCTIONS,
 } from './types';
-import type { PetShopItem } from '@/modules/petland/types';
+import type { PetShopItem, GrammarCard, PhonicsCard } from '@/modules/petland/types';
 
 // ===================================
 // Re-export types for convenience
@@ -2430,17 +2427,87 @@ export function onSessionProgressUpdate(
 }
 
 /**
- * Look up session progress by sessionId (useful for students joining a live session)
+ * Look up session progress by sessionInstanceId (used by debrief page)
  */
-export async function getSessionProgressBySessionId(sessionId: string): Promise<Phase17SessionProgress | null> {
+export async function getSessionProgressByInstanceId(
+  sessionInstanceId: string
+): Promise<Phase17SessionProgress | null> {
   const q = query(
     sessionProgressCollection,
-    where('sessionId', '==', sessionId),
+    where('sessionInstanceId', '==', sessionInstanceId),
     limit(1)
   );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return asId<Phase17SessionProgress>(snap.docs[0].id, snap.docs[0].data());
+}
 
-  const existing = await getDocs(q);
-  if (existing.empty) return null;
+// ===================================
+// GRAMMAR & PHONICS SRS SUBCOLLECTIONS
+// ===================================
 
-  return asId<Phase17SessionProgress>(existing.docs[0].id, existing.docs[0].data());
+/**
+ * Add a grammar card to students/{studentId}/grammar
+ */
+export async function addGrammarCard(
+  studentId: string,
+  card: Omit<GrammarCard, 'id'>
+): Promise<string> {
+  const ref = collection(db, 'students', studentId, 'grammar');
+  const docRef = await addDoc(ref, card);
+  return docRef.id;
+}
+
+/**
+ * Get all grammar cards for a student
+ */
+export async function getGrammarCards(studentId: string): Promise<GrammarCard[]> {
+  const ref = collection(db, 'students', studentId, 'grammar');
+  const snap = await getDocs(ref);
+  return snap.docs.map(d => asId<GrammarCard>(d.id, d.data()));
+}
+
+/**
+ * Update a grammar card (e.g. after SRS review)
+ */
+export async function updateGrammarCard(
+  studentId: string,
+  cardId: string,
+  updates: Partial<Omit<GrammarCard, 'id'>>
+): Promise<void> {
+  const ref = doc(db, 'students', studentId, 'grammar', cardId);
+  await updateDoc(ref, updates as any);
+}
+
+/**
+ * Add a phonics card to students/{studentId}/phonics
+ */
+export async function addPhonicsCard(
+  studentId: string,
+  card: Omit<PhonicsCard, 'id'>
+): Promise<string> {
+  const ref = collection(db, 'students', studentId, 'phonics');
+  const docRef = await addDoc(ref, card);
+  return docRef.id;
+}
+
+/**
+ * Get all phonics cards for a student
+ */
+export async function getPhonicsCards(studentId: string): Promise<PhonicsCard[]> {
+  const ref = collection(db, 'students', studentId, 'phonics');
+  const snap = await getDocs(ref);
+  return snap.docs.map(d => asId<PhonicsCard>(d.id, d.data()));
+}
+
+/**
+ * Update a phonics card (e.g. after SRS review)
+ */
+export async function updatePhonicsCard(
+  studentId: string,
+  cardId: string,
+  updates: Partial<Omit<PhonicsCard, 'id'>>
+): Promise<void> {
+  const ref = doc(db, 'students', studentId, 'phonics', cardId);
+  await updateDoc(ref, updates as any);
 }

@@ -721,41 +721,6 @@ export interface Reward {
   timestamp: string; // ISO timestamp
 }
 
-export interface VocabProgress {
-  id: string;
-  word: string;
-  definition: string;
-  timestamp: string;
-}
-
-export interface GrammarPoint {
-  id: string;
-  rule: string;
-  example: string;
-  timestamp: string;
-}
-
-export interface PhonicsItem {
-  id: string;
-  sound: string;
-  word: string;
-  timestamp: string;
-}
-
-export interface SessionProgress {
-  id: string;
-  sessionId: string;          // links to sessionInstance
-  studentId: string;          // Firebase Auth UID
-  teacherId: string;          // Firebase Auth UID
-  rewards: Reward[];
-  vocabulary: VocabProgress[];
-  grammar: GrammarPoint[];
-  phonics: PhonicsItem[];
-  points: number;             // cumulative points this session
-  createdAt: string;          // ISO timestamp
-  updatedAt: string;          // ISO timestamp
-}
-
 // ============================================
 // PHASE 17: LIVE SESSION
 // ============================================

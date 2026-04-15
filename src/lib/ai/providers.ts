@@ -81,6 +81,8 @@ export const TASK_FAILOVER: Record<string, string[]> = {
   translation: ['deepseek', 'minimax', 'kimi'],
   session_feedback: ['deepseek', 'minimax', 'claude'],
   vocabulary_sentence: ['deepseek', 'minimax', 'claude'],
+  grammar_cloze: ['deepseek', 'minimax', 'claude'],
+  phonics_minimal_pairs: ['deepseek', 'minimax', 'claude'],
 };
 
 // Legacy mapping (kept for reference, failover chains take priority)
