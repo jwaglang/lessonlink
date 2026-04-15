@@ -2511,3 +2511,14 @@ export async function updatePhonicsCard(
   const ref = doc(db, 'students', studentId, 'phonics', cardId);
   await updateDoc(ref, updates as any);
 }
+
+/**
+ * Get all session progress records for a student, newest first
+ */
+export async function getSessionProgressByStudentId(studentId: string): Promise<Phase17SessionProgress[]> {
+  const ref = collection(db, 'sessionProgress');
+  const q = query(ref, where('studentId', '==', studentId));
+  const snap = await getDocs(q);
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as Phase17SessionProgress));
+  return results.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+}

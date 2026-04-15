@@ -231,7 +231,7 @@ export default function SessionDebriefPage() {
           imageUrl: '',
           type: item.level > 3 ? 'cloze' : 'basic',
           srsLevel: 1,
-          lastReviewDate: null,
+          lastReviewDate: '',
           sessionInstanceId: sessionInstanceIdVal,
           questionPrompt: '',
           createdDate: today,
@@ -246,7 +246,7 @@ export default function SessionDebriefPage() {
           cloze: item.cloze,
           answer: item.answer,
           srsLevel: 1,
-          lastReviewDate: null,
+          lastReviewDate: '',
           sessionInstanceId: sessionInstanceIdVal,
           createdDate: today,
         });
@@ -261,7 +261,7 @@ export default function SessionDebriefPage() {
           pairIPA: item.pairIPA,
           minimalPairs: item.minimalPairs,
           srsLevel: 1,
-          lastReviewDate: null,
+          lastReviewDate: '',
           sessionInstanceId: sessionInstanceIdVal,
           createdDate: today,
         });
@@ -281,6 +281,7 @@ export default function SessionDebriefPage() {
         router.push('/t-portal');
       }
     } catch (err) {
+      console.error('[Debrief] handleProcess error:', err);
       toast({ title: 'Failed to save some items', variant: 'destructive' });
     } finally {
       setProcessing(false);

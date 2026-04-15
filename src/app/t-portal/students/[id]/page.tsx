@@ -102,7 +102,7 @@ export default function LearnerProfilePage() {
           <TabsTrigger value="homework">Homework</TabsTrigger>
           <TabsTrigger value="packages">Packages & Credits</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="petland">Petland</TabsTrigger>
+          <TabsTrigger value="petland">Process</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">

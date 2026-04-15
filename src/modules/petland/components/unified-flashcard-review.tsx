@@ -42,6 +42,8 @@ function VocabBack({ card }: { card: Vocabulary }) {
 }
 
 function GrammarFront({ card }: { card: GrammarCard }) {
+  const errorSet = new Set((card.errorWords || []).map(w => w.toLowerCase()));
+  const tokens = (card.wrongSentence || '').split(/(\s+)/);
   return (
     <div className="w-full max-w-sm space-y-3">
       <div className="flex justify-center">
@@ -50,22 +52,26 @@ function GrammarFront({ card }: { card: GrammarCard }) {
         </Badge>
       </div>
       <div className="rounded-2xl border-2 border-orange-300 bg-orange-50 p-8 text-center">
-        <p className="text-xs text-orange-500 font-medium mb-2 uppercase tracking-wide">{card.role}</p>
+        <p className="text-xs text-orange-500 font-medium mb-2 uppercase tracking-wide">{card.rule}</p>
         <p className="text-xl font-bold text-orange-900 italic">
-          {card.cloze}
+          {tokens.map((tok, i) => {
+            const clean = tok.replace(/[.,!?;:]$/, '');
+            return errorSet.has(clean.toLowerCase())
+              ? <span key={i} className="text-red-500">{tok}</span>
+              : <span key={i}>{tok}</span>;
+          })}
         </p>
-        <p className="text-xs text-orange-400 mt-3">Fill in the blank</p>
+        <p className="text-xs text-orange-400 mt-3">What&apos;s the mistake?</p>
       </div>
     </div>
   );
 }
 
 function GrammarBack({ card }: { card: GrammarCard }) {
-  const full = card.cloze.replace('___', `[${card.answer}]`);
   return (
     <div className="w-full max-w-sm rounded-2xl border-2 border-orange-200 bg-orange-50 p-6 text-center space-y-3">
       <p className="text-3xl font-bold text-orange-700">{card.answer}</p>
-      <p className="text-sm text-orange-600 italic">{full}</p>
+      <p className="text-sm text-orange-600 italic">{card.correctSentence}</p>
     </div>
   );
 }

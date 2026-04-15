@@ -63,6 +63,20 @@ service cloud.firestore {
       allow create, delete: if isAdmin() || isTeacher();
       allow update: if isAdmin() || isTeacher() || isOwner(studentId);
     }
+
+    // Grammar SRS — tutors write (debrief), learner updates own (srsLevel from games)
+    match /grammar/{cardId} {
+      allow read: if isAdmin() || isTeacher() || isOwner(studentId);
+      allow create, delete: if isAdmin() || isTeacher();
+      allow update: if isAdmin() || isTeacher() || isOwner(studentId);
+    }
+
+    // Phonics SRS — tutors write (debrief), learner updates own (srsLevel from games)
+    match /phonics/{cardId} {
+      allow read: if isAdmin() || isTeacher() || isOwner(studentId);
+      allow create, delete: if isAdmin() || isTeacher();
+      allow update: if isAdmin() || isTeacher() || isOwner(studentId);
+    }
   }
 
     match /availability/{availId} {

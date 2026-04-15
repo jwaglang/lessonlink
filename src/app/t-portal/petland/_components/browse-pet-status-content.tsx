@@ -74,7 +74,7 @@ export default function BrowsePetStatusTabContent() {
         </CardContent>
       </Card>
 
-      {selectedStudent && <StudentDashboard student={selectedStudent} />}
+      {selectedStudent && <StudentDashboard learnerId={selectedStudent.id} learnerName={selectedStudent.name} />}
     </div>
   );
 }

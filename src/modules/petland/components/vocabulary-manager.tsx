@@ -56,9 +56,11 @@ function todayString() {
 interface VocabularyManagerProps {
   studentId: string;
   latestSessionInstanceId?: string;
+  prefill?: { word: string; meaning: string } | null;
+  onPrefillConsumed?: () => void;
 }
 
-export default function VocabularyManager({ studentId, latestSessionInstanceId }: VocabularyManagerProps) {
+export default function VocabularyManager({ studentId, latestSessionInstanceId, prefill, onPrefillConsumed }: VocabularyManagerProps) {
   const { toast } = useToast();
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
   const [sessionWords, setSessionWords] = useState<SessionVocabulary[]>([]);
@@ -86,6 +88,14 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId }
     });
     return () => unsub();
   }, [studentId]);
+
+  // Accept prefill from session cards
+  useEffect(() => {
+    if (!prefill) return;
+    setNewWord(prefill.word);
+    setNewSentence(prefill.meaning);
+    onPrefillConsumed?.();
+  }, [prefill]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!latestSessionInstanceId) return;
@@ -231,7 +241,7 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId }
       {/* Add Word */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Add Vocabulary Word</CardTitle>
+          <CardTitle className="text-base">Add Vocabulary</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAddWord} className="space-y-4">

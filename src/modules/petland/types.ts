@@ -61,22 +61,27 @@ export interface Vocabulary {
 
 export interface GrammarCard {
   id: string;
-  role: string;           // grammar category, e.g. "present perfect"
-  cloze: string;          // AI-generated open cloze sentence, e.g. "I ___ been here before."
-  answer: string;         // correct fill for the blank, e.g. "have"
-  srsLevel: number;       // Leitner box 1–5
-  lastReviewDate?: string | null;    // YYYY-MM-DD
-  sessionInstanceId?: string | null; // source session
-  createdDate?: string;              // YYYY-MM-DD
+  rule: string;            // grammar rule name, e.g. "Present Perfect"
+  target: string;          // target verb/form, e.g. "to go"
+  wrongSentence: string;   // sentence with the error, e.g. "He has went to the store."
+  correctSentence: string; // correct version, e.g. "He has gone to the store."
+  errorWords: string[];    // which words are wrong (for highlight), e.g. ["went"]
+  answer: string;          // correct replacement, e.g. "gone"
+  srsLevel: number;
+  lastReviewDate?: string | null;
+  sessionInstanceId?: string | null;
+  createdDate?: string;
 }
 
 export interface PhonicsCard {
   id: string;
-  keyword: string;        // e.g. "rock"
-  pairWord: string;       // e.g. "lock" (the minimal pair seed T entered)
-  targetIPA: string;      // e.g. "/r/" — AI-transcribed
-  pairIPA: string;        // e.g. "/l/" — AI-transcribed
-  minimalPairs: Array<{ word1: string; word2: string }>;  // 6–10 pairs for Leitner drilling
+  keyword: string;        // e.g. "ship"
+  keywordIPA: string;     // e.g. "/ʃɪp/" — full IPA for keyword
+  targetPhoneme: string;  // e.g. "ʃ" — the phoneme T selected
+  pairWord: string;       // e.g. "chip" — minimal pair word
+  targetIPA: string;      // e.g. "/ʃ/" — target phoneme IPA
+  pairIPA: string;        // e.g. "/tʃ/" — contrasting phoneme IPA
+  minimalPairs: Array<{ word1: string; word2: string }>;
   srsLevel: number;
   lastReviewDate?: string | null;
   sessionInstanceId?: string | null;

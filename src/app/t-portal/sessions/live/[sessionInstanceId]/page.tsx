@@ -61,6 +61,7 @@ export default function LiveSessionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showScoreboard, setShowScoreboard] = useState(false);
+  const [showEndTip, setShowEndTip] = useState(false);
   const [wowActive, setWowActive] = useState(false);
   const [treasureActive, setTreasureActive] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -729,11 +730,12 @@ export default function LiveSessionPage() {
           left: 0,
           right: 0,
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           padding: '12px 16px',
           zIndex: 10,
         }}>
+          <div style={{ width: '32px' }} />
           <div>
             <div style={{
               background: 'linear-gradient(135deg, var(--k-orange), var(--k-pink))',
@@ -758,6 +760,20 @@ export default function LiveSessionPage() {
                 color: 'rgba(255,255,255,0.4)',
               }}>
                 {progress.sessionAim}
+              </div>
+            )}
+          </div>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              type="button"
+              onClick={handleEndSession}
+              onMouseEnter={() => setShowEndTip(true)}
+              onMouseLeave={() => setShowEndTip(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', filter: 'drop-shadow(0 0 8px rgba(254,89,139,0.9))', padding: '4px' }}
+            >🏁</button>
+            {showEndTip && (
+              <div style={{ position: 'absolute', top: '110%', right: 0, background: 'rgba(10,10,46,0.95)', border: '1px solid rgba(254,89,139,0.4)', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap', zIndex: 20 }}>
+                End session
               </div>
             )}
           </div>
@@ -1427,8 +1443,8 @@ export default function LiveSessionPage() {
           const phonicsCount = progress.phonics?.length ?? 0;
           const wowCount     = progress.wows?.length ?? 0;
           return (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(5,5,25,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ animation: 'scoreboardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards', background: 'linear-gradient(145deg, rgba(26,26,78,0.97) 0%, rgba(42,26,78,0.97) 100%)', border: '2px solid rgba(226,214,244,0.3)', borderRadius: '24px', padding: '36px 48px', textAlign: 'center', minWidth: '360px', boxShadow: '0 0 80px rgba(138,43,226,0.4)' }}>
+            <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(5,5,25,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowScoreboard(false)}>
+              <div style={{ animation: 'scoreboardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards', background: 'linear-gradient(145deg, rgba(26,26,78,0.97) 0%, rgba(42,26,78,0.97) 100%)', border: '2px solid rgba(226,214,244,0.3)', borderRadius: '24px', padding: '36px 48px', textAlign: 'center', minWidth: '360px', boxShadow: '0 0 80px rgba(138,43,226,0.4)' }} onClick={e => e.stopPropagation()}>
 
                 <p style={{ fontSize: '13px', letterSpacing: '3px', color: 'rgba(226,214,244,0.5)', textTransform: 'uppercase', marginBottom: '6px' }}>Session Complete</p>
                 <p className="display-font" style={{ fontSize: '32px', color: 'white', marginBottom: '24px', textShadow: '0 0 20px rgba(226,214,244,0.5)' }}>

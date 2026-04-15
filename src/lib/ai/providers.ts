@@ -83,6 +83,9 @@ export const TASK_FAILOVER: Record<string, string[]> = {
   vocabulary_sentence: ['deepseek', 'minimax', 'claude'],
   grammar_cloze: ['deepseek', 'minimax', 'claude'],
   phonics_minimal_pairs: ['deepseek', 'minimax', 'claude'],
+  grammar_card: ['deepseek', 'minimax', 'claude'],
+  word_ipa: ['deepseek', 'minimax', 'claude'],
+  phoneme_contrast: ['deepseek', 'minimax', 'claude'],
 };
 
 // Legacy mapping (kept for reference, failover chains take priority)
