@@ -60,6 +60,7 @@ export default function LiveSessionPage() {
   const [progress, setProgress] = useState<Phase17SessionProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showScoreboard, setShowScoreboard] = useState(false);
   const [wowActive, setWowActive] = useState(false);
   const [treasureActive, setTreasureActive] = useState(false);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -375,11 +376,15 @@ export default function LiveSessionPage() {
     setTimeout(() => setActiveAnimation(null), 1500);
   };
 
-  const handleEndSession = async () => {
+  const handleEndSession = () => {
+    if (!progress) return;
+    setShowScoreboard(true);
+  };
+
+  const handleScoreboardContinue = async () => {
     if (!progress) return;
     try {
       await endSession(progress.id);
-      toast({ title: 'Session ended' });
       router.push(`/t-portal/sessions/${sessionInstanceId}/debrief`);
     } catch (err) {
       toast({ title: 'Error ending session', variant: 'destructive' });
@@ -625,6 +630,17 @@ export default function LiveSessionPage() {
           0%   { transform: scale(0.2) rotate(-15deg); opacity: 0; }
           50%  { transform: scale(1.4) rotate(6deg); opacity: 1; }
           70%  { transform: scale(0.88) rotate(-3deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes scoreboardIn {
+          0%   { transform: scale(0.7) translateY(30px); opacity: 0; }
+          60%  { transform: scale(1.04) translateY(-4px); opacity: 1; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes medalDrop {
+          0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+          55%  { transform: scale(1.3) rotate(8deg); opacity: 1; }
+          80%  { transform: scale(0.9) rotate(-3deg); }
           100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
       `}</style>
@@ -1392,6 +1408,71 @@ export default function LiveSessionPage() {
             )}
           </div>
         )}
+
+        {/* SCOREBOARD OVERLAY */}
+        {showScoreboard && progress && (() => {
+          const deductions = progress.behaviorDeductions?.length ?? 0;
+          const xpPct = progress.xpTarget > 0 ? progress.totalXpEarned / progress.xpTarget : 0;
+          const medal =
+            deductions >= 3 ? null :
+            xpPct >= 1 && deductions === 0 ? 'gold' :
+            xpPct >= 0.6 && deductions <= 1 ? 'silver' :
+            xpPct >= 0.3 && deductions <= 2 ? 'bronze' :
+            null;
+          const medalEmoji   = medal === 'gold' ? '🥇' : medal === 'silver' ? '🥈' : medal === 'bronze' ? '🥉' : null;
+          const medalLabel   = medal === 'gold' ? 'Gold Dork' : medal === 'silver' ? 'Silver Dork' : medal === 'bronze' ? 'Bronze Dork' : null;
+          const medalColor   = medal === 'gold' ? '#FFD700' : medal === 'silver' ? '#C0C0C0' : medal === 'bronze' ? '#CD7F32' : null;
+          const vocabCount   = progress.vocabulary?.length ?? 0;
+          const grammarCount = progress.grammar?.length ?? 0;
+          const phonicsCount = progress.phonics?.length ?? 0;
+          const wowCount     = progress.wows?.length ?? 0;
+          return (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(5,5,25,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ animation: 'scoreboardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards', background: 'linear-gradient(145deg, rgba(26,26,78,0.97) 0%, rgba(42,26,78,0.97) 100%)', border: '2px solid rgba(226,214,244,0.3)', borderRadius: '24px', padding: '36px 48px', textAlign: 'center', minWidth: '360px', boxShadow: '0 0 80px rgba(138,43,226,0.4)' }}>
+
+                <p style={{ fontSize: '13px', letterSpacing: '3px', color: 'rgba(226,214,244,0.5)', textTransform: 'uppercase', marginBottom: '6px' }}>Session Complete</p>
+                <p className="display-font" style={{ fontSize: '32px', color: 'white', marginBottom: '24px', textShadow: '0 0 20px rgba(226,214,244,0.5)' }}>
+                  {progress.sessionQuestion || 'Great work!'}
+                </p>
+
+                {/* Medal */}
+                {medalEmoji ? (
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontSize: '72px', animation: 'medalDrop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s both', display: 'inline-block' }}>{medalEmoji}</div>
+                    <p style={{ fontSize: '18px', fontWeight: 'bold', color: medalColor!, marginTop: '4px', textShadow: `0 0 20px ${medalColor}` }}>{medalLabel}</p>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '24px', fontSize: '13px', color: 'rgba(254,89,139,0.7)', letterSpacing: '1px' }}>No medal this time — keep going! 💪</div>
+                )}
+
+                {/* Stats grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '28px' }}>
+                  {[
+                    { label: 'XP', value: `${progress.totalXpEarned} / ${progress.xpTarget}`, color: '#FFD700' },
+                    { label: '⭐ Wows', value: wowCount, color: '#60cfff' },
+                    { label: '📖 Vocab', value: vocabCount, color: '#86efac' },
+                    { label: '✍️ Grammar', value: grammarCount, color: '#fdba74' },
+                    { label: '🔤 Phonics', value: phonicsCount, color: '#a78bfa' },
+                    { label: '⚠️ Deductions', value: deductions, color: deductions >= 3 ? '#fe598b' : 'rgba(255,255,255,0.5)' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '10px 8px' }}>
+                      <p style={{ fontSize: '11px', color: 'rgba(226,214,244,0.5)', marginBottom: '4px' }}>{label}</p>
+                      <p style={{ fontSize: '20px', fontWeight: 'bold', color }}>{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleScoreboardContinue}
+                  style={{ background: 'linear-gradient(135deg, #f2811d, #fe598b)', border: 'none', borderRadius: '14px', padding: '12px 32px', fontSize: '15px', fontWeight: 'bold', color: 'white', cursor: 'pointer', boxShadow: '0 4px 20px rgba(242,129,29,0.4)', letterSpacing: '0.5px' }}
+                >
+                  Continue to Debrief →
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* CONTROL PANEL - Below display */}
