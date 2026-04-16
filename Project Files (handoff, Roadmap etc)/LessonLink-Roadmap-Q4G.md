@@ -1,4 +1,4 @@
-# LessonLink | Complete Roadmap (Q4F — April 15, 2026, Updated)
+# LessonLink | Complete Roadmap (Q4G — April 16, 2026, Updated)
 
 ---
 
@@ -702,7 +702,7 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 **Goal:** Full-screen display page T shows via ManyCam during live sessions. T's webcam overlays the center; rewards, vocabulary, grammar, phonics, session goals, and XP progress animate around the edges. Kids aged 5-12 see a fun, immersive game screen — not a dashboard.
 
-**Status:** 🟡 Build in progress — Space background + all reward animations complete. Grammar/phonics diary inputs and session end flow remaining. Last updated Q4F (April 15, 2026).
+**Status:** 🟡 Build in progress — Space background + all reward animations complete. Grammar/phonics diary inputs and session end flow remaining. Last updated Q4G (April 16, 2026).
 
 **Spec Document:** `LessonLink-Phase17-LiveSession-Spec-Q4D.md`
 **Visual Mockup:** `LessonLink-Phase17-LiveSession-Mockup-Q4D.html`
@@ -758,6 +758,8 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 - 🟡 xpSpent backfill (all learner profiles except Max missing this field)
 - ⬜ End-of-session scoreboard/summary overlay
 - ⬜ Ocean/Farm/Desert/City backgrounds
+
+**Deploy note:** `firebase deploy --only firestore:rules` needed for `phonicsRepository` rules (added Q4G).
 
 **Database:** New `sessionProgress` collection. See spec for full schema.
 
@@ -1068,15 +1070,19 @@ All balances stored in Firestore as integers (Copper). Gold/Silver/Copper is a d
 
 ---
 
-## CURRENT STATUS (April 13, 2026)
+## CURRENT STATUS (April 16, 2026)
 
 - ✅ **Phases 1–16:** Complete and production-ready
 - ✅ **Dork Economy:** Complete — Cash-In Station, Pet Shop migrated to Dorks, denomination display
 - ✅ **XP Budget:** Finalized — 5,000 XP/level, 60/40 Engagement/Mastery split
 - ✅ **Reward System:** Updated — Treasure Chests (XP), Wows (behavioral), Oopsies (data), behavior deductions. Stars retired.
 - ✅ **Phase 17 Spec + Mockup:** Complete — `LessonLink-Phase17-LiveSession-Spec-Q4D.md` + `LessonLink-Phase17-LiveSession-Mockup-Q4D.html`
-- 🔴 **Blocker:** xpSpent backfill required before Phase 17
-- 🔧 **Next Priority:** Phase 17 build (Live Session Background)
-- ⬜ **Stacked:** Phases A/B/C (Curriculum AI), Phases 17B/17C, Phases 18–23
-- **Next:** Phase 17 build → Phase 17B (session items → Petland SRS) → Phase 17C (scoreboard) → Phase A (types + CRUD) → Phase B (AI layer) → Phase C (template UI) → Unified Session History → Course Page Architecture
-- **Estimated sessions for Phase 17:** 3–5
+- ✅ **PhonicsGame mechanic:** Complete — picture + audio sentence, Match/Mismatch game, gameData stored with card
+- ✅ **Phonics Repository:** Complete — shared `phonicsRepository` collection, repo-check on phoneme select, backfill button, browse (scroll all)
+- ✅ **Grammar/Phonics list cards:** Complete — two-column layout matching Vocabulary UI
+- ✅ **GrammarFront/Back:** Updated to new field names (rule, errorWords, answer, correctSentence)
+- 🔴 **Deploy needed:** `firebase deploy --only firestore:rules` for `phonicsRepository` rules
+- 🟡 **In progress:** Phase 17 — grammar/phonics diary inputs, session end flow, xpSpent backfill
+- ⬜ **Stacked:** Phases A/B/C (Curriculum AI), Phases 17B/17C, Phases 18–23, Vocab/Grammar repositories
+- **Next:** `firebase deploy --only firestore:rules` → grammar/phonics diary inputs → session end flow → xpSpent backfill → Phase 17B/17C
+- **Estimated sessions to Phase 17 completion:** 1–2 (core flow); additional for theme backgrounds
