@@ -465,11 +465,11 @@ export default function LandingPage() {
               <form onSubmit={(e) => handleLogin(e, 'learner')} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="learner-login-email">Email</Label>
-                  <Input id="learner-login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
+                  <Input id="learner-login-email" type="email" autoComplete="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="learner-login-password">Password</Label>
-                  <Input id="learner-login-password" type="password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                  <Input id="learner-login-password" type="password" autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -657,11 +657,11 @@ export default function LandingPage() {
               <form onSubmit={(e) => handleLogin(e, 'tutor')} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="tutor-login-email">Email</Label>
-                  <Input id="tutor-login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
+                  <Input id="tutor-login-email" type="email" autoComplete="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tutor-login-password">Password</Label>
-                  <Input id="tutor-login-password" type="password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                  <Input id="tutor-login-password" type="password" autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={loading}>

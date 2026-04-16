@@ -118,6 +118,7 @@ export default function GrammarManager({ studentId, prefill, onPrefillConsumed }
   };
 
   return (
+    <div className="grid lg:grid-cols-2 gap-6">
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Add Grammar</CardTitle>
@@ -190,9 +191,18 @@ export default function GrammarManager({ studentId, prefill, onPrefillConsumed }
           </Button>
         )}
 
-        {cards.length > 0 && (
-          <div className="space-y-2 pt-2 border-t">
-            <p className="text-xs text-muted-foreground font-medium">Saved grammar cards ({cards.length})</p>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Grammar List ({cards.length} cards)</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {cards.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">No grammar cards yet.</p>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
             {cards.map(card => (
               <div key={card.id} className="flex items-start justify-between gap-2 text-sm rounded-md border px-3 py-2">
                 <div className="space-y-0.5">
@@ -213,5 +223,6 @@ export default function GrammarManager({ studentId, prefill, onPrefillConsumed }
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

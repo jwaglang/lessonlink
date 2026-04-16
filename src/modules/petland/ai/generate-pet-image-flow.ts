@@ -325,3 +325,44 @@ export async function generateVocabIcon(word: string): Promise<string> {
   // Skip text removal for now - the prompt already asks for text-free images
   return imageDataUri;
 }
+
+export async function generatePhonicsWordImage(word: string, otherWord: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set.');
+
+  const prompt = `A simple, instantly recognisable flashcard illustration for the word "${word}".
+Rules:
+- Show the single most common, concrete, physical meaning of "${word}" that a child aged 5–10 would immediately recognise.
+- The image must be CLEARLY and UNAMBIGUOUSLY about "${word}", NOT about "${otherWord}" or any other meaning.
+- If the word is abstract (e.g. "right"), show its most physical meaning (e.g. an arrow pointing right, not a tick/checkmark).
+- Single subject centred on a white background. No text, letters, or numbers anywhere.
+- Kiddoland style: bold outlines, bright flat colours, friendly and simple. Suitable for a children's flashcard.`;
+
+  const response = await fetchWithRetry(
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: { sampleCount: 1 },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('[generatePhonicsWordImage] API error:', error);
+    throw new Error(`Phonics image generation failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const prediction = data?.predictions?.[0];
+
+  if (!prediction?.bytesBase64Encoded) {
+    console.error('[generatePhonicsWordImage] No image in response:', JSON.stringify(data, null, 2));
+    throw new Error('No image returned from API.');
+  }
+
+  return `data:${prediction.mimeType ?? 'image/png'};base64,${prediction.bytesBase64Encoded}`;
+}

@@ -82,10 +82,31 @@ export interface PhonicsCard {
   targetIPA: string;      // e.g. "/ʃ/" — target phoneme IPA
   pairIPA: string;        // e.g. "/tʃ/" — contrasting phoneme IPA
   minimalPairs: Array<{ word1: string; word2: string }>;
+  gameData?: {
+    imageUrl: string;      // base64 image of pictureWord
+    sentence: string;      // sentence used in audio
+    pictureWord: string;   // the word shown in the image
+    audioWord: string;     // the word used in the sentence
+    otherWord: string;     // the other word in the pair
+    isMatch: boolean;      // whether pictureWord === audioWord
+  };
   srsLevel: number;
   lastReviewDate?: string | null;
   sessionInstanceId?: string | null;
   createdDate?: string;
+}
+
+export interface PhonicsRepositoryCard {
+  id: string;
+  keyword: string;
+  keywordIPA: string;
+  targetPhoneme: string;
+  targetIPA: string;
+  pairWord: string;
+  pairIPA: string;
+  minimalPairs: Array<{ word1: string; word2: string }>;
+  gameData?: PhonicsCard['gameData'];
+  createdDate: string;
 }
 
 export interface ShopItem {

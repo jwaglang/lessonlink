@@ -24,9 +24,13 @@ Return ONLY valid JSON. No explanation, no markdown, no code fences.`;
   const userPrompt = `Keyword: "${keyword}"
 Target phoneme: "${targetPhoneme}"
 
-Find a word that differs from "${keyword}" by only the "${targetPhoneme}" phoneme being replaced with a similar but different phoneme.
-Then generate 6–10 minimal pairs that contrast these two phonemes (not just the keyword pair — varied examples).
-The first pair must be the keyword vs its contrast word.
+Step 1: Identify the IPA symbol for "${targetPhoneme}".
+Step 2: Find ONE contrasting phoneme that is commonly confused with it by EFL learners. The pairWord must differ from "${keyword}" by ONLY that one phoneme substitution — all other sounds identical.
+Step 3: Generate 6–8 minimal pairs. STRICT RULES:
+  - Every pair must contrast EXACTLY the same two phonemes identified in steps 1–2. No other phoneme differences.
+  - Both words in each pair must be real, common English words.
+  - Do NOT include words where other phonemes also differ.
+  - The first pair must be { "word1": "${keyword}", "word2": pairWord }.
 
 Return this exact JSON:
 {
@@ -34,8 +38,8 @@ Return this exact JSON:
   "targetIPA": "/the target phoneme in IPA/",
   "pairIPA": "/the contrasting phoneme in IPA/",
   "minimalPairs": [
-    { "word1": "keyword", "word2": "pairWord" },
-    ...more pairs...
+    { "word1": "${keyword}", "word2": "pairWord" },
+    ...5–7 more strictly correct pairs...
   ]
 }`;
 

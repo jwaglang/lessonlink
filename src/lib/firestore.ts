@@ -2512,6 +2512,106 @@ export async function updatePhonicsCard(
   await updateDoc(ref, updates as any);
 }
 
+// ── Phonics Repository (shared across all students) ──────────────────────────
+
+import type { PhonicsRepositoryCard } from '@/modules/petland/types';
+
+/**
+ * Check if a phonics card already exists in the shared repository
+ * for the given keyword + target phoneme combination.
+ */
+export async function getPhonicsRepoCard(
+  keyword: string,
+  targetPhoneme: string
+): Promise<PhonicsRepositoryCard | null> {
+  const ref = collection(db, 'phonicsRepository');
+  const q = query(
+    ref,
+    where('keyword', '==', keyword.toLowerCase().trim()),
+    where('targetPhoneme', '==', targetPhoneme),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return asId<PhonicsRepositoryCard>(d.id, d.data());
+}
+
+/**
+ * Add a new card to the shared phonics repository.
+ * Call when T saves a card that wasn't already in the repo.
+ */
+export async function addPhonicsRepoCard(
+  card: Omit<PhonicsRepositoryCard, 'id'>
+): Promise<string> {
+  const ref = collection(db, 'phonicsRepository');
+  const docRef = await addDoc(ref, card);
+  return docRef.id;
+}
+
+/**
+ * Update an existing repo card (e.g. to add gameData).
+ */
+export async function updatePhonicsRepoCard(
+  repoCardId: string,
+  updates: Partial<Omit<PhonicsRepositoryCard, 'id'>>
+): Promise<void> {
+  const ref = doc(db, 'phonicsRepository', repoCardId);
+  await updateDoc(ref, updates as any);
+}
+
+/**
+ * Get all cards in the phonics repository, ordered by keyword.
+ */
+export async function getAllPhonicsRepoCards(): Promise<PhonicsRepositoryCard[]> {
+  const ref = collection(db, 'phonicsRepository');
+  const q = query(ref, orderBy('keyword'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => asId<PhonicsRepositoryCard>(d.id, d.data()));
+}
+
+/**
+ * One-time backfill: reads all students' phonics subcollections and writes
+ * any card not yet in phonicsRepository. Skips duplicates (same keyword +
+ * targetPhoneme). Also patches gameData onto existing repo cards that lack it.
+ */
+export async function backfillPhonicsRepository(): Promise<{ added: number; skipped: number }> {
+  const students = await getStudents();
+  let added = 0;
+  let skipped = 0;
+
+  for (const student of students) {
+    const cards = await getPhonicsCards(student.id);
+    for (const card of cards) {
+      const existing = await getPhonicsRepoCard(
+        card.keyword.toLowerCase().trim(),
+        card.targetPhoneme
+      );
+      if (existing) {
+        if (card.gameData && !existing.gameData) {
+          await updatePhonicsRepoCard(existing.id, { gameData: card.gameData });
+        }
+        skipped++;
+      } else {
+        await addPhonicsRepoCard({
+          keyword: card.keyword.toLowerCase().trim(),
+          keywordIPA: card.keywordIPA,
+          targetPhoneme: card.targetPhoneme,
+          targetIPA: card.targetIPA,
+          pairWord: card.pairWord,
+          pairIPA: card.pairIPA,
+          minimalPairs: card.minimalPairs,
+          ...(card.gameData ? { gameData: card.gameData } : {}),
+          createdDate: card.createdDate || new Date().toISOString().slice(0, 10),
+        });
+        added++;
+      }
+    }
+  }
+
+  return { added, skipped };
+}
+
 /**
  * Get all session progress records for a student, newest first
  */
