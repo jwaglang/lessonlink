@@ -170,23 +170,30 @@ async function handleSaveAndSendFeedback() {
     setFeedbackSaved(true);
     toast({ title: 'Success', description: 'Feedback saved and ready to send.' });
     
-    // Send email to parent
+    // Send email to parent (retry once on network failure)
     try {
       const studentEmail = selectedSession.student?.email;
       if (studentEmail) {
-        await fetch('/api/email/send-feedback', {
+        const emailPayload = {
+          to: studentEmail,
+          learnerName: selectedSession.student?.name || 'Learner',
+          sessionTitle: selectedSession.title || 'Session',
+          sessionDate: getSessionDate(selectedSession) || '',
+          summary: editedFeedback.summary,
+          progressHighlights: editedFeedback.progressHighlights,
+          suggestedActivities: editedFeedback.suggestedActivities,
+        };
+        const sendEmail = () => fetch('/api/email/send-feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: studentEmail,
-            learnerName: selectedSession.student?.name || 'Learner',
-            sessionTitle: selectedSession.title || 'Session',
-            sessionDate: getSessionDate(selectedSession) || '',
-            summary: editedFeedback.summary,
-            progressHighlights: editedFeedback.progressHighlights,
-            suggestedActivities: editedFeedback.suggestedActivities,
-          }),
+          body: JSON.stringify(emailPayload),
         });
+        try {
+          await sendEmail();
+        } catch {
+          await new Promise(r => setTimeout(r, 2000));
+          await sendEmail();
+        }
       }
     } catch (emailErr) {
       console.error('Email send failed (non-blocking):', emailErr);
@@ -489,7 +496,7 @@ async function handleMarkComplete(sessionId: string) {
                         <Button
                           size="sm"
                           className="w-full"
-                          onClick={() => setFeedbackSessionId(selectedSession.id)}
+                          onClick={() => { setFeedbackSessionId(selectedSession.id); setFeedbackSaved(false); }}
                         >
                           <Sparkles className="h-4 w-4 mr-2" />
                           Write Feedback
@@ -655,8 +662,39 @@ async function handleMarkComplete(sessionId: string) {
 
           {/* Confirmation after save */}
           {feedbackSaved && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
-              ✅ Feedback saved and ready to send.
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm flex items-center justify-between gap-2">
+              <span>✅ Feedback saved and ready to send.</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0 border-green-300 text-green-800 hover:bg-green-100"
+                onClick={async () => {
+                  if (!selectedSession || !editedFeedback) return;
+                  try {
+                    const studentEmail = selectedSession.student?.email;
+                    if (!studentEmail) return;
+                    await fetch('/api/email/send-feedback', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        to: studentEmail,
+                        learnerName: selectedSession.student?.name || 'Learner',
+                        sessionTitle: selectedSession.title || 'Session',
+                        sessionDate: getSessionDate(selectedSession) || '',
+                        summary: editedFeedback.summary,
+                        progressHighlights: editedFeedback.progressHighlights,
+                        suggestedActivities: editedFeedback.suggestedActivities,
+                      }),
+                    });
+                    toast({ title: 'Email sent', description: 'Feedback sent to parent.' });
+                  } catch (err: any) {
+                    toast({ title: 'Email failed', description: err.message, variant: 'destructive' });
+                  }
+                }}
+              >
+                <Send className="h-3 w-3 mr-1" />
+                Resend Email
+              </Button>
             </div>
           )}
 

@@ -1183,7 +1183,13 @@ export async function resolveApprovalRequest(
 
     await updateDoc(approvalRef, { status: 'approved', resolvedAt: nowIso() } as any);
 
-    // Notify student to complete payment to book
+    // Mark student as no longer new so future bookings go through directly
+    await updateDoc(doc(db, 'students', req.studentId), {
+      isNewStudent: false,
+      updatedAt: nowIso(),
+    } as any);
+
+    // Notify student they can now book directly
     // studentId IS the Auth UID in v7
     await createMessage({
       to: req.studentId,
@@ -1191,11 +1197,11 @@ export async function resolveApprovalRequest(
       fromType: 'system',
       toType: 'student',
       type: 'notification',
-      content: 'Approved. Please complete payment to book your sessions.',
+      content: 'Your booking has been approved! You can now book sessions directly.',
       timestamp: nowIso(),
       read: false,
       relatedEntity: { type: 'approvalRequest', id: requestId },
-      actionLink: '/s-portal/book',
+      actionLink: '/s-portal/calendar',
       createdAt: nowIso(),
     } as any);
   } else if (req.type === 'tutor_assignment') {

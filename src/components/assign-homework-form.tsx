@@ -59,7 +59,7 @@ export default function AssignHomeworkForm({
   const [dueDate, setDueDate] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<HomeworkDeliveryMethod>(parentEmail ? 'email' : 'manual');
   const [teacherInstructions, setTeacherInstructions] = useState('');
-  const [attachmentHtml, setAttachmentHtml] = useState<string | null>(null);
+  const [attachmentBase64, setAttachmentBase64] = useState<string | null>(null);
   const [attachmentFilename, setAttachmentFilename] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
@@ -109,7 +109,7 @@ export default function AssignHomeworkForm({
               learnerName,
               unitTitle,
               teacherName,
-              attachmentHtml,
+              attachmentBase64,
               attachmentFilename,
             }),
           });
@@ -239,7 +239,7 @@ export default function AssignHomeworkForm({
             <Input
               id="hw-attachment"
               type="file"
-              accept=".html"
+              accept=".html,.pdf"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -252,8 +252,9 @@ export default function AssignHomeworkForm({
                   e.target.value = '';
                   return;
                 }
-                const text = await file.text();
-                setAttachmentHtml(text);
+                const buffer = await file.arrayBuffer();
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+                setAttachmentBase64(base64);
                 setAttachmentFilename(file.name);
               }}
             />

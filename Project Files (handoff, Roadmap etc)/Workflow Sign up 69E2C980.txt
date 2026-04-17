@@ -1,0 +1,68 @@
+KIDDOLAND — LEARNER SIGN-UP WORKFLOW
+Date: 2026-04-17 | Hexdate: 69E2C980
+=====================================
+
+
+1. TRIAL
+--------
+- L creates an account and logs into the s-portal.
+- L submits a booking request from the calendar.
+- Because isNewStudent = true, the request goes into the Approval Queue (not a direct booking).
+- T reviews the request in t-portal > Approvals and clicks Approve.
+- On approval: a studentProgress record is created, and isNewStudent is automatically set to false.
+- T books the trial session from the teacher calendar (t-portal > Calendar).
+- T completes the session after it takes place.
+
+
+2. CONVERSION (L has paid)
+--------------------------
+- T goes to t-portal > Learner Packages.
+- T clicks Add Package, selects the learner and course, enters the total hours purchased and currency.
+- Saving the package automatically:
+    a) Creates a studentCredit record with uncommittedHours = totalHours.
+    b) Sets isNewStudent = false on the student doc (unblocks direct booking).
+- No Firebase manual steps required.
+
+
+3. ACTIVE PACKAGE
+-----------------
+- L logs into the s-portal and books sessions directly from the calendar — no approval queue.
+- Each booking reserves hours: uncommittedHours decreases, committedHours increases.
+- T completes each session after it takes place:
+    - sessionsCompleted increments on the studentProgress record.
+    - committedHours decreases, completedHours increases on the studentCredit record.
+
+
+4. POST-SESSION (after each completed session)
+----------------------------------------------
+a) Feedback
+   - T clicks "Write Feedback" on the completed session in the calendar.
+   - T types quick session notes, clicks Generate Feedback.
+   - AI (DeepSeek, fallback: MiniMax → Claude) produces a parent-friendly report in three sections:
+       Summary / Progress Highlights / Suggested Activities.
+   - T optionally translates to Chinese (中文) or Portuguese (Português).
+   - T clicks Save & Send — feedback is saved to Firestore and emailed to the parent via Resend.
+   - If the email fails, a Resend Email button appears in the green confirmation banner.
+
+b) Homework (optional)
+   - T clicks Assign Homework on the same session card.
+   - T fills in the title, type, instructions, due date, and delivery method.
+   - T optionally attaches a workbook (.html or .pdf, max 6 MB).
+   - If delivery = Email, the homework is saved and the file is emailed to the parent.
+
+
+5. PACKAGE COMPLETION
+---------------------
+- When uncommittedHours and committedHours both reach 0, all purchased hours are consumed.
+- T updates the learner's status in their profile:
+    - Renewed:  start a new package (repeat step 2).
+    - Finished: set status to "completed".
+    - Dropped:  set status to "churned".
+
+
+KNOWN GAPS (as of 69E2C980)
+============================
+- No in-app payment recording (amount paid, payment method, invoice). Package creation assumes
+  payment has already been confirmed offline.
+- No automated alert when a package is fully consumed.
+- studentPackages collection is not used by the booking flow; only studentCredit is checked.

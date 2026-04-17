@@ -153,7 +153,7 @@ export default function PackagesPage() {
                                     <TableCell><Badge variant="default">{credit.uncommittedHours}h</Badge></TableCell>
                                     <TableCell>{credit.committedHours}h</TableCell>
                                     <TableCell>{credit.completedHours}h</TableCell>
-                                    <TableCell>{credit.createdAt ? format(new Date(credit.createdAt), 'MMM d, yyyy') : '—'}</TableCell>
+                                    <TableCell>{credit.createdAt ? format(typeof (credit.createdAt as any).toDate === 'function' ? (credit.createdAt as any).toDate() : new Date(credit.createdAt), 'MMM d, yyyy') : '—'}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

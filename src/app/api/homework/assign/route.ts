@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       unitTitle,
       teacherName,
       // Attachment
-      attachmentHtml,
+      attachmentBase64,
       attachmentFilename,
     } = body;
 
@@ -40,18 +40,18 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('[Homework Assign] Sending email to:', parentEmail);
-    console.log('[Homework Assign] Has attachment:', !!attachmentHtml, 'filename:', attachmentFilename || 'homework.html');
+    console.log('[Homework Assign] Has attachment:', !!attachmentBase64, 'filename:', attachmentFilename || 'homework');
 
     // Send email
     const emailResult = await sendEmail({
       to: parentEmail,
       subject,
       html,
-      attachments: attachmentHtml
+      attachments: attachmentBase64
         ? [
             {
-              filename: attachmentFilename || 'homework.html',
-              content: Buffer.from(attachmentHtml).toString('base64'),
+              filename: attachmentFilename || 'homework',
+              content: attachmentBase64,
             },
           ]
         : undefined,

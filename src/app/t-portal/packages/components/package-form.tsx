@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createStudentCredit, updateStudentCredit } from '@/lib/firestore';
+import { createStudentCredit, updateStudentCredit, updateStudent } from '@/lib/firestore';
 import type { StudentCredit, Student, Course } from '@/lib/types';
 
 const formSchema = z.object({
@@ -81,6 +81,7 @@ export default function PackageForm({ students, courses, credit, onSuccess }: Pa
                       updatedAt: new Date().toISOString(),
                     };
                     savedCredit = await createStudentCredit(newCreditData);
+                    await updateStudent(values.studentId, { isNewStudent: false });
                     toast({ title: 'Success', description: 'Package created.'});
                 }
                 onSuccess();

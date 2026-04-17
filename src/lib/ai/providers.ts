@@ -78,7 +78,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 export const TASK_FAILOVER: Record<string, string[]> = {
   assessment_analysis: ['deepseek', 'minimax', 'claude'],
   parent_report: ['deepseek', 'minimax', 'claude'],
-  translation: ['deepseek', 'minimax', 'kimi'],
+  translation: ['deepseek', 'minimax', 'kimi', 'claude'],
   session_feedback: ['deepseek', 'minimax', 'claude'],
   vocabulary_sentence: ['deepseek', 'minimax', 'claude'],
   grammar_cloze: ['deepseek', 'minimax', 'claude'],
