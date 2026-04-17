@@ -1,5 +1,20 @@
 export type PetState = 'egg' | 'hatched' | 'dead';
 
+export type GameType =
+  | 'memory-match'
+  | 'quiz'
+  | 'whack-a-mole'
+  | 'match-up'
+  | 'missing-letter'
+  | 'anagram'
+  | 'true-false'
+  | 'balloon-pop';
+
+export interface GameResult {
+  vocabId: string;
+  correct: boolean; // recognition games always pass true; recall games reflect actual answer
+}
+
 export type FeedbackType = 'wow' | 'brainfart' | 'treasure';
 
 export interface Dorks {

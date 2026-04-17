@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import type { PetlandProfile, Vocabulary, PetShopItem, GeneratedComposite, GrammarCard, PhonicsCard } from '../types';
+import type { PetlandProfile, Vocabulary, PetShopItem, GeneratedComposite, GrammarCard, PhonicsCard, GameType, GameResult } from '../types';
 import { formatDorks, getDorkDenominations } from '../types';
 import { PlaceHolderImages } from '../placeholder-images';
 import { mockShopItems, mockBrochures } from '../data';
-import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD } from '../utils';
+import { getTodayDateString, calculateHpDecay, isWordDue, XP_PER_MATCH, XP_PER_FLASHCARD, selectGame, RECALL_GAMES } from '../utils';
 import { FeedbackOverlay } from './feedback-overlay';
 import { HungerAlerts } from './hunger-alerts';
 import { CashInStation } from './cash-in-station';
@@ -62,6 +62,8 @@ import {
 import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getPetShopItems, decrementPetShopItemStock, getGrammarCards, getPhonicsCards } from '@/lib/firestore';
 import { UnifiedFlashcardReview, type ReviewCard, type ReviewResult } from './unified-flashcard-review';
+import GameReveal from './games/game-reveal';
+import GameRouter from './games/game-router';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1148,14 +1150,19 @@ function CompositeGalleryCard({
 
 // --- PET RESET PANEL ---
 
-function Tip({ children, label }: { children: React.ReactNode; label: string }) {
+function Tip({ children, label, useful }: { children: React.ReactNode; label: string; useful: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="top" className="max-w-56 text-center text-xs">{label}</TooltipContent>
+      <TooltipContent side="top" className="max-w-60 text-xs space-y-1">
+        <p>{label}</p>
+        <p className="text-indigo-300 font-medium">Useful for: {useful}</p>
+      </TooltipContent>
     </Tooltip>
   );
 }
+
+const panelBtn = 'h-9 rounded-xl text-xs font-semibold border-2 border-indigo-300 text-indigo-700 bg-white hover:bg-indigo-50 hover:border-indigo-400 transition-colors';
 
 function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase, onAdjustXp, onAdjustDorks }: {
   hp: number; xp: number; dorkBalance: number; isFat: boolean;
@@ -1181,9 +1188,9 @@ function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMa
           {/* HP row */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium text-muted-foreground w-14">Set HP</span>
-            <Input type="number" className="w-20 h-8 text-sm rounded-xl" value={hpValue} onChange={(e) => setHpValue(e.target.value)} min={0} max={100} />
-            <Tip label="Set this learner's pet health to an exact value between 0 and 100.">
-              <Button size="sm" className="h-8 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white" onClick={() => onSet(Math.max(0, Math.min(100, Number(hpValue))))}>
+            <Input type="number" className="w-20 h-9 text-sm rounded-xl" value={hpValue} onChange={(e) => setHpValue(e.target.value)} min={0} max={100} />
+            <Tip label="Set this learner's pet health to an exact value between 0 and 100." useful="correcting HP after an error, or testing hunger alert thresholds">
+              <Button size="sm" className={panelBtn} onClick={() => onSet(Math.max(0, Math.min(100, Number(hpValue))))}>
                 Apply
               </Button>
             </Tip>
@@ -1192,14 +1199,14 @@ function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMa
           {/* XP row */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium text-muted-foreground w-14">XP <span className="text-indigo-400">({xp})</span></span>
-            <Input type="number" className="w-20 h-8 text-sm rounded-xl" value={xpAmount} onChange={(e) => setXpAmount(e.target.value)} min={1} />
-            <Tip label="Add XP to this learner's lifetime total.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustXp(Math.abs(Number(xpAmount)))}>
+            <Input type="number" className="w-20 h-9 text-sm rounded-xl" value={xpAmount} onChange={(e) => setXpAmount(e.target.value)} min={1} />
+            <Tip label="Add XP to this learner's lifetime total." useful="rewarding effort outside the app, or correcting a missed session">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={() => onAdjustXp(Math.abs(Number(xpAmount)))}>
                 <Plus className="h-3 w-3" />
               </Button>
             </Tip>
-            <Tip label="Remove XP from this learner's lifetime total.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustXp(-Math.abs(Number(xpAmount)))}>
+            <Tip label="Remove XP from this learner's lifetime total." useful="correcting an accidental over-award or test data cleanup">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={() => onAdjustXp(-Math.abs(Number(xpAmount)))}>
                 <Minus className="h-3 w-3" />
               </Button>
             </Tip>
@@ -1208,14 +1215,14 @@ function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMa
           {/* Dorks row */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-medium text-muted-foreground w-14">Dorks <span className="text-indigo-400">({dorkBalance})</span></span>
-            <Input type="number" className="w-20 h-8 text-sm rounded-xl" value={dorksAmount} onChange={(e) => setDorksAmount(e.target.value)} min={1} />
-            <Tip label="Add Dorks to this learner's wallet.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustDorks(Math.abs(Number(dorksAmount)))}>
+            <Input type="number" className="w-20 h-9 text-sm rounded-xl" value={dorksAmount} onChange={(e) => setDorksAmount(e.target.value)} min={1} />
+            <Tip label="Add Dorks to this learner's wallet." useful="gifting bonus currency as a reward or making up for a system error">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={() => onAdjustDorks(Math.abs(Number(dorksAmount)))}>
                 <Plus className="h-3 w-3" />
               </Button>
             </Tip>
-            <Tip label="Remove Dorks from this learner's wallet.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustDorks(-Math.abs(Number(dorksAmount)))}>
+            <Tip label="Remove Dorks from this learner's wallet." useful="correcting an accidental over-award or reversing a bad transaction">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={() => onAdjustDorks(-Math.abs(Number(dorksAmount)))}>
                 <Minus className="h-3 w-3" />
               </Button>
             </Tip>
@@ -1223,34 +1230,34 @@ function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMa
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2 pt-1">
-            <Tip label="Revive a dead pet and restore it to full health.">
-              <Button size="sm" className="h-8 rounded-xl bg-green-500 hover:bg-green-600 text-white" onClick={onRestorePet}>
+            <Tip label="Revive a dead pet and restore it to full health." useful="when a learner accidentally let their pet die and wants a second chance">
+              <Button size="sm" className={panelBtn} onClick={onRestorePet}>
                 <RefreshCw className="mr-1.5 h-3 w-3" /> Restore Pet
               </Button>
             </Tip>
-            <Tip label="Simulate a completed Memory Match round — grants XP and feeds the pet.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-blue-300 text-blue-600 hover:bg-blue-50" onClick={onFakeMatch}>
+            <Tip label="Simulate a completed Memory Match round — grants XP and feeds the pet." useful="testing the XP and HP gain flow without the learner needing to play">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={onFakeMatch}>
                 <Gamepad2 className="mr-1.5 h-3 w-3" /> Fake Match
               </Button>
             </Tip>
-            <Tip label="Subtract 10 HP as if the learner missed a day. Marks the pet as dead if HP hits 0.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-orange-300 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
+            <Tip label="Subtract 10 HP as if the learner missed a full day. Marks the pet as dead if HP hits 0." useful="testing hunger alerts and death behaviour without waiting 24 hours">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={onSimulateDecay}>
                 <Zap className="mr-1.5 h-3 w-3" /> Simulate Decay
               </Button>
             </Tip>
-            <Tip label="Clear all flashcard review history so every word appears as new to the learner.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-purple-300 text-purple-600 hover:bg-purple-50" onClick={onResetFlashcards}>
+            <Tip label="Clear all flashcard review history so every word appears as new to the learner." useful="resetting a learner's SRS progress at the start of a new term or after a data issue">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={onResetFlashcards}>
                 <RotateCcw className="mr-1.5 h-3 w-3" /> Reset Flashcards
               </Button>
             </Tip>
-            <Tip label="Test an accessory purchase without spending Dorks — useful for previewing shop items.">
-              <Button size="sm" variant="outline" className="h-8 rounded-xl border-cyan-300 text-cyan-600 hover:bg-cyan-50" onClick={onSimulateAccessoryPurchase}>
+            <Tip label="Test an accessory purchase without spending Dorks." useful="previewing how an accessory looks on the pet before recommending it to a learner">
+              <Button size="sm" variant="outline" className={panelBtn} onClick={onSimulateAccessoryPurchase}>
                 <ShoppingBag className="mr-1.5 h-3 w-3" /> Sim. Purchase
               </Button>
             </Tip>
             {isFat && (
-              <Tip label="Remove the overfed status so the pet returns to its normal appearance.">
-                <Button size="sm" variant="outline" className="h-8 rounded-xl border-red-300 text-red-600 hover:bg-red-50" onClick={onClearFat}>
+              <Tip label="Remove the overfed status so the pet returns to its normal appearance." useful="fixing a display issue after too many same-day rounds were played">
+                <Button size="sm" variant="outline" className={panelBtn} onClick={onClearFat}>
                   Clear Fat
                 </Button>
               </Tip>
@@ -1298,6 +1305,8 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
   const [isNamingPet, setIsNamingPet] = useState(false);
   const [petNameInput, setPetNameInput] = useState('');
   const [matchCompleted, setMatchCompleted] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<GameType>('memory-match');
+  const [showGameReveal, setShowGameReveal] = useState(true);
   const [isRecoveryHatch, setIsRecoveryHatch] = useState(false);
   const [pendingWish, setPendingWish] = useState('');
   const [showFatConfirm, setShowFatConfirm] = useState(false);
@@ -1425,6 +1434,15 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
     getPhonicsCards(learnerId).then(setPhonicsCards).catch(console.error);
   }, [learnerId]);
 
+  // Pick a game once when Phase 2 becomes available; reset reveal when session resets
+  useEffect(() => {
+    if (!matchCompleted && vocabulary.filter((w) => !w.lastReviewDate).length >= 1) {
+      const unreviewed = vocabulary.filter((w) => !w.lastReviewDate);
+      setSelectedGame(selectGame(unreviewed));
+      setShowGameReveal(true);
+    }
+  }, [matchCompleted, vocabulary.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleGameComplete = useCallback(
     async (vocabIds: string[]) => {
       if (!profile) return;
@@ -1461,6 +1479,20 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
       });
     },
     [profile, learnerId]
+  );
+
+  // Routes game results to the right SRS path based on game type
+  const handleGameCompleteRouted = useCallback(
+    async (results: GameResult[]) => {
+      if (RECALL_GAMES.includes(selectedGame)) {
+        // Recall game: update srsLevel based on correctness
+        await handleFlashcardComplete(results.map((r) => ({ vocabId: r.vocabId, knew: r.correct })));
+      } else {
+        // Recognition game: stamp lastReviewDate only, same as original Memory Match
+        await handleGameComplete(results.map((r) => r.vocabId));
+      }
+    },
+    [selectedGame] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleFlashcardComplete = useCallback(
@@ -2201,9 +2233,17 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
             </Card>
             </>
           ) : unreviewedVocab.length >= 4 && !matchCompleted ? (
-            // Round 1 — new words exist (requires 4+ for game to work), show Memory Match
+            // Phase 2 — new words exist, show reveal then selected game
             <>
-            <MemoryGame vocabulary={unreviewedVocab} onGameComplete={handleGameComplete} />
+            {showGameReveal
+              ? <GameReveal gameType={selectedGame} onStart={() => setShowGameReveal(false)} />
+              : <GameRouter
+                  gameType={selectedGame}
+                  vocabulary={unreviewedVocab}
+                  onComplete={handleGameCompleteRouted}
+                  MemoryGameComponent={MemoryGame}
+                />
+            }
             </>
           ) : unifiedDueCards.length > 0 ? (
             // Leitner-due vocab + any grammar/phonics cards — unified review

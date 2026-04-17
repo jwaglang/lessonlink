@@ -1,4 +1,4 @@
-import type { Dorks, Vocabulary } from './types';
+import type { Dorks, GameType, Vocabulary } from './types';
 
 export function getTodayDateString(): string {
   const today = new Date();
@@ -58,6 +58,31 @@ export function isWordDue(word: Vocabulary, today: string): boolean {
   const due = new Date(word.lastReviewDate);
   due.setDate(due.getDate() + interval);
   return new Date(today) >= due;
+}
+
+// Minimum vocabulary words required to run each game type
+export const GAME_MIN_WORDS: Record<GameType, number> = {
+  'memory-match':   4,
+  'quiz':           4,
+  'whack-a-mole':   3,
+  'match-up':       3,
+  'true-false':     2,
+  'balloon-pop':    3,
+  'missing-letter': 1,
+  'anagram':        1,
+};
+
+// Games where correct/incorrect is meaningful and updates srsLevel.
+// match-up always resolves correctly (you keep trying until matched), so it's recognition-only.
+// memory-match is also recognition-only.
+export const RECALL_GAMES: GameType[] = ['quiz', 'true-false', 'whack-a-mole', 'missing-letter', 'anagram', 'balloon-pop'];
+
+// Randomly selects an eligible game based on the available vocabulary pool size
+export function selectGame(vocab: Vocabulary[]): GameType {
+  const eligible = (Object.keys(GAME_MIN_WORDS) as GameType[]).filter(
+    (g) => vocab.length >= GAME_MIN_WORDS[g]
+  );
+  return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
 // Calculates HP lost since lastHpUpdate (10 HP per missed 24h interval)
