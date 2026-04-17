@@ -65,6 +65,7 @@ import { UnifiedFlashcardReview, type ReviewCard, type ReviewResult } from './un
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -109,6 +110,8 @@ import {
   Settings2,
   RotateCcw,
   RefreshCw,
+  Plus,
+  Minus,
 } from 'lucide-react';
 
 // --- STORAGE HELPER ---
@@ -1145,55 +1148,118 @@ function CompositeGalleryCard({
 
 // --- PET RESET PANEL ---
 
-function PetResetPanel({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void; onSimulateAccessoryPurchase: () => void }) {
-  const [value, setValue] = useState(String(hp));
+function Tip({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <Card className="mt-4 border-2 border-indigo-200 bg-indigo-50/40 rounded-2xl">
-      <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex items-center gap-2">
-          <Settings2 className="h-4 w-4 text-indigo-500" />
-          <CardTitle className="text-sm font-semibold text-indigo-700 uppercase tracking-wide">Pet Reset Panel</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground w-14">Set HP</span>
-          <Input
-            type="number"
-            className="w-20 h-8 text-sm rounded-xl"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            min={0}
-            max={100}
-          />
-          <Button size="sm" className="h-8 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white" onClick={() => onSet(Math.max(0, Math.min(100, Number(value))))}>
-            Apply
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" className="h-8 rounded-xl bg-green-500 hover:bg-green-600 text-white" onClick={onRestorePet}>
-            <RefreshCw className="mr-1.5 h-3 w-3" /> Restore Pet
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 rounded-xl border-blue-300 text-blue-600 hover:bg-blue-50" onClick={onFakeMatch}>
-            <Gamepad2 className="mr-1.5 h-3 w-3" /> Fake Match
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 rounded-xl border-orange-300 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
-            <Zap className="mr-1.5 h-3 w-3" /> Simulate Decay
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 rounded-xl border-purple-300 text-purple-600 hover:bg-purple-50" onClick={onResetFlashcards}>
-            <RotateCcw className="mr-1.5 h-3 w-3" /> Reset Flashcards
-          </Button>
-          <Button size="sm" variant="outline" className="h-8 rounded-xl border-cyan-300 text-cyan-600 hover:bg-cyan-50" onClick={onSimulateAccessoryPurchase}>
-            <ShoppingBag className="mr-1.5 h-3 w-3" /> Sim. Purchase
-          </Button>
-          {isFat && (
-            <Button size="sm" variant="outline" className="h-8 rounded-xl border-red-300 text-red-600 hover:bg-red-50" onClick={onClearFat}>
-              Clear Fat
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-56 text-center text-xs">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase, onAdjustXp, onAdjustDorks }: {
+  hp: number; xp: number; dorkBalance: number; isFat: boolean;
+  onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void;
+  onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void;
+  onSimulateAccessoryPurchase: () => void; onAdjustXp: (delta: number) => void; onAdjustDorks: (delta: number) => void;
+}) {
+  const [hpValue, setHpValue] = useState(String(hp));
+  const [xpAmount, setXpAmount] = useState('10');
+  const [dorksAmount, setDorksAmount] = useState('10');
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Card className="mt-4 border-2 border-indigo-200 bg-indigo-50/40 rounded-2xl">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4 text-indigo-500" />
+            <CardTitle className="text-sm font-semibold text-indigo-700 uppercase tracking-wide">Pet Reset Panel</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-3">
+
+          {/* HP row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground w-14">Set HP</span>
+            <Input type="number" className="w-20 h-8 text-sm rounded-xl" value={hpValue} onChange={(e) => setHpValue(e.target.value)} min={0} max={100} />
+            <Tip label="Set this learner's pet health to an exact value between 0 and 100.">
+              <Button size="sm" className="h-8 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white" onClick={() => onSet(Math.max(0, Math.min(100, Number(hpValue))))}>
+                Apply
+              </Button>
+            </Tip>
+          </div>
+
+          {/* XP row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground w-14">XP <span className="text-indigo-400">({xp})</span></span>
+            <Input type="number" className="w-20 h-8 text-sm rounded-xl" value={xpAmount} onChange={(e) => setXpAmount(e.target.value)} min={1} />
+            <Tip label="Add XP to this learner's lifetime total.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustXp(Math.abs(Number(xpAmount)))}>
+                <Plus className="h-3 w-3" />
+              </Button>
+            </Tip>
+            <Tip label="Remove XP from this learner's lifetime total.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustXp(-Math.abs(Number(xpAmount)))}>
+                <Minus className="h-3 w-3" />
+              </Button>
+            </Tip>
+          </div>
+
+          {/* Dorks row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground w-14">Dorks <span className="text-indigo-400">({dorkBalance})</span></span>
+            <Input type="number" className="w-20 h-8 text-sm rounded-xl" value={dorksAmount} onChange={(e) => setDorksAmount(e.target.value)} min={1} />
+            <Tip label="Add Dorks to this learner's wallet.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustDorks(Math.abs(Number(dorksAmount)))}>
+                <Plus className="h-3 w-3" />
+              </Button>
+            </Tip>
+            <Tip label="Remove Dorks from this learner's wallet.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={() => onAdjustDorks(-Math.abs(Number(dorksAmount)))}>
+                <Minus className="h-3 w-3" />
+              </Button>
+            </Tip>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Tip label="Revive a dead pet and restore it to full health.">
+              <Button size="sm" className="h-8 rounded-xl bg-green-500 hover:bg-green-600 text-white" onClick={onRestorePet}>
+                <RefreshCw className="mr-1.5 h-3 w-3" /> Restore Pet
+              </Button>
+            </Tip>
+            <Tip label="Simulate a completed Memory Match round — grants XP and feeds the pet.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-blue-300 text-blue-600 hover:bg-blue-50" onClick={onFakeMatch}>
+                <Gamepad2 className="mr-1.5 h-3 w-3" /> Fake Match
+              </Button>
+            </Tip>
+            <Tip label="Subtract 10 HP as if the learner missed a day. Marks the pet as dead if HP hits 0.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-orange-300 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
+                <Zap className="mr-1.5 h-3 w-3" /> Simulate Decay
+              </Button>
+            </Tip>
+            <Tip label="Clear all flashcard review history so every word appears as new to the learner.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-purple-300 text-purple-600 hover:bg-purple-50" onClick={onResetFlashcards}>
+                <RotateCcw className="mr-1.5 h-3 w-3" /> Reset Flashcards
+              </Button>
+            </Tip>
+            <Tip label="Test an accessory purchase without spending Dorks — useful for previewing shop items.">
+              <Button size="sm" variant="outline" className="h-8 rounded-xl border-cyan-300 text-cyan-600 hover:bg-cyan-50" onClick={onSimulateAccessoryPurchase}>
+                <ShoppingBag className="mr-1.5 h-3 w-3" /> Sim. Purchase
+              </Button>
+            </Tip>
+            {isFat && (
+              <Tip label="Remove the overfed status so the pet returns to its normal appearance.">
+                <Button size="sm" variant="outline" className="h-8 rounded-xl border-red-300 text-red-600 hover:bg-red-50" onClick={onClearFat}>
+                  Clear Fat
+                </Button>
+              </Tip>
+            )}
+          </div>
+
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }
 
@@ -2048,6 +2114,8 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
           {viewerRole !== 'student' && (
             <PetResetPanel
               hp={profile.hp}
+              xp={profile.xp}
+              dorkBalance={profile.dorkBalance ?? 0}
               isFat={!!profile.isFat}
               onSet={(hp) => {
                 console.log('Setting HP to:', hp);
@@ -2095,6 +2163,18 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
                   });
               }}
               onSimulateAccessoryPurchase={handleSimulateAccessoryPurchase}
+              onAdjustXp={(delta) => {
+                const newXp = Math.max(0, profile.xp + delta);
+                updateDoc(profileRef, { xp: newXp })
+                  .then(() => toast({ title: 'XP Updated', description: `XP ${delta >= 0 ? '+' : ''}${delta} → ${newXp}` }))
+                  .catch((err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }));
+              }}
+              onAdjustDorks={(delta) => {
+                const newBalance = Math.max(0, (profile.dorkBalance ?? 0) + delta);
+                updateDoc(profileRef, { dorkBalance: newBalance })
+                  .then(() => toast({ title: 'Dorks Updated', description: `Dorks ${delta >= 0 ? '+' : ''}${delta} → ${newBalance}` }))
+                  .catch((err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }));
+              }}
             />
           )}
 
