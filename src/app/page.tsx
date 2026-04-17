@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GraduationCap, BookOpen, BookOpenCheck, Plus, Trash2, ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
+import { GraduationCap, BookOpen, BookOpenCheck, Plus, Trash2, ArrowLeft, ArrowRight, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { GradientIcon } from '@/components/gradient-icon';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -198,6 +198,10 @@ export default function LandingPage() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
+  // Password visibility toggles
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   // Signup form state — Step 2: Learner Info
   const [signupName, setSignupName] = useState('');
   const [signupBirthday, setSignupBirthday] = useState('');
@@ -469,7 +473,12 @@ export default function LandingPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="learner-login-password">Password</Label>
-                  <Input id="learner-login-password" type="password" autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="learner-login-password" type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowLoginPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -491,11 +500,21 @@ export default function LandingPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Password</Label>
-                      <Input type="password" placeholder="********" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
+                      <div className="relative">
+                        <Input type={showSignupPassword ? 'text' : 'password'} placeholder="********" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pr-10" />
+                        <button type="button" onClick={() => setShowSignupPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Confirm Password</Label>
-                      <Input type="password" placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} />
+                      <div className="relative">
+                        <Input type={showSignupConfirm ? 'text' : 'password'} placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} className="pr-10" />
+                        <button type="button" onClick={() => setShowSignupConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showSignupConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Full Name</Label>
@@ -661,7 +680,12 @@ export default function LandingPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tutor-login-password">Password</Label>
-                  <Input id="tutor-login-password" type="password" autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="tutor-login-password" type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowLoginPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -677,11 +701,21 @@ export default function LandingPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tutor-signup-password">Password</Label>
-                  <Input id="tutor-signup-password" type="password" placeholder="********" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="tutor-signup-password" type={showSignupPassword ? 'text' : 'password'} placeholder="********" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowSignupPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tutor-signup-confirm">Confirm Password</Label>
-                  <Input id="tutor-signup-confirm" type="password" placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} required />
+                  <div className="relative">
+                    <Input id="tutor-signup-confirm" type={showSignupConfirm ? 'text' : 'password'} placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} required className="pr-10" />
+                    <button type="button" onClick={() => setShowSignupConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showSignupConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={loading}>

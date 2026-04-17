@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Eye } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import StudentDashboard from '@/modules/petland/components/student-dashboard';
+
+const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 
 export default function BrowsePetStatusTabContent() {
   const { user } = useAuth();
@@ -22,11 +24,15 @@ export default function BrowsePetStatusTabContent() {
   const [loading, setLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
   useEffect(() => {
     if (!user?.uid) return;
 
     const studentsCollection = collection(db, 'students');
-    const q = query(studentsCollection, where('assignedTeacherId', '==', user.uid));
+    const q = user.email === ADMIN_EMAIL
+      ? query(studentsCollection)
+      : query(studentsCollection, where('assignedTeacherId', '==', user.uid));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const studentsData = snapshot.docs.map((doc) => {
@@ -38,7 +44,7 @@ export default function BrowsePetStatusTabContent() {
     });
 
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [user?.uid, user?.email]);
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
@@ -74,7 +80,13 @@ export default function BrowsePetStatusTabContent() {
         </CardContent>
       </Card>
 
-      {selectedStudent && <StudentDashboard learnerId={selectedStudent.id} learnerName={selectedStudent.name} />}
+      {selectedStudent && (
+        <StudentDashboard
+          learnerId={selectedStudent.id}
+          learnerName={selectedStudent.name}
+          viewerRole={isAdmin ? 'admin' : 'tutor'}
+        />
+      )}
     </div>
   );
 }

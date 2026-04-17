@@ -35,7 +35,7 @@ export default function PetlandPage() {
     <div className="p-4 md:p-8">
       <PageHeader title="Petland" description="Your virtual pet companion" />
       <div className="mt-6">
-        <StudentDashboard learnerId={user.uid} learnerName={learnerName} />
+        <StudentDashboard learnerId={user.uid} learnerName={learnerName} viewerRole="student" />
       </div>
     </div>
   );

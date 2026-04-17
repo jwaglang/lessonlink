@@ -17,17 +17,23 @@ import { Loader2, Eye } from 'lucide-react';
 import PageHeader from '@/components/page-header';
 import StudentDashboard from '@/modules/petland/components/student-dashboard';
 
+const ADMIN_EMAIL = 'jwag.lang@gmail.com';
+
 export default function BrowsePetStatusPage() {
   const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
   useEffect(() => {
     if (!user?.uid) return;
 
     const studentsCollection = collection(db, 'students');
-    const q = query(studentsCollection, where('assignedTeacherId', '==', user.uid));
+    const q = user.email === ADMIN_EMAIL
+      ? query(studentsCollection)
+      : query(studentsCollection, where('assignedTeacherId', '==', user.uid));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const studentsData = snapshot.docs.map((doc) => {
@@ -39,7 +45,7 @@ export default function BrowsePetStatusPage() {
     });
 
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [user?.uid, user?.email]);
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
@@ -82,7 +88,11 @@ export default function BrowsePetStatusPage() {
       </Card>
 
       {selectedStudent && (
-        <StudentDashboard learnerId={selectedStudent.id} learnerName={selectedStudent.name} />
+        <StudentDashboard
+          learnerId={selectedStudent.id}
+          learnerName={selectedStudent.name}
+          viewerRole={isAdmin ? 'admin' : 'tutor'}
+        />
       )}
     </div>
   );

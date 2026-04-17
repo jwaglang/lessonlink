@@ -106,6 +106,9 @@ import {
   Zap,
   Package,
   Circle,
+  Settings2,
+  RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 
 // --- STORAGE HELPER ---
@@ -1140,45 +1143,57 @@ function CompositeGalleryCard({
   );
 }
 
-// --- DEV HP SETTER (development only) ---
+// --- PET RESET PANEL ---
 
-function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void; onSimulateAccessoryPurchase: () => void }) {
+function PetResetPanel({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDecay, onResetFlashcards, onRestorePet, onSimulateAccessoryPurchase }: { hp: number; isFat: boolean; onSet: (hp: number) => void; onClearFat: () => void; onFakeMatch: () => void; onSimulateDecay: () => void; onResetFlashcards: () => void; onRestorePet: () => void; onSimulateAccessoryPurchase: () => void }) {
   const [value, setValue] = useState(String(hp));
   return (
-    <div className="mt-4 p-3 border border-dashed border-yellow-400 rounded-lg bg-yellow-50 flex items-center gap-3 flex-wrap">
-      <span className="text-xs font-bold text-yellow-700 uppercase tracking-wide">DEV</span>
-      <Input
-        type="number"
-        className="w-24 h-7 text-sm"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        min={0}
-        max={100}
-      />
-      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSet(Math.max(0, Math.min(100, Number(value))))}>
-        Set HP
-      </Button>
-      <Button size="sm" variant="outline" className="h-7 text-xs border-blue-400 text-blue-600 hover:bg-blue-50" onClick={onFakeMatch}>
-        Fake Match
-      </Button>
-      <Button size="sm" variant="outline" className="h-7 text-xs border-orange-400 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
-        Simulate Decay (-10 HP, clears fat)
-      </Button>
-      <Button size="sm" variant="outline" className="h-7 text-xs border-purple-400 text-purple-600 hover:bg-purple-50" onClick={onResetFlashcards}>
-        Reset Flashcards
-      </Button>
-      <Button size="sm" variant="outline" className="h-7 text-xs border-green-400 text-green-600 hover:bg-green-50" onClick={onRestorePet}>
-        Restore Pet
-      </Button>
-      <Button size="sm" variant="outline" className="h-7 text-xs border-cyan-400 text-cyan-600 hover:bg-cyan-50" onClick={onSimulateAccessoryPurchase}>
-        Simulate Buy Accessory
-      </Button>
-      {isFat && (
-        <Button size="sm" variant="outline" className="h-7 text-xs border-red-400 text-red-600 hover:bg-red-50" onClick={onClearFat}>
-          Clear Fat (isFat=false)
-        </Button>
-      )}
-    </div>
+    <Card className="mt-4 border-2 border-indigo-200 bg-indigo-50/40 rounded-2xl">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center gap-2">
+          <Settings2 className="h-4 w-4 text-indigo-500" />
+          <CardTitle className="text-sm font-semibold text-indigo-700 uppercase tracking-wide">Pet Reset Panel</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 space-y-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground w-14">Set HP</span>
+          <Input
+            type="number"
+            className="w-20 h-8 text-sm rounded-xl"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            min={0}
+            max={100}
+          />
+          <Button size="sm" className="h-8 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white" onClick={() => onSet(Math.max(0, Math.min(100, Number(value))))}>
+            Apply
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" className="h-8 rounded-xl bg-green-500 hover:bg-green-600 text-white" onClick={onRestorePet}>
+            <RefreshCw className="mr-1.5 h-3 w-3" /> Restore Pet
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 rounded-xl border-blue-300 text-blue-600 hover:bg-blue-50" onClick={onFakeMatch}>
+            <Gamepad2 className="mr-1.5 h-3 w-3" /> Fake Match
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 rounded-xl border-orange-300 text-orange-600 hover:bg-orange-50" onClick={onSimulateDecay}>
+            <Zap className="mr-1.5 h-3 w-3" /> Simulate Decay
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 rounded-xl border-purple-300 text-purple-600 hover:bg-purple-50" onClick={onResetFlashcards}>
+            <RotateCcw className="mr-1.5 h-3 w-3" /> Reset Flashcards
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 rounded-xl border-cyan-300 text-cyan-600 hover:bg-cyan-50" onClick={onSimulateAccessoryPurchase}>
+            <ShoppingBag className="mr-1.5 h-3 w-3" /> Sim. Purchase
+          </Button>
+          {isFat && (
+            <Button size="sm" variant="outline" className="h-8 rounded-xl border-red-300 text-red-600 hover:bg-red-50" onClick={onClearFat}>
+              Clear Fat
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1187,6 +1202,7 @@ function DevHpSetter({ hp, isFat, onSet, onClearFat, onFakeMatch, onSimulateDeca
 interface StudentDashboardProps {
   learnerId: string;
   learnerName: string;
+  viewerRole?: 'student' | 'tutor' | 'admin';
 }
 
 const DEFAULT_PROFILE: PetlandProfile = {
@@ -1204,7 +1220,7 @@ const DEFAULT_PROFILE: PetlandProfile = {
   unlockedBrochures: [],
 };
 
-export default function StudentDashboard({ learnerId, learnerName }: StudentDashboardProps) {
+export default function StudentDashboard({ learnerId, learnerName, viewerRole = 'student' }: StudentDashboardProps) {
   const { toast } = useToast();
   const [profile, setProfile] = useState<PetlandProfile | null>(null);
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
@@ -2029,8 +2045,8 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
               />
             </>
           )}
-          {process.env.NODE_ENV === 'development' && learnerId === '1SLNgciKQlhKVzE9INPBROgBsEz2' && (
-            <DevHpSetter
+          {viewerRole !== 'student' && (
+            <PetResetPanel
               hp={profile.hp}
               isFat={!!profile.isFat}
               onSet={(hp) => {
@@ -2064,20 +2080,24 @@ export default function StudentDashboard({ learnerId, learnerName }: StudentDash
                 alert('Flashcards reset! All words set to unreviewed.');
               }}
               onRestorePet={() => {
-                console.log('Restoring pet from dead state');
-                updateDoc(profileRef, { petState: 'hatched' })
+                updateDoc(profileRef, {
+                  petState: 'hatched',
+                  hp: 100,
+                  lastHpUpdate: new Date().toISOString(),
+                  isFat: false,
+                  lastHpAlertLevel: null,
+                })
                   .then(() => {
-                    console.log('Pet restored successfully');
-                    toast({ title: 'Pet Restored', description: 'Your pet has been brought back to life!' });
+                    toast({ title: 'Pet Restored', description: 'Pet has been brought back to life at full health!' });
                   })
                   .catch((err) => {
-                    console.error('Pet restore failed:', err);
                     toast({ title: 'Error', description: 'Failed to restore pet: ' + err.message, variant: 'destructive' });
                   });
               }}
               onSimulateAccessoryPurchase={handleSimulateAccessoryPurchase}
             />
           )}
+
 
           {showCashInStation && profile && (
             <CashInStation
