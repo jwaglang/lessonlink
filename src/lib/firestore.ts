@@ -1269,7 +1269,13 @@ export async function saveUserSettings(userId: string, settings: Partial<Omit<Us
    ========================================================= */
 
 export async function createStudentPackage(pkg: Omit<StudentPackage, 'id'>): Promise<StudentPackage> {
-  const ref = await addDoc(studentPackagesCollection, { ...pkg, createdAt: Timestamp.now(), updatedAt: Timestamp.now() } as any);
+  const ref = await addDoc(studentPackagesCollection, { 
+    ...pkg, 
+    totalHours: pkg.totalHours + 0.0,
+    hoursRemaining: pkg.hoursRemaining + 0.0,
+    createdAt: Timestamp.now(), 
+    updatedAt: Timestamp.now() 
+  } as any);
   const snap = await getDoc(ref);
   return asId<StudentPackage>(snap.id, snap.data());
 }
@@ -1540,7 +1546,15 @@ export async function getStudentCredit(studentId: string, _courseId?: string): P
 }
 
 export async function createStudentCredit(credit: Omit<StudentCredit, 'id'>): Promise<StudentCredit> {
-  const ref = await addDoc(studentCreditCollection, { ...credit, createdAt: Timestamp.now(), updatedAt: Timestamp.now() } as any);
+  const ref = await addDoc(studentCreditCollection, { 
+    ...credit, 
+    totalHours: credit.totalHours + 0.0,
+    uncommittedHours: credit.uncommittedHours + 0.0,
+    committedHours: credit.committedHours + 0.0,
+    completedHours: credit.completedHours + 0.0,
+    createdAt: Timestamp.now(), 
+    updatedAt: Timestamp.now() 
+  } as any);
   const snap = await getDoc(ref);
   return asId<StudentCredit>(snap.id, snap.data());
 }

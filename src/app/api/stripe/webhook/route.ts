@@ -73,8 +73,8 @@ export async function POST(req: NextRequest) {
         studentId: metadata.studentId,
         courseId: resolvedCourseId,
         courseTitle: resolvedCourseTitle,
-        totalHours: hours,
-        hoursRemaining: hours,
+        totalHours: hours + 0.0,
+        hoursRemaining: hours + 0.0,
         price: amountTotal,
         currency,
         purchaseDate: new Date().toISOString(),
@@ -95,16 +95,16 @@ export async function POST(req: NextRequest) {
         const existingDoc = creditQuery.docs[0];
         const existing = existingDoc.data();
         await existingDoc.ref.update({
-          totalHours: (existing.totalHours ?? 0) + hours,
-          uncommittedHours: (existing.uncommittedHours ?? 0) + hours,
+          totalHours: (existing.totalHours ?? 0) + hours + 0.0,
+          uncommittedHours: (existing.uncommittedHours ?? 0) + hours + 0.0,
           updatedAt: new Date().toISOString(),
         });
       } else {
         await adminDb.collection('studentCredit').add({
           studentId: metadata.studentId,
           packageId: packageRef.id,
-          totalHours: hours,
-          uncommittedHours: hours,
+          totalHours: hours + 0.0,
+          uncommittedHours: hours + 0.0,
           committedHours: 0,
           completedHours: 0,
           currency,

@@ -108,7 +108,8 @@ export default function StudentList({ students, setStudents }: { students: Stude
 
   // Filter + search
   const filtered = students.filter((s) => {
-    if (filter !== 'all' && s.status !== filter) return false;
+    const studentStatus = s.status || 'active';
+    if (filter !== 'all' && studentStatus !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
       return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
