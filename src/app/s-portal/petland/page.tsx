@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { getStudentById } from '@/lib/firestore';
 import StudentDashboard from '@/modules/petland/components/student-dashboard';
@@ -10,6 +11,8 @@ export default function PetlandPage() {
   const { user, loading: authLoading } = useAuth();
   const [learnerName, setLearnerName] = useState('');
   const [nameLoading, setNameLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') ?? 'home';
 
   useEffect(() => {
     if (authLoading || !user?.uid) return;
@@ -35,7 +38,7 @@ export default function PetlandPage() {
     <div className="p-4 md:p-8">
       <PageHeader title="Petland" description="Your virtual pet companion" />
       <div className="mt-6">
-        <StudentDashboard learnerId={user.uid} learnerName={learnerName} viewerRole="student" />
+        <StudentDashboard learnerId={user.uid} learnerName={learnerName} viewerRole="student" initialTab={initialTab} />
       </div>
     </div>
   );

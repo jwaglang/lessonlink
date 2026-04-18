@@ -1261,6 +1261,7 @@ interface StudentDashboardProps {
   learnerId: string;
   learnerName: string;
   viewerRole?: 'student' | 'tutor' | 'admin';
+  initialTab?: string;
 }
 
 const DEFAULT_PROFILE: PetlandProfile = {
@@ -1278,7 +1279,9 @@ const DEFAULT_PROFILE: PetlandProfile = {
   unlockedBrochures: [],
 };
 
-export default function StudentDashboard({ learnerId, learnerName, viewerRole = 'student' }: StudentDashboardProps) {
+export default function StudentDashboard({ learnerId, learnerName, viewerRole = 'student', initialTab = 'home' }: StudentDashboardProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
   const { toast } = useToast();
   const [profile, setProfile] = useState<PetlandProfile | null>(null);
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
@@ -2135,7 +2138,7 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="home" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="home">
             <BookUser className="mr-2 h-4 w-4" />
@@ -2401,18 +2404,18 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
                   {/* View Toggle */}
                   <div className="flex gap-2">
                     <Button
-                      variant={shopViewBy === 'items' ? 'default' : 'outline'}
-                      onClick={() => setShopViewBy('items')}
-                      size="sm"
-                    >
-                      Items
-                    </Button>
-                    <Button
                       variant={shopViewBy === 'collections' ? 'default' : 'outline'}
                       onClick={() => setShopViewBy('collections')}
                       size="sm"
                     >
                       Collections
+                    </Button>
+                    <Button
+                      variant={shopViewBy === 'items' ? 'default' : 'outline'}
+                      onClick={() => setShopViewBy('items')}
+                      size="sm"
+                    >
+                      Items
                     </Button>
                     <Button
                       variant={shopViewBy === 'price' ? 'default' : 'outline'}

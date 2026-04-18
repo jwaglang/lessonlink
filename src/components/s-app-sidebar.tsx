@@ -33,6 +33,10 @@ import {
   CreditCard,
   Wallet,
   PawPrint,
+  BookUser,
+  Gamepad2,
+  ShoppingBag,
+  Map as MapIcon,
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { ThemeToggle } from './theme-toggle';
@@ -74,6 +78,7 @@ const StudentAppSidebar = () => {
   const [chatVisibleItems, setChatVisibleItems] = useState(0);
   const [coursesVisibleItems, setCoursesVisibleItems] = useState(0);
   const [tutorsVisibleItems, setTutorsVisibleItems] = useState(0);
+  const [petlandVisibleItems, setPetlandVisibleItems] = useState(0);
   const cascadeTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -181,6 +186,19 @@ const StudentAppSidebar = () => {
       });
     } else {
       setTutorsVisibleItems(0);
+    }
+
+    // Petland (Passport, Playground, Pet Shop, Travel Agent) - 4 items
+    if (openMenus.has('petland')) {
+      const delays = generateCascadeDelays(4);
+      delays.forEach((delay) => {
+        const timer = setTimeout(() => {
+          setPetlandVisibleItems((prev) => Math.min(prev + 1, 4));
+        }, delay);
+        cascadeTimersRef.current.push(timer);
+      });
+    } else {
+      setPetlandVisibleItems(0);
     }
   }, [openMenus]);
 
@@ -354,15 +372,65 @@ const StudentAppSidebar = () => {
             )}
           </div>
 
-          {/* ── Petland (no subs) ── */}
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.startsWith('/s-portal/petland')} tooltip="Petland">
-              <Link href="/s-portal/petland" className="flex items-center gap-2">
-                <PawPrint className="h-4 w-4" />
-                <span>Petland</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {/* ── Petland (hover → Passport, Playground, Pet Shop, Travel Agent) ── */}
+          <div
+            onMouseEnter={() => scheduleOpen('petland', OPEN_DELAY)}
+            onMouseLeave={() => scheduleClose('petland')}
+          >
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname.startsWith('/s-portal/petland')} tooltip="Petland">
+                <Link href="/s-portal/petland" className="flex items-center gap-2">
+                  <PawPrint className="h-4 w-4" />
+                  <span>Petland</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            {isOpen('petland') && (
+              <SidebarMenuSub>
+                {petlandVisibleItems > 0 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={pathname === '/s-portal/petland'}>
+                      <Link href="/s-portal/petland" className="flex items-center gap-2">
+                        <BookUser className="h-3.5 w-3.5" />
+                        Passport
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {petlandVisibleItems > 1 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={false}>
+                      <Link href="/s-portal/petland?tab=play" className="flex items-center gap-2">
+                        <Gamepad2 className="h-3.5 w-3.5" />
+                        Playground
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {petlandVisibleItems > 2 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={false}>
+                      <Link href="/s-portal/petland?tab=shop" className="flex items-center gap-2">
+                        <ShoppingBag className="h-3.5 w-3.5" />
+                        Pet Shop
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+                {petlandVisibleItems > 3 && (
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={false}>
+                      <Link href="/s-portal/petland?tab=brochures" className="flex items-center gap-2">
+                        <MapIcon className="h-3.5 w-3.5" />
+                        Travel Agent
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                )}
+              </SidebarMenuSub>
+            )}
+          </div>
 
           {/* ── Tutors (hover → My Tutor, Feedback, Evaluations) ── */}
           <div

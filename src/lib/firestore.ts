@@ -1191,6 +1191,27 @@ export async function resolveApprovalRequest(
       updatedAt: nowIso(),
     } as any);
 
+    // Create petlandProfile if missing — all students need one
+    const petRef = doc(db, 'students', req.studentId, 'petland', 'profile');
+    const petSnap = await getDoc(petRef);
+    if (!petSnap.exists()) {
+      await setDoc(petRef, {
+        xp: 0,
+        xpSpent: 0,
+        hp: 100,
+        maxHp: 100,
+        dorkBalance: 10,
+        lastHpUpdate: nowIso(),
+        lastChallengeDate: '',
+        isFat: false,
+        petState: 'egg',
+        petName: '',
+        inventory: [],
+        unlockedBrochures: [],
+        createdAt: nowIso(),
+      });
+    }
+
     // Notify student they can now book directly
     // studentId IS the Auth UID in v7
     await createMessage({

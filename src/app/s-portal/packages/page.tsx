@@ -35,6 +35,13 @@ import {
 import Link from 'next/link';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
+function toIso(value: any): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  return null;
+}
+
 export default function MyPackagesPage() {
   const { user } = useAuth();
   const [packages, setPackages] = useState<StudentPackage[]>([]);
@@ -93,10 +100,10 @@ export default function MyPackagesPage() {
     return credits.find((c) => c.courseId === pkg.courseId);
   }
 
-  // Summary stats
+  // Summary stats — coerce to numbers defensively (manual packages may store strings)
   const activePackages = packages.filter((p) => p.status === 'active');
-  const totalHoursRemaining = activePackages.reduce((sum, p) => sum + p.hoursRemaining, 0);
-  const totalHours = packages.reduce((sum, p) => sum + p.totalHours, 0);
+  const totalHoursRemaining = activePackages.reduce((sum, p) => sum + Number(p.hoursRemaining ?? 0), 0);
+  const totalHours = packages.reduce((sum, p) => sum + Number(p.totalHours ?? 0), 0);
 
   if (loading) {
     return (
@@ -179,11 +186,14 @@ export default function MyPackagesPage() {
         <div className="space-y-4">
           {packages.map((pkg) => {
             const credit = getCreditForPackage(pkg);
+            const totalHrs = Number(pkg.totalHours ?? 0);
+            const remainingHrs = Number(pkg.hoursRemaining ?? 0);
+            const pauseCount = Number(pkg.pauseCount ?? 0);
             const daysLeft = pkg.expiresAt
-              ? differenceInDays(parseISO(pkg.expiresAt), new Date())
+              ? differenceInDays(parseISO(toIso(pkg.expiresAt)!), new Date())
               : null;
-            const usedPercent = pkg.totalHours > 0
-              ? ((pkg.totalHours - pkg.hoursRemaining) / pkg.totalHours) * 100
+            const usedPercent = totalHrs > 0
+              ? ((totalHrs - remainingHrs) / totalHrs) * 100
               : 0;
 
             return (
@@ -199,12 +209,12 @@ export default function MyPackagesPage() {
                   <CardDescription className="flex items-center gap-4 text-xs">
                     <span className="flex items-center gap-1">
                       <CalendarDays className="h-3 w-3" />
-                      Purchased: {pkg.purchaseDate ? format(parseISO(pkg.purchaseDate), 'MMM d, yyyy') : '—'}
+                      Purchased: {pkg.purchaseDate ? format(parseISO(toIso(pkg.purchaseDate)!), 'MMM d, yyyy') : '—'}
                     </span>
                     {pkg.expiresAt && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Expires: {format(parseISO(pkg.expiresAt), 'MMM d, yyyy')}
+                        Expires: {format(parseISO(toIso(pkg.expiresAt)!), 'MMM d, yyyy')}
                         {daysLeft !== null && daysLeft >= 0 && daysLeft <= 14 && (
                           <Badge variant="outline" className="ml-1 text-amber-600 border-amber-300">
                             {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
@@ -219,7 +229,7 @@ export default function MyPackagesPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>
-                        {pkg.hoursRemaining.toFixed(1)}h remaining of {pkg.totalHours}h
+                        {remainingHrs.toFixed(1)}h remaining of {totalHrs}h
                       </span>
                       <span className="text-muted-foreground">{usedPercent.toFixed(0)}% used</span>
                     </div>
@@ -237,9 +247,9 @@ export default function MyPackagesPage() {
                   {/* Pause info */}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {pkg.pauseCount} of {getMaxPauses(pkg.totalHours)} pause{getMaxPauses(pkg.totalHours) !== 1 ? 's' : ''} used
+                      {pauseCount} of {getMaxPauses(totalHrs)} pause{getMaxPauses(totalHrs) !== 1 ? 's' : ''} used
                     </span>
-                    {pkg.status === 'active' && canPause(pkg) && (
+                    {pkg.status === 'active' && canPause({ ...pkg, pauseCount, totalHours: totalHrs }) && (
                       <Button
                         variant="outline"
                         size="sm"
