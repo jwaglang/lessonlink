@@ -228,24 +228,6 @@ export default function ProfileEditorPage() {
   }
 
   const [seedingReviews, setSeedingReviews] = useState(false);
-  const [backfilling, setBackfilling] = useState(false);
-  const [backfillReport, setBackfillReport] = useState<Record<string, string[]> | null>(null);
-
-  async function handleBackfill() {
-    setBackfilling(true);
-    setBackfillReport(null);
-    try {
-      const fn = httpsCallable<Record<string, never>, { success: boolean; report: Record<string, string[]> }>(
-        functions, 'backfillStudentRecords'
-      );
-      const result = await fn({});
-      setBackfillReport(result.data.report);
-    } catch (error: any) {
-      setSaveMessage({ type: 'error', text: error.message || 'Backfill failed' });
-    } finally {
-      setBackfilling(false);
-    }
-  }
 
   async function handleSeedReviews() {
     setSeedingReviews(true);
@@ -834,43 +816,6 @@ export default function ProfileEditorPage() {
             </div>
           </CardContent>
         </Card>
-        {/* Admin Tools */}
-        {user?.email === ADMIN_EMAIL && (
-          <Card className="lg:col-span-2 border-dashed border-orange-300">
-            <CardHeader>
-              <CardTitle className="text-orange-600">Admin Tools</CardTitle>
-              <CardDescription>Backfill and maintenance — admin only</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleBackfill}
-                  disabled={backfilling}
-                  className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                >
-                  {backfilling ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running...</> : 'Backfill Student Records'}
-                </Button>
-                <p className="text-xs text-muted-foreground">Arina, Luke, Gordon — checks and creates missing studentPackages / studentCredit / status fields</p>
-              </div>
-              {backfillReport && (
-                <div className="rounded-lg bg-muted p-4 text-xs font-mono space-y-2">
-                  {Object.entries(backfillReport).map(([uid, actions]) => (
-                    <div key={uid}>
-                      <p className="font-semibold text-foreground">{uid}</p>
-                      {actions.map((a, i) => (
-                        <p key={i} className={a.startsWith('ERROR') ? 'text-red-500' : 'text-muted-foreground'}>
-                          &nbsp;&nbsp;{a}
-                        </p>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Add Certificate Dialog */}

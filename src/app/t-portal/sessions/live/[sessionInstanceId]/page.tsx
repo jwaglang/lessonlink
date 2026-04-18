@@ -20,6 +20,7 @@ import {
   updateSessionGoals,
   updateSessionTarget,
   updateSessionTheme,
+  updateSessionFeedbackDraft,
   endSession,
 } from '@/lib/firestore';
 import { doc, getDoc } from 'firebase/firestore';
@@ -83,7 +84,12 @@ export default function LiveSessionPage() {
 
   // Language Diary
   const [showLanguageDiary, setShowLanguageDiary] = useState(false);
-  const [diaryTab, setDiaryTab] = useState<'vocab' | 'grammar' | 'phonics'>('vocab');
+  const [diaryTab, setDiaryTab] = useState<'vocab' | 'grammar' | 'phonics' | 'feedback'>('vocab');
+
+  // Feedback draft (synced to Firestore on blur)
+  const [fbTitle, setFbTitle] = useState('');
+  const [fbDescription, setFbDescription] = useState('');
+  const [fbInstructions, setFbInstructions] = useState('');
 
   const [comets, setComets] = useState<Comet[]>([]);
   const cometIdRef = useRef(0);
@@ -214,6 +220,9 @@ export default function LiveSessionPage() {
         setSessionQuestion(progressData.sessionQuestion || '');
         setTargetXp(progressData.xpTarget || 60);
         setMagicWordInput(progressData.magicWord || '');
+        setFbTitle(progressData.feedbackTitle || '');
+        setFbDescription(progressData.feedbackDescription || '');
+        setFbInstructions(progressData.feedbackInstructions || '');
 
         // Subscribe to real-time updates
         const unsubscribe = onSessionProgressUpdate(progressData.id, (updatedProgress) => {
@@ -964,8 +973,8 @@ export default function LiveSessionPage() {
             </div>
 
             {/* Diary Tabs */}
-            <div style={{ display: 'flex', gap: '6px', borderBottom: '2px solid rgba(226,214,244,0.2)' }}>
-              {(['vocab', 'grammar', 'phonics'] as const).map((tab) => (
+            <div style={{ display: 'flex', gap: '6px', borderBottom: '2px solid rgba(226,214,244,0.2)', flexWrap: 'wrap' }}>
+              {(['vocab', 'grammar', 'phonics', 'feedback'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setDiaryTab(tab)}
@@ -973,8 +982,8 @@ export default function LiveSessionPage() {
                     padding: '6px 10px',
                     fontSize: '10px',
                     fontWeight: diaryTab === tab ? 'bold' : 'normal',
-                    color: diaryTab === tab ? 'var(--k-lavender)' : 'rgba(255,255,255,0.4)',
-                    background: diaryTab === tab ? 'rgba(138,43,226,0.3)' : 'transparent',
+                    color: diaryTab === tab ? (tab === 'feedback' ? '#6ee7b7' : 'var(--k-lavender)') : 'rgba(255,255,255,0.4)',
+                    background: diaryTab === tab ? (tab === 'feedback' ? 'rgba(16,185,129,0.25)' : 'rgba(138,43,226,0.3)') : 'transparent',
                     border: 'none',
                     borderRadius: '8px',
                     cursor: 'pointer',
@@ -984,6 +993,7 @@ export default function LiveSessionPage() {
                   {tab === 'vocab' && '📚 Vocab'}
                   {tab === 'grammar' && '✍️ Grammar'}
                   {tab === 'phonics' && '🔤 Phonics'}
+                  {tab === 'feedback' && '📝 Feedback'}
                 </button>
               ))}
             </div>
@@ -1068,7 +1078,7 @@ export default function LiveSessionPage() {
                   Add Grammar
                 </button>
               </div>
-            ) : (
+            ) : diaryTab === 'phonics' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <input
                   value={phonicsSound}
@@ -1104,11 +1114,58 @@ export default function LiveSessionPage() {
                   Add Phonics
                 </button>
               </div>
+            ) : null}
+
+            {/* Feedback Tab */}
+            {diaryTab === 'feedback' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{ fontSize: '10px', color: 'rgba(110,231,183,0.7)', fontFamily: 'Poppins', margin: 0 }}>
+                  Notes saved here pre-fill the homework draft in the debrief.
+                </p>
+                <input
+                  value={fbTitle}
+                  onChange={e => setFbTitle(e.target.value)}
+                  onBlur={() => progress && updateSessionFeedbackDraft(progress.id, { feedbackTitle: fbTitle })}
+                  placeholder="Homework title (e.g. Animals Workbook)"
+                  style={{
+                    padding: '7px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(16,185,129,0.4)',
+                    background: 'rgba(0,0,0,0.3)', color: 'white',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none',
+                  }}
+                />
+                <textarea
+                  value={fbDescription}
+                  onChange={e => setFbDescription(e.target.value)}
+                  onBlur={() => progress && updateSessionFeedbackDraft(progress.id, { feedbackDescription: fbDescription })}
+                  placeholder="What we covered today..."
+                  rows={3}
+                  style={{
+                    padding: '7px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(16,185,129,0.4)',
+                    background: 'rgba(0,0,0,0.3)', color: 'white',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none', resize: 'none',
+                  }}
+                />
+                <textarea
+                  value={fbInstructions}
+                  onChange={e => setFbInstructions(e.target.value)}
+                  onBlur={() => progress && updateSessionFeedbackDraft(progress.id, { feedbackInstructions: fbInstructions })}
+                  placeholder="Homework instructions for parent..."
+                  rows={3}
+                  style={{
+                    padding: '7px 10px', borderRadius: '10px',
+                    border: '1.5px solid rgba(16,185,129,0.4)',
+                    background: 'rgba(0,0,0,0.3)', color: 'white',
+                    fontSize: '12px', fontFamily: 'Poppins', outline: 'none', resize: 'none',
+                  }}
+                />
+              </div>
             )}
 
-            {/* Entries */}
+            {/* Entries — hidden on feedback tab */}
             <div style={{
-              display: 'flex',
+              display: diaryTab === 'feedback' ? 'none' : 'flex',
               flexDirection: 'column',
               gap: '7px',
               overflowY: 'auto',

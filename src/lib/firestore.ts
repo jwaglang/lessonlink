@@ -2364,6 +2364,17 @@ export async function addSessionPhonics(
 }
 
 /**
+ * Save feedback draft fields during live session (pre-fills debrief homework tab)
+ */
+export async function updateSessionFeedbackDraft(
+  sessionProgressId: string,
+  fields: { feedbackTitle?: string; feedbackDescription?: string; feedbackInstructions?: string }
+): Promise<void> {
+  const ref = doc(db, 'sessionProgress', sessionProgressId);
+  await updateDoc(ref, fields as any);
+}
+
+/**
  * Update session question and aim
  */
 export async function updateSessionGoals(

@@ -793,7 +793,12 @@ export interface SessionProgress {
   totalXpEarned: number;
   
   magicWord?: string;
-  
+
+  // Feedback draft — written during session, pre-fills debrief homework tab
+  feedbackTitle?: string;
+  feedbackDescription?: string;
+  feedbackInstructions?: string;
+
   status: 'active' | 'completed';
   createdAt: string;
   completedAt?: string;
