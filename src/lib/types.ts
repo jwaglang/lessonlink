@@ -323,6 +323,8 @@ export interface TeacherProfile {
   name: string;
   headline: string; // e.g., "🌟 Fluency Specialist for All Ages 🌟"
   avatarUrl: string;
+  avatarPositionX?: number; // 0–100, maps to object-position x%, default 50
+  avatarPositionY?: number; // 0–100, maps to object-position y%, default 50
   coverImageUrl?: string;
   videoUrl?: string; // YouTube intro video
   

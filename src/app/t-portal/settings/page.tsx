@@ -1,7 +1,9 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { storage } from '@/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   getTeacherProfileByEmail,
   createTeacherProfile,
@@ -87,6 +89,8 @@ export default function ProfileEditorPage() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [usernameStatus, setUsernameStatus] = useState<'checking' | 'available' | 'taken' | 'idle'>('idle');
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -164,6 +168,30 @@ export default function ProfileEditorPage() {
 
   function updateField<K extends keyof typeof profile>(field: K, value: typeof profile[K]) {
     setProfile(prev => ({ ...prev, [field]: value }));
+  }
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `teacher-avatars/${user.uid}/avatar.${ext}`;
+      const snap = await uploadBytes(storageRef(storage, path), file);
+      const url = await getDownloadURL(snap.ref);
+      updateField('avatarUrl', url);
+      // Auto-save avatarUrl immediately so it takes effect without a full Save Profile
+      if (profileId) {
+        await updateTeacherProfile(profileId, { avatarUrl: url } as any);
+        setSaveMessage({ type: 'success', text: 'Profile photo updated!' });
+      }
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      setSaveMessage({ type: 'error', text: 'Upload failed. Try again.' });
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
   }
 
   function parseArrayInput(input: string): string[] {
@@ -408,13 +436,62 @@ export default function ProfileEditorPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="avatarUrl">Avatar URL</Label>
-              <Input
-                id="avatarUrl"
-                value={profile.avatarUrl}
-                onChange={(e) => updateField('avatarUrl', e.target.value)}
-                placeholder="https://..."
-              />
+              <Label>Photo Preview</Label>
+              {profile.avatarUrl && (
+                <>
+                  <style>{`.avatar-preview-wrap { --avatar-x: ${profile.avatarPositionX ?? 50}%; --avatar-y: ${profile.avatarPositionY ?? 50}%; }`}</style>
+                  <div className="avatar-preview-wrap h-40 w-40 rounded-full overflow-hidden border mx-auto">
+                    <img src={profile.avatarUrl} alt="Avatar preview" className="avatar-photo" />
+                  </div>
+                </>
+              )}
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-1">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    title="Upload profile photo"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingAvatar}
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    {uploadingAvatar ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</> : 'Upload Photo'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">JPG, PNG or WEBP. Hi-res recommended.</p>
+                </div>
+              </div>
+              {profile.avatarUrl && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs text-muted-foreground">Adjust photo position</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs w-12 text-muted-foreground">Left/Right</span>
+                    <input
+                      type="range" min={0} max={100}
+                      title="Horizontal position"
+                      value={profile.avatarPositionX ?? 50}
+                      onChange={e => updateField('avatarPositionX', Number(e.target.value))}
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs w-12 text-muted-foreground">Up/Down</span>
+                    <input
+                      type="range" min={0} max={100}
+                      title="Vertical position"
+                      value={profile.avatarPositionY ?? 50}
+                      onChange={e => updateField('avatarPositionY', Number(e.target.value))}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

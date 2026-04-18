@@ -120,8 +120,8 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
         paymentDate: formDate,
         type: formType,
         method: formMethod,
-        notes: formNotes || undefined,
-        courseId: formCourseId || undefined,
+        ...(formNotes ? { notes: formNotes } : {}),
+        ...(formCourseId ? { courseId: formCourseId } : {}),
         status: 'completed',
         createdAt: new Date().toISOString(),
       });

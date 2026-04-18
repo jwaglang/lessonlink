@@ -58,6 +58,11 @@ export interface PetlandProfile {
   fatPetImageUrl?: string;      // AI-generated chubby version, shown when isFat
   thinPetImageUrl?: string;     // AI-generated skinny version, shown when hp < 50
   starvingPetImageUrl?: string; // AI-generated skeletal version, shown when hp < 20
+  earnedStamps?: Array<{
+    topic: string;
+    imageUrl: string;
+    earnedDate: string;         // YYYY-MM-DD
+  }>;
 }
 
 export interface Vocabulary {
@@ -72,6 +77,7 @@ export interface Vocabulary {
   lastReviewDate?: string | null;    // YYYY-MM-DD, null/undefined = never reviewed
   sessionInstanceId?: string | null; // which session this word came from
   createdDate?: string;              // YYYY-MM-DD, when this card was created (searchable)
+  topic?: string;                    // optional topic/theme label, e.g. "Animals", "Food"
 }
 
 export interface GrammarCard {

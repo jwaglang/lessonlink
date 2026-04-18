@@ -117,4 +117,13 @@
   .dark .dark-mode-solid-button {
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
+  .stamp-multiply {
+    mix-blend-mode: multiply;
+  }
+  .avatar-photo {
+    object-fit: cover;
+    object-position: var(--avatar-x, 50%) var(--avatar-y, 50%);
+    width: 100%;
+    height: 100%;
+  }
 }

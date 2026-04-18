@@ -71,6 +71,7 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId, 
   const [newSentence, setNewSentence] = useState('');
   const [newLevel, setNewLevel] = useState(1);
   const [newCreatedDate, setNewCreatedDate] = useState(todayString);
+  const [newTopic, setNewTopic] = useState('');
   const [previewIconUrl, setPreviewIconUrl] = useState<string | null>(null);
   const [isGeneratingIcon, setIsGeneratingIcon] = useState(false);
   const [isGeneratingSentence, setIsGeneratingSentence] = useState(false);
@@ -165,12 +166,14 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId, 
         questionPrompt: '',
         createdDate: newCreatedDate,
         createdAt: new Date().toISOString(),
+        topic: newTopic.trim() || null,
       });
       setNewWord('');
       setNewSentence('');
       setNewLevel(1);
       setPreviewIconUrl(null);
       setNewCreatedDate(todayString());
+      setNewTopic('');
       toast({ title: 'Word saved!' });
     } catch {
       toast({ variant: 'destructive', title: 'Failed to save word' });
@@ -187,6 +190,7 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId, 
         level: Number(editingVocab.level),
         imageUrl: editingVocab.imageUrl || '',
         createdDate: editingVocab.createdDate,
+        topic: (editingVocab as any).topic?.trim() || null,
       });
       toast({ title: 'Word updated!' });
       setIsEditOpen(false);
@@ -313,6 +317,16 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId, 
                   className="mt-1"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label>Topic <span className="text-xs text-muted-foreground font-normal">(optional — e.g. Animals, Food, Colors)</span></Label>
+              <Input
+                value={newTopic}
+                onChange={e => setNewTopic(e.target.value)}
+                placeholder="e.g. Animals"
+                className="mt-1"
+              />
             </div>
 
             {newWord && (
@@ -456,6 +470,15 @@ export default function VocabularyManager({ studentId, latestSessionInstanceId, 
                   className="mt-1"
                 />
               </div>
+            </div>
+            <div>
+              <Label>Topic <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                value={(editingVocab as any)?.topic ?? ''}
+                onChange={e => setEditingVocab(v => ({ ...v, topic: e.target.value } as any))}
+                placeholder="e.g. Animals"
+                className="mt-1"
+              />
             </div>
             {editingVocab?.word && (
               <div className="space-y-1">

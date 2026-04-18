@@ -11,6 +11,7 @@ import { FeedbackOverlay } from './feedback-overlay';
 import { HungerAlerts } from './hunger-alerts';
 import { CashInStation } from './cash-in-station';
 import { generatePetImage, editPetImage, composeAccessoryOnPet } from '../ai/generate-pet-image-flow';
+import { generateTopicStamp } from '../ai/generate-topic-stamp';
 
 const FAT_PROMPT =
   'Modify this creature to be extremely chubby and round, belly bulging out, gobbling junk food, looking embarrassed and sheepish at getting caught. Keep the exact same creature — same colors, features, species — just make it fat.';
@@ -724,19 +725,19 @@ function DorkIconDisplay({ copperAmount, size = 'lg' }: { copperAmount: number; 
       {dorks.gold > 0 && (
         <div className="flex items-center gap-1">
           <Circle className={`${iconSize} fill-yellow-500 text-yellow-500`} />
-          <span>{dorks.gold}</span>
+          <span>{dorks.gold}</span><span className="text-xs font-medium text-yellow-600">Gold</span>
         </div>
       )}
       {dorks.silver > 0 && (
         <div className="flex items-center gap-1">
           <Circle className={`${iconSize} fill-gray-400 text-gray-400`} />
-          <span>{dorks.silver}</span>
+          <span>{dorks.silver}</span><span className="text-xs font-medium text-gray-500">Silver</span>
         </div>
       )}
       {(dorks.copper > 0 || copperAmount === 0) && (
         <div className="flex items-center gap-1">
           <Circle className={`${iconSize} fill-amber-700 text-amber-700`} />
-          <span>{dorks.copper}</span>
+          <span>{dorks.copper}</span><span className="text-xs font-medium text-amber-700">Copper</span>
         </div>
       )}
     </div>
@@ -887,7 +888,7 @@ function PetStatus({
         <div className="space-y-4 text-left">
           <div>
             <Label className="font-bold text-muted-foreground flex items-center justify-between text-sm mb-1">
-              <span>Vitals</span>
+              <span>HP</span>
               <span className="font-mono">
                 {profile.hp}/{profile.maxHp}
               </span>
@@ -915,15 +916,15 @@ function PetStatus({
             {/* Three XP Stats - no boxes */}
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center">
-                <p className="text-xs font-bold text-purple-700 mb-1">Earned</p>
+                <p className="text-xs font-bold text-purple-700 mb-1">XP Earned</p>
                 <p className="text-base font-bold text-purple-900">{(profile.xp ?? 0) + (profile.xpSpent ?? 0)}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs font-bold text-pink-700 mb-1">Spent</p>
+                <p className="text-xs font-bold text-pink-700 mb-1">XP Spent</p>
                 <p className="text-base font-bold text-pink-900">{profile.xpSpent ?? 0}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs font-bold text-orange-700 mb-1">Current</p>
+                <p className="text-xs font-bold text-orange-700 mb-1">XP Current</p>
                 <p className="text-base font-bold text-orange-900">{profile.xp ?? 0}</p>
               </div>
             </div>
@@ -938,6 +939,13 @@ function PetStatus({
           {profile.petState === 'egg' && !previewImageUrl && (
             <HatchPet onHatch={onHatch} isHatching={isHatching} />
           )}
+
+          {/* Passport stamps — purely decorative */}
+          <div className="flex items-end justify-around mt-6 pointer-events-none select-none">
+            <img src="/passport-stamp-2.png" alt="" className="stamp-multiply w-32 opacity-50 rotate-[6deg]" />
+            <img src="/passport-stamp-3.png" alt="" className="stamp-multiply w-36 opacity-50 rotate-[-4deg]" />
+            <img src="/passport-stamp.png"   alt="" className="stamp-multiply w-44 opacity-50 rotate-[-8deg]" />
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1023,14 +1031,6 @@ function CompositeGalleryCard({
               <CardTitle className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 My Outfits
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-6 w-6 p-0"
-              >
-                ✕
-              </Button>
             </div>
             <CardDescription>Pick a collection to browse your outfits.</CardDescription>
           </CardHeader>
@@ -1078,64 +1078,53 @@ function CompositeGalleryCard({
               <CardTitle className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex-1 text-center">
                 My {selectedCollection}
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-6 w-6 p-0"
-              >
-                ✕
-              </Button>
             </div>
           </CardHeader>
 
           <CardContent>
-            <div className="space-y-6">
+            <div className="flex flex-wrap gap-4">
               {(accessoriesByCollection[selectedCollection] || []).map(({ accessoryId, accessory }) => {
                 const accessoryComposites = groupedByAccessory[accessoryId] || [];
-                if (!accessory) return null;
+                if (!accessory || accessoryComposites.length === 0) return null;
+                // Use the most recently generated composite for Put On / Delete
+                const latestComposite = [...accessoryComposites].sort(
+                  (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                )[0];
+
+                const accessoryImageUrl =
+                  latestComposite.accessories?.find((a) => a.id === accessoryId)?.imageUrl
+                  ?? accessory.imageUrl;
 
                 return (
-                  <div key={accessoryId}>
-                    <h3 className="font-semibold text-sm mb-3 text-purple-700">
-                      {accessory.name}
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {accessoryComposites.map((composite, idx) => (
-                        <div key={idx} className="flex flex-col gap-2">
-                          <div className="relative aspect-square rounded-lg border-2 border-purple-200 overflow-hidden bg-white">
-                            <img
-                              src={accessory.imageUrl}
-                              alt={accessory.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              className="flex-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
-                              onClick={() => {
-                                onSelectComposite(composite.imageUrl);
-                                onClose();
-                                setSelectedCollection(null);
-                              }}
-                            >
-                              Put On
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1 text-xs"
-                              onClick={() => onDeleteComposite(composite.imageUrl)}
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground text-center">
-                            {new Date(composite.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      ))}
+                  <div key={accessoryId} className="flex flex-col gap-2 w-40 justify-between">
+                    <div className="relative aspect-square rounded-lg border-2 border-purple-200 overflow-hidden bg-white">
+                      <img
+                        src={accessoryImageUrl}
+                        alt={accessory.name}
+                        className="w-full h-full object-contain p-2"
+                      />
+                    </div>
+                    <p className="text-xs font-semibold text-purple-700 text-center">{accessory.name}</p>
+                    <div className="flex gap-1 mt-auto">
+                      <Button
+                        size="sm"
+                        className="flex-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                        onClick={() => {
+                          onSelectComposite(latestComposite.imageUrl);
+                          onClose();
+                          setSelectedCollection(null);
+                        }}
+                      >
+                        Put On
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="flex-1 text-xs"
+                        onClick={() => onDeleteComposite(latestComposite.imageUrl)}
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 );
@@ -1177,11 +1166,7 @@ function PetResetPanel({ hp, xp, dorkBalance, isFat, onSet, onClearFat, onFakeMa
   return (
     <TooltipProvider delayDuration={300}>
       <Card className="mt-4 border-2 border-indigo-200 bg-indigo-50/40 rounded-2xl">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-indigo-500" />
-            <CardTitle className="text-sm font-semibold text-indigo-700 uppercase tracking-wide">Pet Reset Panel</CardTitle>
-          </div>
+        <CardHeader className="pb-2 pt-3 px-4">
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
 
@@ -1316,6 +1301,8 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
   const [isBuyingAccessory, setIsBuyingAccessory] = useState(false);
   const [selectedAccessoryId, setSelectedAccessoryId] = useState<string | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isStampsOpen, setIsStampsOpen] = useState(false);
   const [isSelectingAccessoryForPurchase, setIsSelectingAccessoryForPurchase] = useState(false);
   const [shopViewBy, setShopViewBy] = useState<'items' | 'collections' | 'price'>('items');
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set());
@@ -1481,6 +1468,19 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
     [profile, learnerId]
   );
 
+  // Picks a different game type from the current one and resets the reveal (tutor preview use)
+  const skipToNextGame = useCallback(() => {
+    const unreviewed = vocabulary.filter((w) => !w.lastReviewDate);
+    const eligible = (Object.keys(GAME_MIN_WORDS) as GameType[]).filter(
+      (g) => unreviewed.length >= GAME_MIN_WORDS[g] && g !== selectedGame
+    );
+    const next = eligible.length > 0
+      ? eligible[Math.floor(Math.random() * eligible.length)]
+      : selectedGame;
+    setSelectedGame(next);
+    setShowGameReveal(true);
+  }, [selectedGame, vocabulary]);
+
   // Routes game results to the right SRS path based on game type
   const handleGameCompleteRouted = useCallback(
     async (results: GameResult[]) => {
@@ -1493,6 +1493,42 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
       }
     },
     [selectedGame] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const checkAndEarnStamps = useCallback(
+    async (updatedVocab: typeof vocabulary, currentProfile: typeof profile) => {
+      if (!currentProfile) return;
+      const today = getTodayDateString();
+      const alreadyEarned = new Set((currentProfile.earnedStamps ?? []).map((s) => s.topic));
+
+      // Group words by topic — only words that have a topic set
+      const byTopic: Record<string, typeof vocabulary> = {};
+      for (const w of updatedVocab) {
+        if (!w.topic) continue;
+        if (!byTopic[w.topic]) byTopic[w.topic] = [];
+        byTopic[w.topic].push(w);
+      }
+
+      const newStamps: NonNullable<typeof currentProfile.earnedStamps> = [];
+      for (const [topic, words] of Object.entries(byTopic)) {
+        if (alreadyEarned.has(topic)) continue;
+        const allMastered = words.length >= 3 && words.every((w) => (w.srsLevel || 1) >= 3);
+        if (!allMastered) continue;
+        try {
+          const imageUrl = await generateTopicStamp(topic);
+          newStamps.push({ topic, imageUrl, earnedDate: today });
+          toast({ title: `🎉 New stamp earned!`, description: `You mastered the "${topic}" topic!` });
+        } catch (err) {
+          console.error('Failed to generate stamp for topic:', topic, err);
+        }
+      }
+
+      if (newStamps.length > 0) {
+        const combined = [...(currentProfile.earnedStamps ?? []), ...newStamps];
+        await updateDoc(profileRef, { earnedStamps: combined }).catch(console.error);
+      }
+    },
+    [profile, profileRef, toast] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleFlashcardComplete = useCallback(
@@ -1514,13 +1550,21 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
       await batch.commit().catch(console.error);
       await updateDoc(profileRef, { xp: profile.xp + xp }).catch(console.error);
 
+      // Check if any topics just became fully mastered (all words srsLevel >= 3)
+      const updatedVocab = vocabulary.map((w) => {
+        const r = results.find((res) => res.vocabId === w.id);
+        if (!r) return w;
+        return { ...w, srsLevel: r.knew ? Math.min(5, (w.srsLevel || 1) + 1) : 1 };
+      });
+      await checkAndEarnStamps(updatedVocab, profile);
+
       const knewCount = results.filter((r) => r.knew).length;
       toast({
         title: 'Review done!',
         description: `${knewCount}/${results.length} known · +${xp} XP`,
       });
     },
-    [profile, vocabulary, learnerId]
+    [profile, vocabulary, learnerId] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleUnifiedComplete = useCallback(
@@ -2123,10 +2167,20 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
             onStoreYourBling={handleStoreYourBling}
             onCashInClick={() => setShowCashInStation(!showCashInStation)}
           />
+          {showCashInStation && profile && (
+            <CashInStation
+              learnerId={learnerId}
+              currentXp={profile.xp}
+              xpSpent={profile.xpSpent ?? 0}
+              currentDorkBalance={profile.dorkBalance ?? 0}
+              onConversionComplete={() => setShowCashInStation(false)}
+            />
+          )}
+
           {(profile.generatedComposites || []).length > 0 && (
             <>
               <Button
-                onClick={() => setIsGalleryOpen(true)}
+                onClick={() => setIsGalleryOpen((o) => !o)}
                 className="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -2143,82 +2197,108 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
               />
             </>
           )}
-          {viewerRole !== 'student' && (
-            <PetResetPanel
-              hp={profile.hp}
-              xp={profile.xp}
-              dorkBalance={profile.dorkBalance ?? 0}
-              isFat={!!profile.isFat}
-              onSet={(hp) => {
-                console.log('Setting HP to:', hp);
-                updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() })
-                  .then(() => {
-                    console.log('HP updated successfully');
-                    toast({ title: 'HP Set', description: `HP set to ${hp}` });
-                  })
-                  .catch((err) => {
-                    console.error('HP update failed:', err);
-                    toast({ title: 'Error', description: 'Failed to set HP: ' + err.message, variant: 'destructive' });
-                  });
-              }}
-              onClearFat={() => updateDoc(profileRef, { isFat: false }).catch(console.error)}
-              onFakeMatch={() => handleGameComplete(vocabulary.slice(0, 3).map((v) => v.id))}
-              onSimulateDecay={() => {
-                const newHp = Math.max(0, profile.hp - 10);
-                const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString(), isFat: false };
-                if (newHp === 0) updates.petState = 'dead';
-                updateDoc(profileRef, updates).catch(console.error);
-              }}
-              onResetFlashcards={async () => {
-                const vocabRef = collection(db, 'students', learnerId, 'vocabulary');
-                const snap = await getDocs(vocabRef);
-                const batch = writeBatch(db);
-                snap.docs.forEach((doc) => {
-                  batch.update(doc.ref, { lastReviewDate: deleteField(), srsLevel: 1 });
-                });
-                await batch.commit().catch(console.error);
-                alert('Flashcards reset! All words set to unreviewed.');
-              }}
-              onRestorePet={() => {
-                updateDoc(profileRef, {
-                  petState: 'hatched',
-                  hp: 100,
-                  lastHpUpdate: new Date().toISOString(),
-                  isFat: false,
-                  lastHpAlertLevel: null,
-                })
-                  .then(() => {
-                    toast({ title: 'Pet Restored', description: 'Pet has been brought back to life at full health!' });
-                  })
-                  .catch((err) => {
-                    toast({ title: 'Error', description: 'Failed to restore pet: ' + err.message, variant: 'destructive' });
-                  });
-              }}
-              onSimulateAccessoryPurchase={handleSimulateAccessoryPurchase}
-              onAdjustXp={(delta) => {
-                const newXp = Math.max(0, profile.xp + delta);
-                updateDoc(profileRef, { xp: newXp })
-                  .then(() => toast({ title: 'XP Updated', description: `XP ${delta >= 0 ? '+' : ''}${delta} → ${newXp}` }))
-                  .catch((err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }));
-              }}
-              onAdjustDorks={(delta) => {
-                const newBalance = Math.max(0, (profile.dorkBalance ?? 0) + delta);
-                updateDoc(profileRef, { dorkBalance: newBalance })
-                  .then(() => toast({ title: 'Dorks Updated', description: `Dorks ${delta >= 0 ? '+' : ''}${delta} → ${newBalance}` }))
-                  .catch((err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }));
-              }}
-            />
+
+          {(profile.earnedStamps ?? []).length > 0 && (
+            <>
+              <Button
+                onClick={() => setIsStampsOpen((o) => !o)}
+                className="mt-4 w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                My Stamps ({(profile.earnedStamps ?? []).length})
+              </Button>
+              {isStampsOpen && (
+                <Card className="mt-2 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+                  <CardContent className="p-4">
+                    <div className="flex flex-wrap gap-6 justify-center py-2">
+                      {(profile.earnedStamps ?? []).map((stamp, i) => {
+                        const rotClasses = [
+                          'rotate-[-10deg]', 'rotate-[8deg]', 'rotate-[-5deg]', 'rotate-[12deg]',
+                          'rotate-[-8deg]', 'rotate-[6deg]',  'rotate-[-12deg]', 'rotate-[9deg]',
+                        ];
+                        return (
+                          <div key={stamp.topic} className="flex flex-col items-center gap-1">
+                            <img
+                              src={stamp.imageUrl}
+                              alt={stamp.topic}
+                              className={`stamp-multiply w-32 opacity-80 pointer-events-none select-none ${rotClasses[i % rotClasses.length]}`}
+                            />
+                            <p className="text-xs text-muted-foreground">{stamp.earnedDate}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
-
-          {showCashInStation && profile && (
-            <CashInStation
-              learnerId={learnerId}
-              currentXp={profile.xp}
-              xpSpent={profile.xpSpent ?? 0}
-              currentDorkBalance={profile.dorkBalance ?? 0}
-              onConversionComplete={() => setShowCashInStation(false)}
-            />
+          {viewerRole !== 'student' && (
+            <>
+              <Button
+                onClick={() => setIsResetOpen((o) => !o)}
+                className="mt-4 w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-semibold"
+              >
+                <Settings2 className="mr-2 h-4 w-4" />
+                Pet Reset
+              </Button>
+              {isResetOpen && (
+                <PetResetPanel
+                  hp={profile.hp}
+                  xp={profile.xp}
+                  dorkBalance={profile.dorkBalance ?? 0}
+                  isFat={!!profile.isFat}
+                  onSet={(hp) => {
+                    updateDoc(profileRef, { hp, lastHpUpdate: new Date().toISOString() })
+                      .then(() => toast({ title: 'HP Set', description: `HP set to ${hp}` }))
+                      .catch((err) => toast({ title: 'Error', description: 'Failed to set HP: ' + err.message, variant: 'destructive' }));
+                  }}
+                  onClearFat={() => updateDoc(profileRef, { isFat: false }).catch(console.error)}
+                  onFakeMatch={() => handleGameComplete(vocabulary.slice(0, 3).map((v) => v.id))}
+                  onSimulateDecay={() => {
+                    const newHp = Math.max(0, profile.hp - 10);
+                    const updates: Partial<PetlandProfile> = { hp: newHp, lastHpUpdate: new Date().toISOString(), isFat: false };
+                    if (newHp === 0) updates.petState = 'dead';
+                    updateDoc(profileRef, updates).catch(console.error);
+                  }}
+                  onResetFlashcards={async () => {
+                    const vocabRef = collection(db, 'students', learnerId, 'vocabulary');
+                    const snap = await getDocs(vocabRef);
+                    const batch = writeBatch(db);
+                    snap.docs.forEach((doc) => {
+                      batch.update(doc.ref, { lastReviewDate: deleteField(), srsLevel: 1 });
+                    });
+                    await batch.commit().catch(console.error);
+                    alert('Flashcards reset! All words set to unreviewed.');
+                  }}
+                  onRestorePet={() => {
+                    updateDoc(profileRef, {
+                      petState: 'hatched',
+                      hp: 100,
+                      lastHpUpdate: new Date().toISOString(),
+                      isFat: false,
+                      lastHpAlertLevel: null,
+                    })
+                      .then(() => toast({ title: 'Pet Restored', description: 'Pet has been brought back to life at full health!' }))
+                      .catch((err) => toast({ title: 'Error', description: 'Failed to restore pet: ' + err.message, variant: 'destructive' }));
+                  }}
+                  onSimulateAccessoryPurchase={handleSimulateAccessoryPurchase}
+                  onAdjustXp={(delta) => {
+                    const newXp = Math.max(0, profile.xp + delta);
+                    updateDoc(profileRef, { xp: newXp })
+                      .then(() => toast({ title: 'XP Updated', description: `XP ${delta >= 0 ? '+' : ''}${delta} → ${newXp}` }))
+                      .catch((err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }));
+                  }}
+                  onAdjustDorks={(delta) => {
+                    const newBalance = Math.max(0, (profile.dorkBalance ?? 0) + delta);
+                    updateDoc(profileRef, { dorkBalance: newBalance })
+                      .then(() => toast({ title: 'Dorks Updated', description: `Dorks ${delta >= 0 ? '+' : ''}${delta} → ${newBalance}` }))
+                      .catch((err) => toast({ title: 'Error', description: err.message, variant: 'destructive' }));
+                  }}
+                />
+              )}
+            </>
           )}
         </TabsContent>
 
@@ -2237,12 +2317,26 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
             <>
             {showGameReveal
               ? <GameReveal gameType={selectedGame} onStart={() => setShowGameReveal(false)} />
-              : <GameRouter
-                  gameType={selectedGame}
-                  vocabulary={unreviewedVocab}
-                  onComplete={handleGameCompleteRouted}
-                  MemoryGameComponent={MemoryGame}
-                />
+              : <>
+                  <GameRouter
+                    gameType={selectedGame}
+                    vocabulary={unreviewedVocab}
+                    onComplete={handleGameCompleteRouted}
+                    MemoryGameComponent={MemoryGame}
+                  />
+                  {viewerRole !== 'student' && (
+                    <div className="mt-3 flex justify-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={skipToNextGame}
+                        className="rounded-xl border-2 border-indigo-200 text-indigo-500 hover:bg-indigo-50 text-xs"
+                      >
+                        Skip to next game →
+                      </Button>
+                    </div>
+                  )}
+                </>
             }
             </>
           ) : unifiedDueCards.length > 0 ? (
@@ -2433,6 +2527,7 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
                           return (
                             <div key={collectionName} className="space-y-3">
                               <button
+                                type="button"
                                 onClick={() => toggleCollection(collectionName)}
                                 className="w-full flex items-center gap-3 bg-gradient-to-r from-purple-400 via-pink-300 to-purple-500 text-white px-4 py-3 rounded-lg font-bold hover:shadow-lg transition-all text-left"
                               >

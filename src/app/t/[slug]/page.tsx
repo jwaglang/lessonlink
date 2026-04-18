@@ -263,16 +263,21 @@ export default function PublicProfilePage() {
         <div className={`flex flex-col md:flex-row gap-6 ${profile.coverImageUrl ? '-mt-16' : 'mt-8'}`}>
           {/* Avatar */}
           <div className="flex-shrink-0">
-            <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-              <AvatarImage src={profile.avatarUrl} alt={profile.name} />
-              <AvatarFallback className="text-3xl">{profile.name.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <style>{`.teacher-avatar-wrap { --avatar-x: ${profile.avatarPositionX ?? 50}%; --avatar-y: ${profile.avatarPositionY ?? 50}%; }`}</style>
+            <div className="p-[3px] rounded-full primary-gradient shadow-lg">
+            <div className="teacher-avatar-wrap h-64 w-64 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+              {profile.avatarUrl
+                ? <img src={profile.avatarUrl} alt={profile.name} className="avatar-photo" />
+                : <span className="text-6xl font-bold text-muted-foreground">{profile.name.charAt(0)}</span>
+              }
+            </div>
+            </div>
           </div>
 
           {/* Basic Info */}
           <div className="flex-1 pt-4 md:pt-8">
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-headline font-bold primary-gradient-text">{profile.name}</h1>
+              <h1 className="text-6xl font-headline font-bold primary-gradient-text">{profile.name}</h1>
               {profile.isOnline && (
                 <Badge variant="secondary" className="bg-green-100 text-green-700">
                   Online
@@ -332,9 +337,31 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
-          {/* Quick Book Card (Desktop) */}
-          <div className="hidden lg:block">
-            <Card className="w-72">
+          {/* Right Sidebar (Desktop) */}
+          <div className="hidden lg:flex flex-col gap-4 w-[36rem] flex-shrink-0">
+            {/* Intro Video */}
+            {profile.videoUrl && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Play className="h-4 w-4" />
+                    Introduction Video
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0">
+                  <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                    <iframe
+                      src={profile.videoUrl.replace('watch?v=', 'embed/')}
+                      className="w-full h-full"
+                      allowFullScreen
+                      title="Introduction Video"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* Purchase a Package */}
+            <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
                   {isLoggedIn ? 'Purchase a Package' : 'Book a Lesson'}
@@ -372,26 +399,6 @@ export default function PublicProfilePage() {
         <div>
           {/* About */}
           <div className="space-y-8">
-            {/* Video */}
-            {profile.videoUrl && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Play className="h-5 w-5" />
-                    Introduction Video
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                    <iframe
-                      src={profile.videoUrl.replace('watch?v=', 'embed/')}
-                      className="w-full h-full"
-                      allowFullScreen
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Tabs */}
             <Tabs defaultValue="about">
