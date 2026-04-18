@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
-import { getStudentById, updateStudent } from '@/lib/firestore';
+import { getStudentById, updateStudent, getUserSettings, saveUserSettings } from '@/lib/firestore';
 import { Student, MessagingContact, ParentContact } from '@/lib/types';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,16 @@ import {
   MessageCircle,
   Shield,
   GraduationCap,
+  Globe,
 } from 'lucide-react';
+
+const TIMEZONE_OPTIONS = [
+  { group: 'Americas', zones: ['America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Toronto','America/Vancouver','America/Mexico_City','America/Sao_Paulo','America/Buenos_Aires'] },
+  { group: 'Europe', zones: ['Europe/London','Europe/Paris','Europe/Berlin','Europe/Madrid','Europe/Rome','Europe/Amsterdam','Europe/Brussels','Europe/Lisbon','Europe/Warsaw','Europe/Moscow'] },
+  { group: 'Asia', zones: ['Asia/Shanghai','Asia/Hong_Kong','Asia/Tokyo','Asia/Seoul','Asia/Singapore','Asia/Dubai','Asia/Kolkata','Asia/Bangkok','Asia/Jakarta'] },
+  { group: 'Pacific', zones: ['Pacific/Auckland','Pacific/Sydney','Australia/Melbourne','Australia/Perth'] },
+  { group: 'Africa', zones: ['Africa/Cairo','Africa/Johannesburg','Africa/Lagos','Africa/Nairobi'] },
+];
 
 const PROGRAM_TYPES = ['Public', 'Private', 'Homeschool', 'Other'] as const;
 const RELATIONSHIPS = [
@@ -84,6 +93,11 @@ export default function StudentSettingsPage() {
   // Secondary contact
   const [secondaryContact, setSecondaryContact] = useState<ParentContact | null>(null);
 
+  // Timezone
+  const [timezone, setTimezone] = useState('');
+  const [savingTimezone, setSavingTimezone] = useState(false);
+  const [timezoneSaved, setTimezoneSaved] = useState(false);
+
   // Age calculation for conditional required fields
   const [isUnder18, setIsUnder18] = useState(false);
 
@@ -91,7 +105,15 @@ export default function StudentSettingsPage() {
     if (authLoading || !user?.uid) return;
 
     async function loadStudent() {
-      const studentData = await getStudentById(user!.uid);
+      const [studentData, userSettings] = await Promise.all([
+        getStudentById(user!.uid),
+        getUserSettings(user!.uid, 'student'),
+      ]);
+      if (userSettings?.timezone) {
+        setTimezone(userSettings.timezone);
+      } else {
+        setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+      }
       if (studentData) {
         setStudent(studentData);
         setName(studentData.name || '');
@@ -200,6 +222,20 @@ export default function StudentSettingsPage() {
       setPrimaryContact(null);
     } else {
       setSecondaryContact(null);
+    }
+  }
+
+  async function saveTimezone() {
+    if (!user?.uid || !timezone) return;
+    setSavingTimezone(true);
+    try {
+      await saveUserSettings(user.uid, { userType: 'student', timezone, timezoneConfirmed: true });
+      setTimezoneSaved(true);
+      setTimeout(() => setTimezoneSaved(false), 2000);
+    } catch (e) {
+      setSaveMessage({ type: 'error', text: 'Failed to save timezone' });
+    } finally {
+      setSavingTimezone(false);
     }
   }
 
@@ -502,6 +538,41 @@ export default function StudentSettingsPage() {
                   : 'Optional — add emergency contact if desired'}
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Timezone */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" />
+              <CardTitle>Timezone</CardTitle>
+            </div>
+            <CardDescription>Used for scheduling and session times</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Your Timezone</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select timezone..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {TIMEZONE_OPTIONS.map(group => (
+                    <div key={group.group}>
+                      <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">{group.group}</div>
+                      {group.zones.map(zone => (
+                        <SelectItem key={zone} value={zone}>{zone.replace(/_/g, ' ')}</SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="button" size="sm" onClick={saveTimezone} disabled={savingTimezone || !timezone} className="w-full mt-2">
+              {savingTimezone ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : timezoneSaved ? <CheckCircle className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              {timezoneSaved ? 'Saved!' : 'Save Timezone'}
+            </Button>
           </CardContent>
         </Card>
 

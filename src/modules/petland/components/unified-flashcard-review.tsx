@@ -81,10 +81,11 @@ function GrammarBack({ card }: { card: GrammarCard }) {
 
 type PhonicsGamePhase = 'loading' | 'ready' | 'answered';
 
-export function PhonicsGame({ card, onAnswer, onGenerated }: {
+export function PhonicsGame({ card, onAnswer, onGenerated, canGenerate = false }: {
   card: PhonicsCard;
   onAnswer: (knew: boolean) => void;
   onGenerated?: (data: NonNullable<PhonicsCard['gameData']>) => void;
+  canGenerate?: boolean;
 }) {
   const g = card.gameData;
   const [phase, setPhase] = useState<PhonicsGamePhase>(g ? 'ready' : 'loading');
@@ -99,8 +100,11 @@ export function PhonicsGame({ card, onAnswer, onGenerated }: {
   const initialized = useRef(false);
 
   useEffect(() => {
-    // L-side: gameData already loaded into state above — nothing to do
+    // Already have gameData — nothing to generate
     if (card.gameData) return;
+
+    // L-side: never generate — T must preview first
+    if (!canGenerate) return;
 
     if (initialized.current) return;
     initialized.current = true;

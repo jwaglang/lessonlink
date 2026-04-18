@@ -17,6 +17,14 @@ import type {
   StudentRewards,
 } from './types';
 import { differenceInDays, parseISO } from 'date-fns';
+
+function toIso(value: any): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (value instanceof Date) return value.toISOString();
+  return null;
+}
 import { getIncompleteFields } from './profile-completeness';
 
 // ── Types ──
@@ -133,7 +141,7 @@ export function generateTutorAlerts(
   // Package expiring within 14 days
   for (const pkg of packages) {
     if (pkg.status !== 'active' || !pkg.expiresAt) continue;
-    const daysLeft = differenceInDays(parseISO(pkg.expiresAt), new Date());
+    const daysLeft = differenceInDays(parseISO(toIso(pkg.expiresAt)!), new Date());
     if (daysLeft >= 0 && daysLeft <= 14) {
       const student = students.find((s) => s.id === pkg.studentId);
       alerts.push({
@@ -217,7 +225,8 @@ export function generateTutorAlerts(
     if (anyS.status !== 'cancelled') return false;
     const dateStr = anyS.lessonDate || anyS.date || '';
     if (!dateStr) return false;
-    return differenceInDays(new Date(), parseISO(dateStr)) <= 7;
+    const isoStr = toIso(dateStr);
+    return isoStr ? differenceInDays(new Date(), parseISO(isoStr)) <= 7 : false;
   });
   if (recentCancelled.length > 0) {
     alerts.push({
@@ -300,7 +309,7 @@ export function generateLearnerAlerts(
   // Package expiring within 14 days
   for (const pkg of packages) {
     if (pkg.status !== 'active' || !pkg.expiresAt) continue;
-    const daysLeft = differenceInDays(parseISO(pkg.expiresAt), new Date());
+    const daysLeft = differenceInDays(parseISO(toIso(pkg.expiresAt)!), new Date());
     if (daysLeft >= 0 && daysLeft <= 14) {
       alerts.push({
         id: `yellow-pkg-expiring-${pkg.id}`,

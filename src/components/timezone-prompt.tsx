@@ -168,7 +168,10 @@ export default function TimezonePrompt({ userIdOrEmail, userType, onTimezoneSet 
           </p>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex gap-2">
+          <Button variant="ghost" onClick={() => setIsOpen(false)}>
+            Skip for now
+          </Button>
           <Button onClick={handleConfirm} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Confirm Timezone'}
           </Button>

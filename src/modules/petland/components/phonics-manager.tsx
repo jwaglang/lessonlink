@@ -357,6 +357,7 @@ export default function PhonicsManager({ studentId, prefill, onPrefillConsumed }
                 }}
                 onGenerated={data => setCapturedGameData(data)}
                 onAnswer={() => setPreviewPair(null)}
+                canGenerate={true}
               />
             </DialogContent>
           </Dialog>

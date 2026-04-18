@@ -32,6 +32,7 @@ import { Loader2, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { SessionInstance, Student, SessionProgress as Phase17SessionProgress } from '@/lib/types';
 import type { PetlandProfile } from '@/modules/petland/types';
+import OceanBackground from './ocean-background';
 
 interface Comet {
   id: number;
@@ -660,13 +661,20 @@ export default function LiveSessionPage() {
         position: 'relative',
         flex: 1,
         aspectRatio: '16/9',
-        background: 'linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 30%, #2a1a4e 60%, #0a0a2e 100%)',
+        background: (progress?.theme ?? 'space') === 'ocean'
+          ? 'linear-gradient(180deg, #003d6e 0%, #0077be 55%, #00b4d8 100%)'
+          : 'linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 30%, #2a1a4e 60%, #0a0a2e 100%)',
         borderRadius: '0px',
         overflow: 'hidden',
       }}>
         
+        {/* THEME BACKGROUND */}
+        {(progress?.theme ?? 'space') === 'ocean' ? (
+          <OceanBackground />
+        ) : null}
+
         {/* SPACE BACKGROUND */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, display: (progress?.theme ?? 'space') === 'ocean' ? 'none' : 'block' }}>
           {/* Stars */}
           {fixedStars.map((star) => (
             <div key={star.id} style={{
@@ -772,6 +780,17 @@ export default function LiveSessionPage() {
               </div>
             )}
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!progress) return;
+              const next = (progress.theme ?? 'space') === 'space' ? 'ocean' : 'space';
+              await updateSessionTheme(progress.id, next);
+            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', filter: 'drop-shadow(0 0 8px rgba(0,180,216,0.9))', padding: '4px' }}
+            title="Switch theme"
+          >{(progress?.theme ?? 'space') === 'ocean' ? '🚀' : '🌊'}</button>
           <div style={{ position: 'relative', display: 'inline-block' }}>
             <button
               type="button"
@@ -785,6 +804,7 @@ export default function LiveSessionPage() {
                 End session
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -1277,20 +1297,24 @@ export default function LiveSessionPage() {
                   height: '100%',
                   background: 'linear-gradient(90deg, var(--k-orange), var(--k-pink), var(--k-lavender))',
                   borderRadius: '10px',
-                  position: 'relative',
                   transition: 'width 0.5s ease-out',
                 }} />
-                <div style={{
-                  position: 'absolute',
-                  right: '-10px',
-                  top: '-10px',
-                  fontSize: '28px',
-                  lineHeight: 1,
-                }}>
-                  🐉
-                </div>
+                <img
+                  src="/Dork1.png"
+                  alt="dork"
+                  style={{
+                    position: 'absolute',
+                    left: `calc(${Math.min((progress?.totalXpEarned || 0) / (progress?.xpTarget || 60) * 100, 100)}% - 24px)`,
+                    top: '-16px',
+                    width: '48px',
+                    height: '48px',
+                    objectFit: 'contain',
+                    transform: 'scaleX(-1)',
+                    transition: 'left 0.5s ease-out',
+                  }}
+                />
               </div>
-              <div style={{ fontSize: '26px', marginLeft: '6px' }}>🏆</div>
+              <div style={{ fontSize: '39px', marginLeft: '6px' }}>🏆</div>
             </div>
             <div style={{
               display: 'flex',

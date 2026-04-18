@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 import { logOut } from '@/lib/auth';
-import { ThemeToggle } from './theme-toggle';
+import { LLButton } from './ll-button';
 import { Badge } from '@/components/ui/badge';
 import {
   getApprovalRequests,
@@ -103,6 +103,13 @@ const AppSidebar = () => {
   const [coursesVisibleCount, setCoursesVisibleCount] = useState(0);
   const cascadeTimersRef = useRef<NodeJS.Timeout[]>([]);
 
+  // Nav unfurl state
+  const [navOpen, setNavOpen] = useState(false);
+  const [navVisibleItems, setNavVisibleItems] = useState(0);
+  const navOpenTimer  = useRef<NodeJS.Timeout | null>(null);
+  const navCloseTimer = useRef<NodeJS.Timeout | null>(null);
+  const navCascadeTimers = useRef<NodeJS.Timeout[]>([]);
+
   const adminEmail = useMemo(() => user?.email === 'jwag.lang@gmail.com', [user]);
 
   useEffect(() => { setIsAdmin(adminEmail); }, [adminEmail]);
@@ -113,6 +120,9 @@ const AppSidebar = () => {
       Object.values(openTimers.current).forEach(clearTimeout);
       Object.values(closeTimers.current).forEach(clearTimeout);
       cascadeTimersRef.current.forEach(clearTimeout);
+      navCascadeTimers.current.forEach(clearTimeout);
+      if (navOpenTimer.current)  clearTimeout(navOpenTimer.current);
+      if (navCloseTimer.current) clearTimeout(navCloseTimer.current);
     };
   }, []);
 
@@ -188,6 +198,20 @@ const AppSidebar = () => {
     }
   }, [openMenus, courses]);
 
+  // Nav unfurl cascade
+  useEffect(() => {
+    navCascadeTimers.current.forEach(clearTimeout);
+    navCascadeTimers.current = [];
+    if (navOpen) {
+      generateCascadeDelays(6).forEach((delay) => {
+        const t = setTimeout(() => setNavVisibleItems((p) => Math.min(p + 1, 6)), delay);
+        navCascadeTimers.current.push(t);
+      });
+    } else {
+      setNavVisibleItems(0);
+    }
+  }, [navOpen]);
+
   /* ── Hover helpers ── */
 
   const scheduleOpen = useCallback((key: string, delay: number) => {
@@ -231,6 +255,18 @@ const AppSidebar = () => {
   }, []);
 
   const isOpen = useCallback((key: string) => openMenus.has(key), [openMenus]);
+
+  const scheduleNavOpen = useCallback(() => {
+    if (navCloseTimer.current) { clearTimeout(navCloseTimer.current); navCloseTimer.current = null; }
+    if (navOpenTimer.current) return;
+    navOpenTimer.current = setTimeout(() => { setNavOpen(true); navOpenTimer.current = null; }, OPEN_DELAY);
+  }, []);
+
+  const scheduleNavClose = useCallback(() => {
+    if (navOpenTimer.current) { clearTimeout(navOpenTimer.current); navOpenTimer.current = null; }
+    if (navCloseTimer.current) return;
+    navCloseTimer.current = setTimeout(() => { setNavOpen(false); navCloseTimer.current = null; }, CLOSE_DELAY);
+  }, []);
 
   /* ── Data fetching ── */
 
@@ -299,7 +335,10 @@ const AppSidebar = () => {
 
   return (
     <>
-      <SidebarHeader>
+      <SidebarHeader
+        onMouseEnter={scheduleNavOpen}
+        onMouseLeave={scheduleNavClose}
+      >
         <div className="flex items-center gap-2 p-2">
           <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8" />
           <h1 className="text-xl font-headline font-bold primary-gradient-text">
@@ -309,8 +348,10 @@ const AppSidebar = () => {
       </SidebarHeader>
 
       <SidebarContent>
+        <div onMouseEnter={scheduleNavOpen} onMouseLeave={scheduleNavClose}>
         <SidebarMenu>
           {/* ── Dashboard (no subs) ── */}
+          <div className={`transition-all duration-200 ${navVisibleItems > 0 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname === '/t-portal'} tooltip="Dashboard">
               <Link href="/t-portal" className="flex items-center gap-2">
@@ -319,8 +360,10 @@ const AppSidebar = () => {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          </div>
 
           {/* ── Calendar (hover → Schedule / Availability) ── */}
+          <div className={`transition-all duration-200 ${navVisibleItems > 1 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
           <div
             onMouseEnter={() => scheduleOpen('calendar', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('calendar')}
@@ -366,8 +409,10 @@ const AppSidebar = () => {
               </SidebarMenuSub>
             )}
           </div>
+          </div>
 
           {/* ── Chat (hover → Notifications / Communications) ── */}
+          <div className={`transition-all duration-200 ${navVisibleItems > 2 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
           <div
             onMouseEnter={() => scheduleOpen('chat', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('chat')}
@@ -410,8 +455,10 @@ const AppSidebar = () => {
               </SidebarMenuSub>
             )}
           </div>
+          </div>
 
           {/* ── Courses (hover → All Courses + individual courses cascade) ── */}
+          <div className={`transition-all duration-200 ${navVisibleItems > 3 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
           <div
             onMouseEnter={() => scheduleOpen('courses', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('courses')}
@@ -530,8 +577,10 @@ const AppSidebar = () => {
               </SidebarMenuSub>
             )}
           </div>
+          </div>
 
           {/* ── Learners (hover → Roster, Packages, Approvals, Reports) ── */}
+          <div className={`transition-all duration-200 ${navVisibleItems > 4 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
           <div
             onMouseEnter={() => scheduleOpen('learners', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('learners')}
@@ -610,8 +659,10 @@ const AppSidebar = () => {
               </SidebarMenuSub>
             )}
           </div>
+          </div>
 
           {/* ── Petland (hover → Create Accessory, Refine Composite, Browse Pet Status, Browse Pet Shop) ── */}
+          <div className={`transition-all duration-200 ${navVisibleItems > 5 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
           <div
             onMouseEnter={() => scheduleOpen('petland', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('petland')}
@@ -674,13 +725,15 @@ const AppSidebar = () => {
               </SidebarMenuSub>
             )}
           </div>
+          </div>
         </SidebarMenu>
+        </div>
       </SidebarContent>
 
       {/* ── Footer ── */}
       <SidebarFooter className="p-0 gap-0">
         <div className="p-2">
-          <ThemeToggle />
+          <LLButton />
         </div>
         {user && !loading && (
           <div

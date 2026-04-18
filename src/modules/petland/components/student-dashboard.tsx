@@ -478,70 +478,60 @@ function MemoryGame({
         <CardTitle>Round 2: Memory Match!</CardTitle>
       </CardHeader>
       <CardContent>
+        <style>{`
+          .flip-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 100%;
+          }
+          .flip-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+          }
+          .flip-inner.flipped {
+            transform: rotateY(180deg);
+          }
+          .flip-front, .flip-back {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            border: 2px solid #7B3FF2;
+            padding: 0.5rem;
+          }
+          .flip-back {
+            transform: rotateY(180deg);
+            background: white;
+          }
+        `}</style>
         <div className="grid grid-cols-4 gap-2 max-w-2xl">
           {cards.map((card, index) => (
             <div
               key={card.id}
-              className="aspect-square cursor-pointer"
+              className="aspect-square cursor-pointer flip-container hover:scale-105 transition-transform"
               onClick={() => !isFlipped(index) && flipped.length < 2 && setFlipped((p) => [...p, index])}
             >
-              <div
-                className={cn(
-                  'w-full h-full rounded-lg flex items-center justify-center p-2 transition-all border-2',
-                  isFlipped(index) ? 'bg-white border-primary shadow-lg' : 'bg-primary border-transparent'
-                )}
-              >
-                {isFlipped(index) ? (
-                  card.imageUrl ? (
+              <div className={`flip-inner ${isFlipped(index) ? 'flipped' : ''}`}>
+                <div className="flip-front bg-primary">
+                  <img src="/Dork1.png" className="w-4/5 h-4/5 object-contain" alt="dork" />
+                </div>
+                <div className="flip-back">
+                  {card.imageUrl ? (
                     <img src={card.imageUrl} className="w-full h-full object-contain" alt="icon" />
                   ) : (
                     <span className="font-headline font-bold text-base text-center leading-tight text-slate-700">{card.content}</span>
-                  )
-                ) : (
-                  <svg viewBox="0 0 100 110" className="w-4/5 h-4/5" xmlns="http://www.w3.org/2000/svg">
-                    {/* Left leg */}
-                    <ellipse cx="40" cy="88" rx="7" ry="5" fill="#e8334a" transform="rotate(-15 40 88)" />
-                    {/* Left foot */}
-                    <ellipse cx="35" cy="95" rx="8" ry="4" fill="#c9283e" />
-                    {/* Right leg */}
-                    <ellipse cx="60" cy="88" rx="7" ry="5" fill="#e8334a" transform="rotate(15 60 88)" />
-                    {/* Right foot */}
-                    <ellipse cx="65" cy="95" rx="8" ry="4" fill="#c9283e" />
-                    {/* Body */}
-                    <ellipse cx="50" cy="66" rx="22" ry="20" fill="#e8334a" />
-                    {/* Yellow belly */}
-                    <ellipse cx="50" cy="69" rx="13" ry="13" fill="#f5c842" />
-                    {/* Left wing */}
-                    <ellipse cx="27" cy="60" rx="10" ry="6" fill="#c9283e" transform="rotate(-30 27 60)" />
-                    {/* Right wing */}
-                    <ellipse cx="73" cy="60" rx="10" ry="6" fill="#c9283e" transform="rotate(30 73 60)" />
-                    {/* Tail */}
-                    <path d="M68 76 Q84 84 80 96 Q73 90 68 82 Z" fill="#e8334a" />
-                    {/* Head */}
-                    <ellipse cx="50" cy="40" rx="19" ry="17" fill="#e8334a" />
-                    {/* Left eye white */}
-                    <ellipse cx="43" cy="38" rx="6" ry="6" fill="white" />
-                    {/* Right eye white */}
-                    <ellipse cx="57" cy="38" rx="6" ry="6" fill="white" />
-                    {/* Heavy lids - grumpy */}
-                    <rect x="37" y="32" width="12" height="6" rx="2" fill="#e8334a" />
-                    <rect x="51" y="32" width="12" height="6" rx="2" fill="#e8334a" />
-                    {/* Pupils */}
-                    <ellipse cx="44" cy="40" rx="3" ry="3" fill="#1a1a1a" />
-                    <ellipse cx="57" cy="40" rx="3" ry="3" fill="#1a1a1a" />
-                    {/* Snout */}
-                    <ellipse cx="50" cy="48" rx="8" ry="5" fill="#d42a3e" />
-                    {/* Nostrils */}
-                    <ellipse cx="47" cy="48" rx="1.5" ry="1.5" fill="#b01e2e" />
-                    <ellipse cx="53" cy="48" rx="1.5" ry="1.5" fill="#b01e2e" />
-                    {/* Hat brim */}
-                    <ellipse cx="50" cy="24" rx="18" ry="4" fill="#4a2878" />
-                    {/* Hat body */}
-                    <rect x="36" y="8" width="28" height="17" rx="3" fill="#3d1f6e" />
-                    {/* Hat band */}
-                    <rect x="36" y="21" width="28" height="4" rx="1" fill="#f5c842" />
-                  </svg>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}

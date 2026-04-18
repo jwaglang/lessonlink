@@ -112,7 +112,8 @@ export default function StudentPortalPage() {
 
   useEffect(() => {
     async function fetchStudentData() {
-      if (user?.email) {
+      if (!user?.email) return;
+      try {
         console.log('ðŸ” Attempting to get/create student:', { email: user.email, uid: user.uid });
         const studentRecord = await getStudentById(user.uid);
         if (!studentRecord) {
@@ -161,6 +162,9 @@ export default function StudentPortalPage() {
             setTeacherId(teacherProfile.id);
           }
         }
+        setLoadingData(false);
+      } catch (err) {
+        console.error('fetchStudentData failed:', err);
         setLoadingData(false);
       }
     }
@@ -787,6 +791,7 @@ export default function StudentPortalPage() {
                   <button
                     key={star}
                     type="button"
+                    title={`Rate ${star} star${star !== 1 ? 's' : ''}`}
                     onClick={() => setReviewRating(star)}
                     className="p-1 hover:scale-110 transition-transform"
                   >
