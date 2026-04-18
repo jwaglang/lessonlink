@@ -30,6 +30,7 @@ import {
   CheckCircle,
   Plus,
   Trash2,
+  Pencil,
   Save,
   Loader2,
   User,
@@ -39,7 +40,12 @@ import {
 } from 'lucide-react';
 
 const PROGRAM_TYPES = ['Public', 'Private', 'Homeschool', 'Other'] as const;
-const RELATIONSHIPS = ['Mother', 'Father', 'Guardian', 'Grandparent', 'Other'] as const;
+const RELATIONSHIPS = [
+  { label: 'Mother', value: 'mother' },
+  { label: 'Father', value: 'father' },
+  { label: 'Guardian', value: 'guardian' },
+  { label: 'Other', value: 'other' },
+] as const;
 const CONTACT_METHODS = ['Email', 'Phone', 'Messaging App'] as const;
 const ENGLISH_LEVELS = ['Beginner', 'Elementary', 'Intermediate', 'Upper-Intermediate', 'Advanced', 'Native'] as const;
 const MESSAGING_APPS = ['WeChat', 'WhatsApp', 'Line', 'KakaoTalk', 'Telegram', 'Signal', 'Other'] as const;
@@ -48,7 +54,10 @@ export default function StudentSettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [savingLearner, setSavingLearner] = useState(false);
+  const [accountSaved, setAccountSaved] = useState(false);
+  const [learnerSaved, setLearnerSaved] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Form state mirrors
@@ -142,28 +151,48 @@ export default function StudentSettingsPage() {
     return age;
   }
 
-  function addMessagingContact() {
+  async function addMessagingContact() {
     if (!newMsgHandle.trim()) return;
-    const newContact: MessagingContact = {
-      app: newMsgApp,
-      handle: newMsgHandle.trim(),
-    };
-    setMessagingContacts([...messagingContacts, newContact]);
+    const newContact: MessagingContact = { app: newMsgApp, handle: newMsgHandle.trim() };
+    const updated = [...messagingContacts, newContact];
+    setMessagingContacts(updated);
     setNewMsgHandle('');
     setMsgDialogOpen(false);
+    if (user?.uid) {
+      try {
+        await updateStudent(user.uid, { messagingContacts: updated, updatedAt: new Date().toISOString() });
+      } catch (e) { console.error('Auto-save messaging failed:', e); }
+    }
   }
 
-  function removeMessagingContact(index: number) {
-    setMessagingContacts(messagingContacts.filter((_, i) => i !== index));
+  async function removeMessagingContact(index: number) {
+    const updated = messagingContacts.filter((_, i) => i !== index);
+    setMessagingContacts(updated);
+    if (user?.uid) {
+      try {
+        await updateStudent(user.uid, { messagingContacts: updated, updatedAt: new Date().toISOString() });
+      } catch (e) { console.error('Auto-save messaging failed:', e); }
+    }
   }
 
-  function addContact(contact: ParentContact) {
+  async function addContact(contact: ParentContact) {
     if (isPrimary) {
       setPrimaryContact(contact);
     } else {
       setSecondaryContact(contact);
     }
     setContactDialogOpen(false);
+    // Auto-save immediately
+    if (user?.uid) {
+      try {
+        await updateStudent(user.uid, {
+          ...(isPrimary ? { primaryContact: contact } : { secondaryContact: contact }),
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.error('Auto-save contact failed:', e);
+      }
+    }
   }
 
   function removeContact(type: 'primary' | 'secondary') {
@@ -174,57 +203,43 @@ export default function StudentSettingsPage() {
     }
   }
 
-  async function handleSave() {
-  if (!user?.uid || !student) {
-    setSaveMessage({ type: 'error', text: 'You must be logged in to save.' });
-    return;
+  async function saveAccountInfo() {
+    if (!user?.uid) return;
+    setSavingAccount(true);
+    try {
+      await updateStudent(user.uid, {
+        ...(name && { name }),
+        ...(avatarUrl && { avatarUrl }),
+        updatedAt: new Date().toISOString(),
+      });
+      setAccountSaved(true);
+      setTimeout(() => setAccountSaved(false), 2000);
+    } catch (e) {
+      setSaveMessage({ type: 'error', text: 'Failed to save account info' });
+    } finally {
+      setSavingAccount(false);
+    }
   }
 
-  setSaving(true);
-  setSaveMessage(null);
-
-  // Determine final gender value
-  const finalGender = gender === 'Other' && customGender ? customGender : gender;
-
-  // Helper: strip undefined from ParentContact
-  function cleanContact(contact: ParentContact | null): ParentContact | undefined {
-    if (!contact) return undefined;
-    return {
-      name: contact.name,
-      email: contact.email,
-      phone: contact.phone || '',
-      relationship: contact.relationship,
-      ...(contact.country && { country: contact.country }),
-      ...(contact.city && { city: contact.city }),
-      ...(contact.messaging && contact.messaging.length > 0 && { messaging: contact.messaging }),
-      ...(contact.preferredContactMethod && { preferredContactMethod: contact.preferredContactMethod }),
-      ...(contact.profession && { profession: contact.profession }),
-      ...(contact.englishProficiency && { englishProficiency: contact.englishProficiency }),
-    };
+  async function saveLearnerDetails() {
+    if (!user?.uid) return;
+    setSavingLearner(true);
+    const finalGender = gender === 'Other' && customGender ? customGender : gender;
+    try {
+      await updateStudent(user.uid, {
+        ...(birthday && { birthday }),
+        ...(finalGender && { gender: finalGender }),
+        ...(school && { school }),
+        updatedAt: new Date().toISOString(),
+      });
+      setLearnerSaved(true);
+      setTimeout(() => setLearnerSaved(false), 2000);
+    } catch (e) {
+      setSaveMessage({ type: 'error', text: 'Failed to save learner details' });
+    } finally {
+      setSavingLearner(false);
+    }
   }
-
-  // ✅ FIX: Use conditional spread - never include undefined fields (including nested)
-  const updatedData: Partial<Student> = {
-    ...(name && { name }),
-    ...(avatarUrl && { avatarUrl }),
-    ...(birthday && { birthday }),
-    ...(finalGender && { gender: finalGender }),
-    ...(school && { school }),
-    ...(messagingContacts.length > 0 && { messagingContacts: messagingContacts.filter(c => c.handle.trim()) }),
-    ...(primaryContact && { primaryContact: cleanContact(primaryContact) }),
-    ...(secondaryContact && { secondaryContact: cleanContact(secondaryContact) }),
-    updatedAt: new Date().toISOString(),
-  };
-
-  try {
-    await updateStudent(user.uid, updatedData);
-    setSaveMessage({ type: 'success', text: 'Profile saved successfully!' });
-  } catch (error: any) {
-    setSaveMessage({ type: 'error', text: error.message || 'Failed to save profile' });
-  } finally {
-    setSaving(false);
-  }
-}
 
   if (authLoading || loading) {
     return (
@@ -238,26 +253,14 @@ export default function StudentSettingsPage() {
 
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Settings"
-          description="Manage your profile and account settings"
-        />
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Save
-        </Button>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your profile and account settings"
+      />
 
-      {/* Save Message */}
       {saveMessage && (
-        <div className={`flex items-center gap-2 p-3 rounded-lg ${
-          saveMessage.type === 'success' 
-            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-        }`}>
-          {saveMessage.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-100 text-red-700">
+          <AlertCircle className="h-4 w-4" />
           {saveMessage.text}
         </div>
       )}
@@ -312,6 +315,10 @@ export default function StudentSettingsPage() {
                 <img src={avatarUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover border" />
               )}
             </div>
+            <Button type="button" size="sm" onClick={saveAccountInfo} disabled={savingAccount} className="w-full mt-2">
+              {savingAccount ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : accountSaved ? <CheckCircle className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              {accountSaved ? 'Saved!' : name || avatarUrl ? 'Save Changes' : 'Save'}
+            </Button>
           </CardContent>
         </Card>
 
@@ -373,6 +380,10 @@ export default function StudentSettingsPage() {
                 📝 Note: Program type and grade fields coming soon (DB update needed)
               </p>
             </div>
+            <Button type="button" size="sm" onClick={saveLearnerDetails} disabled={savingLearner} className="w-full mt-2">
+              {savingLearner ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : learnerSaved ? <CheckCircle className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              {learnerSaved ? 'Saved!' : birthday || gender || school ? 'Save Changes' : 'Save'}
+            </Button>
           </CardContent>
         </Card>
 
@@ -456,12 +467,9 @@ export default function StudentSettingsPage() {
                 Primary Contact {isUnder18 && <span className="text-red-500">*</span>}
               </CardTitle>
             </div>
-            {!primaryContact && (
-              <Button size="sm" onClick={() => { setIsPrimary(true); setContactDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            )}
+            <Button size="sm" variant={primaryContact ? 'outline' : 'default'} onClick={() => { setIsPrimary(true); setContactDialogOpen(true); }}>
+              {primaryContact ? <><Pencil className="h-4 w-4 mr-1" />Edit</> : <><Plus className="h-4 w-4 mr-1" />Add</>}
+            </Button>
           </CardHeader>
           <CardContent>
             {primaryContact ? (
@@ -504,12 +512,9 @@ export default function StudentSettingsPage() {
               <Shield className="h-5 w-5 text-primary" />
               <CardTitle>Secondary Contact (Optional)</CardTitle>
             </div>
-            {!secondaryContact && (
-              <Button size="sm" onClick={() => { setIsPrimary(false); setContactDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            )}
+            <Button size="sm" variant={secondaryContact ? 'outline' : 'default'} onClick={() => { setIsPrimary(false); setContactDialogOpen(true); }}>
+              {secondaryContact ? <><Pencil className="h-4 w-4 mr-1" />Edit</> : <><Plus className="h-4 w-4 mr-1" />Add</>}
+            </Button>
           </CardHeader>
           <CardContent>
             {secondaryContact ? (
@@ -549,6 +554,7 @@ export default function StudentSettingsPage() {
         isPrimary={isPrimary}
         isUnder18={isUnder18}
         onAdd={addContact}
+        initialContact={isPrimary ? primaryContact : secondaryContact}
       />
     </div>
   );
@@ -561,12 +567,14 @@ function ParentContactDialog({
   isPrimary,
   isUnder18,
   onAdd,
+  initialContact,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isPrimary: boolean;
   isUnder18: boolean;
   onAdd: (contact: ParentContact) => void;
+  initialContact?: ParentContact | null;
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -580,6 +588,24 @@ function ParentContactDialog({
   const [contactMessaging, setContactMessaging] = useState<MessagingContact[]>([]);
   const [msgApp, setMsgApp] = useState('WeChat');
   const [msgHandle, setMsgHandle] = useState('');
+
+  // Pre-populate when dialog opens with existing contact
+  useEffect(() => {
+    if (open && initialContact) {
+      setName(initialContact.name || '');
+      setEmail(initialContact.email || '');
+      setPhone(initialContact.phone || '');
+      setRelationship(initialContact.relationship || 'guardian');
+      setCountry(initialContact.country || '');
+      setCity(initialContact.city || '');
+      setPreferredContactMethod(initialContact.preferredContactMethod || 'Email');
+      setProfession(initialContact.profession || '');
+      setEnglishProficiency(initialContact.englishProficiency);
+      setContactMessaging(initialContact.messaging || []);
+    } else if (open && !initialContact) {
+      reset();
+    }
+  }, [open]);
 
   function reset() {
     setName('');
@@ -595,19 +621,25 @@ function ParentContactDialog({
   }
 
   function handleAdd() {
-    if (!name || !email || (!isUnder18 && !relationship)) return;
+    if (!name || !email) return;
+
+    // Auto-add any pending messaging handle the user typed but didn't click +
+    const finalMessaging = [...contactMessaging];
+    if (msgHandle.trim()) {
+      finalMessaging.push({ app: msgApp, handle: msgHandle.trim() });
+    }
 
     const contact: ParentContact = {
       name,
       email,
       phone: phone || '',
       relationship,
-      country: country || undefined,
-      city: city || undefined,
-      messaging: contactMessaging.length > 0 ? contactMessaging : undefined,
-      preferredContactMethod,
-      profession: profession || undefined,
-      englishProficiency: englishProficiency || undefined,
+      ...(country && { country }),
+      ...(city && { city }),
+      ...(finalMessaging.length > 0 && { messaging: finalMessaging }),
+      ...(preferredContactMethod && { preferredContactMethod }),
+      ...(profession && { profession }),
+      ...(englishProficiency && { englishProficiency }),
     };
 
     onAdd(contact);
@@ -630,7 +662,7 @@ function ParentContactDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isPrimary ? 'Primary' : 'Secondary'} Contact {isUnder18 && isPrimary && <span className="text-red-500">*</span>}
+            {initialContact ? 'Edit' : 'Add'} {isPrimary ? 'Primary' : 'Secondary'} Contact {isUnder18 && isPrimary && <span className="text-red-500">*</span>}
           </DialogTitle>
           <DialogDescription>
             {isUnder18 && isPrimary 
@@ -680,7 +712,7 @@ function ParentContactDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {RELATIONSHIPS.map(r => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -788,7 +820,7 @@ function ParentContactDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleAdd}>
-            {isPrimary ? 'Add Primary Contact' : 'Add Secondary Contact'}
+            {initialContact ? 'Save Changes' : isPrimary ? 'Add Primary Contact' : 'Add Secondary Contact'}
           </Button>
         </DialogFooter>
       </DialogContent>

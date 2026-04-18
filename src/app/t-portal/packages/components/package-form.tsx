@@ -7,11 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createStudentCredit, updateStudentCredit, updateStudent } from '@/lib/firestore';
+import { createStudentCredit, updateStudentCredit, updateStudent, createStudentPackage } from '@/lib/firestore';
 import type { StudentCredit, Student, Course } from '@/lib/types';
 
 const formSchema = z.object({
@@ -22,6 +23,7 @@ const formSchema = z.object({
   committedHours: z.coerce.number().min(0),
   completedHours: z.coerce.number().min(0),
   currency: z.string().min(3, { message: 'Currency code must be 3 letters.'}).max(3),
+  notes: z.string().optional(),
 });
 
 interface PackageFormProps {
@@ -45,6 +47,7 @@ export default function PackageForm({ students, courses, credit, onSuccess }: Pa
             committedHours: credit?.committedHours || 0,
             completedHours: credit?.completedHours || 0,
             currency: credit?.currency || 'USD',
+            notes: (credit as any)?.notes || '',
         },
     });
     
@@ -71,12 +74,41 @@ export default function PackageForm({ students, courses, credit, onSuccess }: Pa
                 let savedCredit;
                 if (credit) {
                     const { id, createdAt, packageId, ...rest } = credit;
-                    savedCredit = await updateStudentCredit(credit.id, values);
+                    const { notes, ...creditUpdateValues } = values;
+                    savedCredit = await updateStudentCredit(credit.id, {
+                      ...creditUpdateValues,
+                      ...(notes ? { notes } : {}),
+                    });
                     toast({ title: 'Success', description: 'Package updated.'});
                 } else {
+                    const { notes, ...creditValues } = values;
+                    const selectedStudent = students.find(s => s.id === values.studentId);
+                    const selectedCourse = courses.find(c => c.id === values.courseId);
+
+                    const pkg = await createStudentPackage({
+                      studentId: values.studentId,
+                      studentName: selectedStudent?.name ?? '',
+                      courseId: values.courseId,
+                      courseTitle: selectedCourse?.title ?? '',
+                      totalHours: values.totalHours,
+                      hoursRemaining: values.totalHours,
+                      price: 0,
+                      currency: values.currency,
+                      purchaseDate: new Date().toISOString(),
+                      isPaused: false,
+                      totalDaysPaused: 0,
+                      pauseCount: 0,
+                      status: 'active',
+                      source: 'manual',
+                      ...(notes ? { notes } : {}),
+                      updatedAt: new Date().toISOString(),
+                    });
+
                     const newCreditData = {
-                      ...values,
-                      packageId: `manual-${Date.now()}`,
+                      ...creditValues,
+                      packageId: pkg.id,
+                      source: 'manual' as const,
+                      ...(notes ? { notes } : {}),
                       createdAt: new Date().toISOString(),
                       updatedAt: new Date().toISOString(),
                     };
@@ -172,6 +204,20 @@ export default function PackageForm({ students, courses, credit, onSuccess }: Pa
                     />
                 </div>
                 
+                <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Notes</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="e.g. 2-for-1 with Luke" rows={2} {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
                 {credit && (
                     <div className="grid grid-cols-3 gap-4 border-t pt-4">
                          <FormField

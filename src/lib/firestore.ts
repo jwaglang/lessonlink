@@ -1186,6 +1186,8 @@ export async function resolveApprovalRequest(
     // Mark student as no longer new so future bookings go through directly
     await updateDoc(doc(db, 'students', req.studentId), {
       isNewStudent: false,
+      status: 'active',
+      ...(req.teacherUid ? { assignedTeacherId: req.teacherUid } : {}),
       updatedAt: nowIso(),
     } as any);
 

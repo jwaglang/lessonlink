@@ -227,6 +227,8 @@ export interface StudentPackage {
   totalDaysPaused: number;
   pauseCount: number;           // how many pauses have been used
   status: 'active' | 'expired' | 'completed' | 'paused';
+  source?: 'stripe' | 'manual' | 'backfill' | 'deal';
+  notes?: string;
 }
 
 export interface StudentCredit {

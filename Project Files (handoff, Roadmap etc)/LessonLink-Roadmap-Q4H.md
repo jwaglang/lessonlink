@@ -1070,7 +1070,7 @@ All balances stored in Firestore as integers (Copper). Gold/Silver/Copper is a d
 
 ---
 
-## CURRENT STATUS (April 16, 2026)
+## CURRENT STATUS (April 18, 2026 — Updated Q4H)
 
 - ✅ **Phases 1–16:** Complete and production-ready
 - ✅ **Dork Economy:** Complete — Cash-In Station, Pet Shop migrated to Dorks, denomination display
@@ -1081,8 +1081,9 @@ All balances stored in Firestore as integers (Copper). Gold/Silver/Copper is a d
 - ✅ **Phonics Repository:** Complete — shared `phonicsRepository` collection, repo-check on phoneme select, backfill button, browse (scroll all)
 - ✅ **Grammar/Phonics list cards:** Complete — two-column layout matching Vocabulary UI
 - ✅ **GrammarFront/Back:** Updated to new field names (rule, errorWords, answer, correctSentence)
-- 🔴 **Deploy needed:** `firebase deploy --only firestore:rules` for `phonicsRepository` rules
+- ✅ **Enrollment flow hardened (Q4H):** Trial → active pipeline fully wired. Approval sets `status: active` + `assignedTeacherId`. Free Trial UI in calendar. Credit gate errors surfaced. Package form creates both docs. All 4 real learners clean.
+- ✅ **Firestore rules deployed (Q4H):** `isTeacher()` bypass on messages create. `phonicsRepository` rules also deployed.
 - 🟡 **In progress:** Phase 17 — grammar/phonics diary inputs, session end flow, xpSpent backfill
 - ⬜ **Stacked:** Phases A/B/C (Curriculum AI), Phases 17B/17C, Phases 18–23, Vocab/Grammar repositories
-- **Next:** `firebase deploy --only firestore:rules` → grammar/phonics diary inputs → session end flow → xpSpent backfill → Phase 17B/17C
+- **Next:** E2E enrollment test → Gordon `studentProgress.unitId` fix → xpSpent backfill → grammar/phonics diary inputs → session end flow → Phase 17B/17C
 - **Estimated sessions to Phase 17 completion:** 1–2 (core flow); additional for theme backgrounds

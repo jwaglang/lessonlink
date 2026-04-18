@@ -76,7 +76,7 @@ function BookingPageContent() {
   const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingResult, setBookingResult] = useState<{
-    type: 'success' | 'pending_approval';
+    type: 'success' | 'pending_approval' | 'error';
     message: string;
   } | null>(null);
 
@@ -237,8 +237,8 @@ function BookingPageContent() {
           reason: 'First-time booking requires teacher approval.',
           status: 'pending',
           createdAt: new Date().toISOString(),
-        
-          // NEW: required linkage for creating a valid lesson on approval
+          billingType: 'trial',
+
           courseId: selectedCourse,
           unitId,
           sessionId,
@@ -277,6 +277,10 @@ function BookingPageContent() {
       }
     } catch (error) {
       console.error('Booking failed:', error);
+      setBookingResult({
+        type: 'pending_approval',
+        message: error instanceof Error ? error.message : 'Booking failed. Please try again.',
+      });
     } finally {
       setIsBooking(false);
     }
@@ -465,7 +469,7 @@ function BookingPageContent() {
       <Dialog open={!!selectedSlot && !bookingResult} onOpenChange={() => closeDialog()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Book a Lesson</DialogTitle>
+            <DialogTitle>{isNew ? 'Book Free Trial Lesson' : 'Book a Lesson'}</DialogTitle>
             <DialogDescription>
               {selectedSlot && (
                 <>
@@ -474,8 +478,13 @@ function BookingPageContent() {
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 space-y-4">
+            {isNew && (
+              <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-700">
+                Your first lesson is a <strong>free trial</strong>. Your teacher will review and confirm the booking.
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium mb-2 block">Select a Course</label>
               <Select value={selectedCourse} onValueChange={setSelectedCourse}>
@@ -491,7 +500,7 @@ function BookingPageContent() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {selectedCourse && (
               <div>
                 <label className="text-sm font-medium mb-2 block">Select Duration</label>
@@ -499,14 +508,14 @@ function BookingPageContent() {
                   {[30, 60].map(duration => {
                     const course = courses.find(c => c.id === selectedCourse);
                     if (!course) return null;
-                    
+
                     const price = calculateLessonPrice(
-                      course.hourlyRate, 
-                      duration as 30 | 60, 
+                      course.hourlyRate,
+                      duration as 30 | 60,
                       course.discount60min
                     );
                     const hasDiscount = duration === 60 && course.discount60min && course.discount60min > 0;
-                    
+
                     return (
                       <Button
                         key={duration}
@@ -515,26 +524,23 @@ function BookingPageContent() {
                         onClick={() => setSelectedDuration(duration as 30 | 60)}
                       >
                         <span className="font-semibold">{duration} minutes</span>
-                        <span className="text-sm">
-                          ${price.toFixed(2)}
-                          {hasDiscount && (
-                            <span className="text-xs ml-1">
-                              ({course.discount60min}% off! ðŸ¥³)
-                            </span>
-                          )}
-                        </span>
+                        {isNew ? (
+                          <span className="text-sm text-green-600 font-medium">Free Trial</span>
+                        ) : (
+                          <span className="text-sm">
+                            ${price.toFixed(2)}
+                            {hasDiscount && (
+                              <span className="text-xs ml-1">
+                                ({course.discount60min}% off! ðŸ¥³)
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </Button>
                     );
                   })}
                 </div>
               </div>
-            )}
-            
-            {isNew && (
-              <p className="text-xs text-amber-600 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                This booking will require teacher approval.
-              </p>
             )}
           </div>
 
@@ -561,6 +567,11 @@ function BookingPageContent() {
                   <CheckCircle className="h-5 w-5 text-green-500" />
                   Lesson Booked!
                 </>
+              ) : bookingResult?.type === 'error' ? (
+                <>
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                  Booking Failed
+                </>
               ) : (
                 <>
                   <AlertCircle className="h-5 w-5 text-blue-500" />
@@ -573,8 +584,11 @@ function BookingPageContent() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => router.push('/s-portal')}>
-              {bookingResult?.type === 'success' ? 'View My Lessons' : 'Back to Portal'}
+            <Button
+              variant={bookingResult?.type === 'error' ? 'outline' : 'default'}
+              onClick={() => bookingResult?.type === 'error' ? setBookingResult(null) : router.push('/s-portal')}
+            >
+              {bookingResult?.type === 'success' ? 'View My Lessons' : bookingResult?.type === 'error' ? 'Try Again' : 'Back to Portal'}
             </Button>
           </DialogFooter>
         </DialogContent>

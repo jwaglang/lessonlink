@@ -172,13 +172,15 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   // Package stats
-  const activePackages = allPackages.filter((p) => p.status === 'active');
+  const knownStudentIds = new Set(students.filter((s) => s.name).map((s) => s.id));
+  const activePackages = allPackages.filter((p) => p.status === 'active' && knownStudentIds.has(p.studentId));
   const totalHoursRemaining = activePackages.reduce((sum, p) => sum + (p.hoursRemaining ?? 0), 0);
 
-  // Progress stats
-  const learnersWithProgress = new Set(allProgress.map((p) => p.studentId)).size;
-  const avgCompletion = allProgress.length > 0
-    ? allProgress.reduce((sum, p) => sum + p.percentComplete, 0) / allProgress.length
+  // Progress stats — filter out orphaned docs with no matching student
+  const validProgress = allProgress.filter((p) => students.some((s) => s.id === p.studentId && s.name));
+  const learnersWithProgress = new Set(validProgress.map((p) => p.studentId)).size;
+  const avgCompletion = validProgress.length > 0
+    ? validProgress.reduce((sum, p) => sum + (p.percentComplete ?? 0), 0) / validProgress.length
     : 0;
 
   const currencySymbols: { [key: string]: string } = {
@@ -336,10 +338,9 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Average completion</p>
               </div>
             </div>
-            {allProgress.length > 0 ? (
+            {validProgress.length > 0 ? (
               <div className="space-y-3">
-                {/* Show top 5 most recent progress entries */}
-                {allProgress.slice(0, 5).map((prog) => {
+                {validProgress.slice(0, 5).map((prog) => {
                   const student = students.find((s) => s.id === prog.studentId);
                   return (
                     <div key={prog.id} className="flex items-center gap-3">

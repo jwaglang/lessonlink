@@ -8,6 +8,7 @@ import {
   updatePayment,
   getCourses,
   createStudentCredit,
+  createStudentPackage,
   getStudentCredit,
   updateStudentCredit,
 } from '@/lib/firestore';
@@ -130,6 +131,26 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
       if (formType === 'package' && formCourseId && formHours) {
         const hours = parseFloat(formHours);
         if (hours > 0) {
+          const course = courses.find((c) => c.id === formCourseId);
+          // Create studentPackages doc
+          const pkg = await createStudentPackage({
+            studentId,
+            courseId: formCourseId,
+            courseTitle: course?.title ?? '',
+            totalHours: hours,
+            hoursRemaining: hours,
+            price: amount,
+            currency: formCurrency,
+            purchaseDate: formDate,
+            expiresAt: '',
+            isPaused: false,
+            totalDaysPaused: 0,
+            pauseCount: 0,
+            status: 'active',
+            source: 'manual',
+            ...(formNotes ? { notes: formNotes } : {}),
+          });
+          // Create or top-up studentCredit
           const existingCredit = await getStudentCredit(studentId, formCourseId);
           if (existingCredit) {
             await updateStudentCredit(existingCredit.id, {
@@ -141,15 +162,16 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
             await createStudentCredit({
               studentId,
               courseId: formCourseId,
-              packageId: '',
+              packageId: pkg.id,
               totalHours: hours,
               uncommittedHours: hours,
               committedHours: 0,
               completedHours: 0,
               currency: formCurrency,
+              source: 'manual',
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
-            });
+            } as any);
           }
         }
       }

@@ -114,8 +114,8 @@ export default function PackagesPage() {
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader
-                title="Student Packages"
-                description="Manage credit packages for your students."
+                title="Learner Packages"
+                description="Manage credit packages for your learners."
             >
                 <Button onClick={handleAddClick}>
                     <PlusCircle className="mr-2 h-4 w-4" />
@@ -127,7 +127,7 @@ export default function PackagesPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Student</TableHead>
+                            <TableHead>Learner</TableHead>
                             <TableHead>Course</TableHead>
                             <TableHead>Total Hours</TableHead>
                             <TableHead>Uncommitted</TableHead>

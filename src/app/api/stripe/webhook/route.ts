@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
         totalDaysPaused: 0,
         pauseCount: 0,
         status: 'active',
+        source: 'stripe',
       });
 
       // 3. Create or update StudentCredit (course-agnostic — one pool per learner)
