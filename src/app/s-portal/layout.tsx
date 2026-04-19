@@ -83,7 +83,7 @@ export default function StudentPortalLayout({
   }
   
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <Sidebar variant="sidebar" collapsible="icon">
         <StudentAppSidebar />
       </Sidebar>

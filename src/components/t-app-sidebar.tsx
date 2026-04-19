@@ -13,6 +13,7 @@ import {
   SidebarMenuSubButton,
   SidebarFooter,
   SidebarContent,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -103,8 +104,8 @@ const AppSidebar = () => {
   const [coursesVisibleCount, setCoursesVisibleCount] = useState(0);
   const cascadeTimersRef = useRef<NodeJS.Timeout[]>([]);
 
-  // Nav unfurl state
-  const [navOpen, setNavOpen] = useState(false);
+  // Nav unfurl state (driven by sidebar open state)
+  const { open, setOpen } = useSidebar();
   const [navVisibleItems, setNavVisibleItems] = useState(0);
   const navOpenTimer  = useRef<NodeJS.Timeout | null>(null);
   const navCloseTimer = useRef<NodeJS.Timeout | null>(null);
@@ -198,11 +199,11 @@ const AppSidebar = () => {
     }
   }, [openMenus, courses]);
 
-  // Nav unfurl cascade
+  // Nav unfurl cascade — fires when sidebar expands/collapses
   useEffect(() => {
     navCascadeTimers.current.forEach(clearTimeout);
     navCascadeTimers.current = [];
-    if (navOpen) {
+    if (open) {
       generateCascadeDelays(6).forEach((delay) => {
         const t = setTimeout(() => setNavVisibleItems((p) => Math.min(p + 1, 6)), delay);
         navCascadeTimers.current.push(t);
@@ -210,7 +211,7 @@ const AppSidebar = () => {
     } else {
       setNavVisibleItems(0);
     }
-  }, [navOpen]);
+  }, [open]);
 
   /* ── Hover helpers ── */
 
@@ -259,14 +260,14 @@ const AppSidebar = () => {
   const scheduleNavOpen = useCallback(() => {
     if (navCloseTimer.current) { clearTimeout(navCloseTimer.current); navCloseTimer.current = null; }
     if (navOpenTimer.current) return;
-    navOpenTimer.current = setTimeout(() => { setNavOpen(true); navOpenTimer.current = null; }, OPEN_DELAY);
-  }, []);
+    navOpenTimer.current = setTimeout(() => { setOpen(true); navOpenTimer.current = null; }, OPEN_DELAY);
+  }, [setOpen]);
 
   const scheduleNavClose = useCallback(() => {
     if (navOpenTimer.current) { clearTimeout(navOpenTimer.current); navOpenTimer.current = null; }
     if (navCloseTimer.current) return;
-    navCloseTimer.current = setTimeout(() => { setNavOpen(false); navCloseTimer.current = null; }, CLOSE_DELAY);
-  }, []);
+    navCloseTimer.current = setTimeout(() => { setOpen(false); navCloseTimer.current = null; }, CLOSE_DELAY);
+  }, [setOpen]);
 
   /* ── Data fetching ── */
 
@@ -731,7 +732,7 @@ const AppSidebar = () => {
       </SidebarContent>
 
       {/* ── Footer ── */}
-      <SidebarFooter className="p-0 gap-0">
+      <SidebarFooter className="p-0 gap-0" onMouseEnter={scheduleNavOpen} onMouseLeave={scheduleNavClose}>
         <div className="p-2">
           <LLButton />
         </div>

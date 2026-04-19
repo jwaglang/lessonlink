@@ -88,7 +88,7 @@ export default function TeacherPortalLayout({
   }
   
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <Sidebar variant="sidebar" collapsible="icon">
         <AppSidebar />
       </Sidebar>
