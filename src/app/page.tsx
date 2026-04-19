@@ -1,731 +1,298 @@
-'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { logIn, signUp } from '@/lib/auth';
-import { createStudent } from '@/lib/firestore';
-import type { MessagingContact, ParentContact } from '@/lib/types';
-import {
-  GENDER_OPTIONS,
-  MESSAGING_APPS,
-  RELATIONSHIP_OPTIONS,
-  ENGLISH_PROFICIENCY_OPTIONS,
-  CONTACT_METHOD_OPTIONS,
-  calculateAge,
-} from '@/lib/dragon-levels';
+import Link from 'next/link';
+import { BookOpenCheck, Star, Award, Users, Clock, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GraduationCap, BookOpen, BookOpenCheck, Plus, Trash2, ArrowLeft, ArrowRight, AlertTriangle, Eye, EyeOff } from 'lucide-react';
-import { GradientIcon } from '@/components/gradient-icon';
-import { useToast } from '@/hooks/use-toast';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { LLButton } from '@/components/ll-button';
+import { QuoteCarousel } from '@/components/quote-carousel';
+import { ContactFAB } from '@/components/contact-modal';
+import { HeroLogo } from '@/components/hero-logo';
+import { DragonDork } from '@/components/dragon-dork';
+import { NavBrand } from '@/components/nav-brand';
 
-// ============ SUB-COMPONENTS (must be outside LandingPage to preserve focus) ============
+const DRAGONS = [
+  { name: 'White Dragon', level: 'Pre-A1', ages: '5+', color: 'from-slate-200 to-slate-100', text: 'text-slate-700', description: 'First steps - sounds, alphabet, simple words. Learning feels like play.' },
+  { name: 'Yellow Dragon', level: 'Pre-A1+', ages: '6–8', color: 'from-yellow-400 to-amber-300', text: 'text-yellow-900', description: 'Short phrases, greetings, personal details. Every "I did it!" celebrated.' },
+  { name: 'Orange Dragon', level: 'A1', ages: '6–8', color: 'from-orange-400 to-amber-400', text: 'text-orange-900', description: 'Concrete vocabulary, routine situations, familiar topics explored freely.' },
+  { name: 'Green Dragon', level: 'A2', ages: '6–8', color: 'from-green-400 to-emerald-300', text: 'text-green-900', description: 'Growing confidence - comprehension broadens, control increases.' },
+  { name: 'Blue Dragon', level: 'A2+', ages: '8–11', color: 'from-blue-400 to-sky-300', text: 'text-blue-900', description: 'Independent exchanges, longer monologues, familiar topics with ease.' },
+  { name: 'Purple Dragon', level: 'B1', ages: '8–11', color: 'from-purple-400 to-violet-300', text: 'text-purple-900', description: 'Complex sentences, unpredictable situations, full linguistic confidence.' },
+];
 
-function StepIndicator({ signupStep, totalSteps }: { signupStep: number; totalSteps: number }) {
+const COURSES = [
+  {
+    title: 'Curious Explorers',
+    subtitle: 'Solo English Classes',
+    description: 'Personalized 1-on-1 lessons built around your child\'s passions. We unlock the door to their interests and use them as the gateway to fluency.',
+    emoji: '🔍',
+    badge: 'Most Popular',
+  },
+  {
+    title: 'Kiddie Quests',
+    subtitle: 'Group English Classes',
+    description: 'Group expeditions in English for young learners. A communal adventure where kids motivate each other while building real fluency together.',
+    emoji: '🗺️',
+    badge: null,
+  },
+  {
+    title: 'Bite-Sized Books',
+    subtitle: 'Reading & Language Arts',
+    description: 'What if reading were as addictive as video games? A fresh book every session, lifted off the page with high-energy gamified strategies.',
+    emoji: '📚',
+    badge: null,
+  },
+  {
+    title: 'Captivating Chats',
+    subtitle: 'Advanced Conversation (B1+)',
+    description: 'For teens and advanced kids. Lively discussions on topics that matter to them - fluency through real conversation, not textbooks.',
+    emoji: '💬',
+    badge: 'Teens & Advanced',
+  },
+];
+
+export default function KiddolandPage() {
   return (
-    <div className="flex items-center justify-center gap-2 mb-4">
-      {Array.from({ length: totalSteps }, (_, i) => (
-        <div
-          key={i}
-          className={`h-2 rounded-full transition-all ${
-            i + 1 === signupStep ? 'w-8 bg-primary' : i + 1 < signupStep ? 'w-2 bg-primary/60' : 'w-2 bg-muted'
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function ParentFields({
-  label,
-  parent,
-  setter,
-  updateParent,
-  addParentMessaging,
-  removeParentMessaging,
-  updateParentMessaging,
-}: {
-  label: string;
-  parent: ParentContact;
-  setter: React.Dispatch<React.SetStateAction<ParentContact>>;
-  updateParent: (
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-    field: string,
-    value: any,
-  ) => void;
-  addParentMessaging: (
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-  ) => void;
-  removeParentMessaging: (
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-    i: number,
-  ) => void;
-  updateParentMessaging: (
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-    i: number,
-    field: keyof MessagingContact,
-    value: string,
-  ) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm font-semibold">{label}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs">Name</Label>
-          <Input value={parent.name} onChange={(e) => updateParent(setter, parent, 'name', e.target.value)} />
+    <div className="min-h-screen bg-background text-foreground">
+      {/* ── NAV ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background/80 backdrop-blur-md border-b border-border">
+        <NavBrand />
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+          <a href="#about" className="hover:text-primary transition-colors">About</a>
+          <a href="#program" className="hover:text-primary transition-colors">Program</a>
+          <a href="#courses" className="hover:text-primary transition-colors">Courses</a>
+          <a href="#media" className="hover:text-primary transition-colors">Media</a>
         </div>
-        <div>
-          <Label className="text-xs">Relationship</Label>
-          <select
-            value={parent.relationship}
-            onChange={(e) => updateParent(setter, parent, 'relationship', e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            {RELATIONSHIP_OPTIONS.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2">
+          <LLButton expandLeft flagsDown />
+          <Link href="/login">
+            <Button size="sm" variant="outline" className="border-primary/40 hover:border-primary">
+              Login
+            </Button>
+          </Link>
         </div>
-        <div>
-          <Label className="text-xs">Email</Label>
-          <Input type="email" value={parent.email} onChange={(e) => updateParent(setter, parent, 'email', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Phone</Label>
-          <Input value={parent.phone} onChange={(e) => updateParent(setter, parent, 'phone', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Country</Label>
-          <Input value={parent.country ?? ''} onChange={(e) => updateParent(setter, parent, 'country', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">City</Label>
-          <Input value={parent.city ?? ''} onChange={(e) => updateParent(setter, parent, 'city', e.target.value)} />
-        </div>
-        <div>
-          <Label className="text-xs">Preferred Contact</Label>
-          <select
-            value={parent.preferredContactMethod ?? ''}
-            onChange={(e) => updateParent(setter, parent, 'preferredContactMethod', e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">Select...</option>
-            {CONTACT_METHOD_OPTIONS.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <Label className="text-xs">Profession</Label>
-          <Input value={parent.profession ?? ''} onChange={(e) => updateParent(setter, parent, 'profession', e.target.value)} />
-        </div>
-        <div className="sm:col-span-2">
-          <Label className="text-xs">English Proficiency</Label>
-          <select
-            value={parent.englishProficiency ?? ''}
-            onChange={(e) => updateParent(setter, parent, 'englishProficiency', e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">Select...</option>
-            {ENGLISH_PROFICIENCY_OPTIONS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      {/* Parent messaging */}
-      <div>
-        <Label className="text-xs">Messaging</Label>
-        <div className="space-y-2 mt-1">
-          {(parent.messaging ?? []).map((m, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <select
-                value={m.app}
-                onChange={(e) => updateParentMessaging(setter, parent, i, 'app', e.target.value)}
-                className="flex h-9 rounded-md border border-input bg-background px-2 py-1 text-sm w-32"
-              >
-                {MESSAGING_APPS.map((a) => (
-                  <option key={a.value} value={a.value}>{a.label}</option>
-                ))}
-              </select>
-              <Input
-                value={m.handle}
-                onChange={(e) => updateParentMessaging(setter, parent, i, 'handle', e.target.value)}
-                placeholder="Handle..."
-                className="flex-1 h-9"
-              />
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => removeParentMessaging(setter, parent, i)}>
-                <Trash2 className="h-3 w-3 text-red-500" />
-              </Button>
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={() => addParentMessaging(setter, parent)}>
-            <Plus className="mr-1 h-3 w-3" /> Add
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
+      </nav>
 
-// ============ MAIN PAGE COMPONENT ============
-
-export default function LandingPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [learnerDialogOpen, setLearnerDialogOpen] = useState(false);
-  const [tutorDialogOpen, setTutorDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  // Signup form state — Step 1: Account
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirm, setSignupConfirm] = useState('');
-  // Password visibility toggles
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
-  // Signup form state — Step 2: Learner Info
-  const [signupName, setSignupName] = useState('');
-  const [signupBirthday, setSignupBirthday] = useState('');
-  const [signupGender, setSignupGender] = useState('');
-  const [signupCustomGender, setSignupCustomGender] = useState('');
-  // Signup form state — Step 3: Messaging
-  const [signupMessaging, setSignupMessaging] = useState<MessagingContact[]>([]);
-  // Signup form state — Step 4: Parent Info
-  const [signupPrimary, setSignupPrimary] = useState<ParentContact>({
-    name: '', email: '', phone: '', relationship: 'mother',
-    country: '', city: '', messaging: [], preferredContactMethod: 'email',
-    profession: '', englishProficiency: 'none',
-  });
-  const [signupSecondary, setSignupSecondary] = useState<ParentContact>({
-    name: '', email: '', phone: '', relationship: 'father',
-    country: '', city: '', messaging: [], preferredContactMethod: 'email',
-    profession: '', englishProficiency: 'none',
-  });
-  // Multi-step wizard
-  const [signupStep, setSignupStep] = useState(1);
-  const totalSteps = 4;
-  const isUnder18 = signupBirthday ? calculateAge(signupBirthday) < 18 : false;
-
-  async function handleLogin(e: React.FormEvent, role: 'learner' | 'tutor') {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await logIn(loginEmail, loginPassword);
-      const redirectPath = role === 'learner' ? '/s-portal' : '/t-portal';
-      router.push(redirectPath);
-    } catch (err: any) {
-      setError(err.message || 'Failed to log in');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function validateStep(step: number): boolean {
-    setError('');
-    if (step === 1) {
-      if (!signupEmail || !signupPassword || !signupConfirm || !signupName.trim()) {
-        setError('All fields are required');
-        return false;
-      }
-      if (signupPassword !== signupConfirm) {
-        setError('Passwords do not match');
-        return false;
-      }
-      if (signupPassword.length < 6) {
-        setError('Password must be at least 6 characters');
-        return false;
-      }
-    }
-    // Steps 2-4 have no required validation — user can skip
-    return true;
-  }
-
-  function handleNext() {
-    if (validateStep(signupStep)) {
-      setSignupStep(signupStep + 1);
-    }
-  }
-
-  function handleBack() {
-    setError('');
-    setSignupStep(signupStep - 1);
-  }
-
-  async function handleSignupComplete() {
-    // Always validate Step 1 (name + email + password), skip validation for other steps
-    if (!validateStep(1)) return;
-    setLoading(true);
-    setError('');
-    try {
-      const user = await signUp(signupEmail, signupPassword);
-      const resolvedGender = signupGender === 'other' ? signupCustomGender : signupGender;
-      const cleanedMessaging = signupMessaging.filter((m) => m.handle.trim());
-      await createStudent(user.uid, {
-        name: signupName,
-        email: signupEmail,
-        avatarUrl: '',
-        status: 'trial',
-        isNewStudent: true,
-        ...(signupBirthday && { birthday: signupBirthday }),
-        ...(resolvedGender && { gender: resolvedGender }),
-        ...(cleanedMessaging.length > 0 && { messagingContacts: cleanedMessaging }),
-        ...(signupPrimary.name && { primaryContact: signupPrimary }),
-        ...(signupSecondary.name && { secondaryContact: signupSecondary }),
-      });
-      setLearnerDialogOpen(false);
-      toast({
-        title: 'Welcome to LessonLink! 🎉',
-        description: 'Your account has been created successfully.',
-      });
-      router.push('/s-portal');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleTutorSignup(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    if (signupPassword !== signupConfirm) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (signupPassword.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    setLoading(true);
-    try {
-      await signUp(signupEmail, signupPassword);
-      router.push('/t-portal');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function resetForm() {
-    setLoginEmail('');
-    setLoginPassword('');
-    setSignupEmail('');
-    setSignupPassword('');
-    setSignupConfirm('');
-    setSignupName('');
-    setSignupBirthday('');
-    setSignupGender('');
-    setSignupCustomGender('');
-    setSignupMessaging([]);
-    setSignupPrimary({
-      name: '', email: '', phone: '', relationship: 'mother',
-      country: '', city: '', messaging: [], preferredContactMethod: 'email',
-      profession: '', englishProficiency: 'none',
-    });
-    setSignupSecondary({
-      name: '', email: '', phone: '', relationship: 'father',
-      country: '', city: '', messaging: [], preferredContactMethod: 'email',
-      profession: '', englishProficiency: 'none',
-    });
-    setSignupStep(1);
-    setError('');
-  }
-
-  // ── Messaging helpers ──
-  function addMessaging() {
-    setSignupMessaging([...signupMessaging, { app: 'whatsapp', handle: '' }]);
-  }
-
-  function removeMessaging(i: number) {
-    setSignupMessaging(signupMessaging.filter((_, idx) => idx !== i));
-  }
-
-  function updateMessaging(i: number, field: keyof MessagingContact, value: string) {
-    const updated = [...signupMessaging];
-    updated[i] = { ...updated[i], [field]: value };
-    setSignupMessaging(updated);
-  }
-
-  // ── Parent helpers ──
-  function updateParent(
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-    field: string,
-    value: any,
-  ) {
-    setter({ ...parent, [field]: value });
-  }
-
-  function addParentMessaging(
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-  ) {
-    setter({ ...parent, messaging: [...(parent.messaging ?? []), { app: 'whatsapp', handle: '' }] });
-  }
-
-  function removeParentMessaging(
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-    i: number,
-  ) {
-    setter({ ...parent, messaging: (parent.messaging ?? []).filter((_, idx) => idx !== i) });
-  }
-
-  function updateParentMessaging(
-    setter: React.Dispatch<React.SetStateAction<ParentContact>>,
-    parent: ParentContact,
-    i: number,
-    field: keyof MessagingContact,
-    value: string,
-  ) {
-    const msgs = [...(parent.messaging ?? [])];
-    msgs[i] = { ...msgs[i], [field]: value };
-    setter({ ...parent, messaging: msgs });
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      {/* Hero Section */}
-      <div className="text-center mb-12 max-w-3xl">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <GradientIcon icon={BookOpenCheck} id="landing-logo" className="w-16 h-16 md:w-20 md:h-20"/>
-          <h1 className="text-6xl md:text-7xl font-headline font-bold primary-gradient-text">
-            LessonLink
-          </h1>
-        </div>
-        <p className="text-xl md:text-2xl text-foreground font-body">
-          Sit back and learn.
-          <br />
-          We'll take care of the rest.
+      {/* ── HERO ── */}
+      <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20">
+        <HeroLogo />
+        <h1 className="text-5xl md:text-7xl font-headline font-bold primary-gradient-text mb-4 leading-tight">
+          Kiddoland
+        </h1>
+        <p className="text-2xl md:text-3xl font-headline text-muted-foreground mb-2">
+          Not just <span className="text-primary font-bold">edu</span>cation,
         </p>
-      </div>
-      {/* Portal Buttons */}
-      <div className="flex flex-col sm:flex-row gap-6">
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-32 w-48 text-xl font-headline bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300"
-          onClick={() => { resetForm(); setLearnerDialogOpen(true); }}
-        >
-          <div className="flex flex-col items-center gap-3">
-            <GraduationCap className="h-10 w-10" />
-            <span>Learners</span>
+        <p className="text-2xl md:text-3xl font-headline primary-gradient-text font-bold mb-8">
+          <span className="text-primary">in</span>spiration!
+        </p>
+        <p className="text-lg text-muted-foreground max-w-xl mb-10">
+          Personalized English fluency lessons for kids, built around what they love.
+          Where learning feels like an adventure.
+        </p>
+        <Link href="/login">
+          <Button size="lg" className="text-lg px-8 py-6 font-headline">
+            Book a Free Trial 🚀
+          </Button>
+        </Link>
+        <a href="#about" className="mt-16 flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+          <span className="text-sm">Meet your teacher</span>
+          <ChevronDown className="h-5 w-5 animate-bounce" />
+        </a>
+      </section>
+
+      {/* ── ABOUT JON ── */}
+      <section id="about" className="py-24 px-6 max-w-5xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-headline font-bold mb-3">Meet Teacher Jon</h2>
+          <p className="text-muted-foreground text-lg">Fluency Specialist · Certified Teacher · Native English speaker</p>
+          <p className="text-muted-foreground/60 text-sm mt-1">Lisbon, Portugal</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-4 text-muted-foreground leading-relaxed">
+            <p className="text-foreground text-lg">
+              I've spent 25 years helping kids fall in love with English - not by drilling grammar,
+              but by following their curiosity into topics they actually care about.
+            </p>
+            <p>
+              My approach is simple: find what fascinates your child and use it as the
+              vehicle for language learning. The result? Kids who speak confidently
+              because they've been having too much fun to notice they were learning.
+            </p>
+            <p>
+              Every lesson, graded reader, and video in the Kiddoland curriculum is my own original work - built from scratch around how real kids I've taught actually learn. As a certified Cambridge Speaking Examiner, I've seen exactly what fluency looks like at all levels. Now I've built a program to get your child there.
+            </p>
+            <Link href="/login">
+              <Button className="mt-4 font-headline">Book a Free Trial →</Button>
+            </Link>
           </div>
-        </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-32 w-48 text-xl font-headline bg-transparent hover:bg-primary/10 border-2 border-primary/30 hover:border-primary transition-all duration-300"
-          onClick={() => { resetForm(); setTutorDialogOpen(true); }}
-        >
-          <div className="flex flex-col items-center gap-3">
-            <BookOpen className="h-10 w-10" />
-            <span>Tutors</span>
-          </div>
-        </Button>
-      </div>
-      {/* ═══════ Learner Dialog ═══════ */}
-      <Dialog open={learnerDialogOpen} onOpenChange={setLearnerDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-headline text-center">
-              Learner Portal
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              Sign in to view your lessons and book new sessions
-            </DialogDescription>
-          </DialogHeader>
-          <Tabs defaultValue="login" className="w-full" onValueChange={() => { setError(''); setSignupStep(1); }}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Log In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            {/* ── Login Tab ── */}
-            <TabsContent value="login">
-              <form onSubmit={(e) => handleLogin(e, 'learner')} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="learner-login-email">Email</Label>
-                  <Input id="learner-login-email" type="email" autoComplete="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="learner-login-password">Password</Label>
-                  <div className="relative">
-                    <Input id="learner-login-password" type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="pr-10" />
-                    <button type="button" onClick={() => setShowLoginPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Logging in...' : 'Log In'}
-                </Button>
-              </form>
-            </TabsContent>
-            {/* ── Signup Tab (Multi-Step) ── */}
-            <TabsContent value="signup">
-              <div className="mt-4">
-                <StepIndicator signupStep={signupStep} totalSteps={totalSteps} />
-                {/* Step 1: Account */}
-                {signupStep === 1 && (
-                  <div className="space-y-4">
-                    <p className="text-sm font-semibold text-center">Create your account</p>
-                    <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Password</Label>
-                      <div className="relative">
-                        <Input type={showSignupPassword ? 'text' : 'password'} placeholder="********" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="pr-10" />
-                        <button type="button" onClick={() => setShowSignupPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                          {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Confirm Password</Label>
-                      <div className="relative">
-                        <Input type={showSignupConfirm ? 'text' : 'password'} placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} className="pr-10" />
-                        <button type="button" onClick={() => setShowSignupConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                          {showSignupConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Full Name</Label>
-                      <Input placeholder="Learner's full name" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-                {/* Step 2: Learner Info */}
-                {signupStep === 2 && (
-                  <div className="space-y-4">
-                    <p className="text-sm font-semibold text-center">Tell us about yourself</p>
-                    <p className="text-xs text-muted-foreground text-center">You can skip this for now and fill it in later</p>
-                    <div className="space-y-2">
-                      <Label>Birthday</Label>
-                      <Input type="date" value={signupBirthday} onChange={(e) => setSignupBirthday(e.target.value)} />
-                      {signupBirthday && (
-                        <p className="text-xs text-muted-foreground">
-                          Age: {calculateAge(signupBirthday)}
-                          {isUnder18 && ' — Parent information will be required'}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Gender</Label>
-                      <select
-                        value={signupGender === 'other' || (signupGender && !['boy', 'girl', ''].includes(signupGender)) ? 'other' : signupGender}
-                        onChange={(e) => { setSignupGender(e.target.value); if (e.target.value !== 'other') setSignupCustomGender(''); }}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Select...</option>
-                        {GENDER_OPTIONS.map((g) => (
-                          <option key={g.value} value={g.value}>{g.label}</option>
-                        ))}
-                      </select>
-                      {(signupGender === 'other') && (
-                        <Input value={signupCustomGender} onChange={(e) => setSignupCustomGender(e.target.value)} placeholder="Enter identity..." className="mt-2" />
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Step 3: Messaging */}
-                {signupStep === 3 && (
-                  <div className="space-y-4">
-                    <p className="text-sm font-semibold text-center">How can we reach you?</p>
-                    <p className="text-xs text-muted-foreground text-center">Add your messaging apps so your tutor can contact you</p>
-                    <div className="space-y-3">
-                      {signupMessaging.map((m, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <select
-                            value={m.app}
-                            onChange={(e) => updateMessaging(i, 'app', e.target.value)}
-                            className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm w-36"
-                          >
-                            {MESSAGING_APPS.map((a) => (
-                              <option key={a.value} value={a.value}>{a.label}</option>
-                            ))}
-                          </select>
-                          <Input
-                            value={m.handle}
-                            onChange={(e) => updateMessaging(i, 'handle', e.target.value)}
-                            placeholder="Username or ID..."
-                            className="flex-1"
-                          />
-                          <Button variant="ghost" size="sm" onClick={() => removeMessaging(i)}>
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button variant="outline" size="sm" onClick={addMessaging} className="w-full">
-                        <Plus className="mr-1 h-3 w-3" /> Add Messaging App
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {/* Step 4: Parent Info */}
-                {signupStep === 4 && (
-                  <div className="space-y-6">
-                    <div className="text-center">
-                      <p className="text-sm font-semibold">Parent / Guardian Information</p>
-                      {isUnder18 ? (
-                        <p className="text-xs text-amber-600 flex items-center justify-center gap-1 mt-1">
-                          <AlertTriangle className="h-3 w-3" /> Required — learner is under 18
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-1">Optional for adult learners</p>
-                      )}
-                    </div>
-                    <ParentFields 
-                      label="Primary Contact" 
-                      parent={signupPrimary} 
-                      setter={setSignupPrimary}
-                      updateParent={updateParent}
-                      addParentMessaging={addParentMessaging}
-                      removeParentMessaging={removeParentMessaging}
-                      updateParentMessaging={updateParentMessaging}
-                    />
-                    <div className="border-t pt-4">
-                      <ParentFields 
-                        label="Secondary Contact (optional)" 
-                        parent={signupSecondary} 
-                        setter={setSignupSecondary}
-                        updateParent={updateParent}
-                        addParentMessaging={addParentMessaging}
-                        removeParentMessaging={removeParentMessaging}
-                        updateParentMessaging={updateParentMessaging}
-                      />
-                    </div>
-                  </div>
-                )}
-                {/* Error + Navigation */}
-                {error && <p className="text-sm text-destructive mt-3">{error}</p>}
-                <div className="flex justify-between mt-6">
-                  {signupStep > 1 ? (
-                    <Button variant="outline" onClick={handleBack}>
-                      <ArrowLeft className="mr-1 h-4 w-4" /> Back
-                    </Button>
-                  ) : (
-                    <div />
-                  )}
-                  <div className="flex gap-2">
-                    {signupStep > 1 && (
-                      <Button variant="ghost" onClick={handleSignupComplete} disabled={loading}>
-                        {loading ? 'Creating account...' : 'Skip for now'}
-                      </Button>
-                    )}
-                    {signupStep < totalSteps ? (
-                      <Button onClick={handleNext}>
-                        Next <ArrowRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button onClick={handleSignupComplete} disabled={loading}>
-                        {loading ? 'Creating account...' : 'Complete Sign Up'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { icon: <Users className="h-6 w-6" />, value: '5,000+', label: 'Students taught' },
+              { icon: <Clock className="h-6 w-6" />, value: '25 yrs', label: 'Experience' },
+              { icon: <Star className="h-6 w-6 fill-yellow-400 text-yellow-400" />, value: '5.0', label: 'Average Rating' },
+              { icon: <Award className="h-6 w-6" />, value: '50,000+', label: 'Lessons completed' },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-xl border border-border bg-card p-5 text-center">
+                <div className="flex justify-center mb-2 text-primary">{stat.icon}</div>
+                <div className="text-2xl font-bold font-headline primary-gradient-text">{stat.value}</div>
+                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
               </div>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-      {/* ═══════ Tutor Dialog ═══════ */}
-      <Dialog open={tutorDialogOpen} onOpenChange={setTutorDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-headline text-center">
-              Tutor Portal
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              Sign in to manage your learners and lessons
-            </DialogDescription>
-          </DialogHeader>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Log In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={(e) => handleLogin(e, 'tutor')} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tutor-login-email">Email</Label>
-                  <Input id="tutor-login-email" type="email" autoComplete="email" placeholder="you@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
+            ))}
+            <div className="col-span-2 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground space-y-1">
+              <p>🎓 TESOL - Trinity College London (1998)</p>
+              <p>🎭 BFA - New York University (1997)</p>
+              <p>📋 Cambridge Speaking Examiner (2014-2020)</p>
+              <p>📖 Curriculum Developer & Content Creator</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Video */}
+        <div className="mt-12 rounded-2xl overflow-hidden border border-border aspect-video">
+          <iframe
+            src="https://www.youtube.com/embed/OaB4ozR5Qmo"
+            title="Teacher Jon profile video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-full"
+          />
+        </div>
+
+        <QuoteCarousel />
+      </section>
+
+      {/* ── PROGRAM ── */}
+      <section id="program" className="py-24 px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-4">
+            <h2 className="text-4xl font-headline font-bold mb-3">The Program</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Based on the CEFR framework and aligned with US Common Core - but with a twist.
+              Learners choose their own topics and navigate freely, so motivation never runs out.
+            </p>
+          </div>
+
+          {/* Cyclical Learning */}
+          <div className="grid md:grid-cols-4 gap-4 mb-16 mt-12">
+            {[
+              { step: 'Learn', desc: 'Language targets introduced through songs, videos, and games.', emoji: '🎵' },
+              { step: 'Engage', desc: 'Deeper exploration through discussions, searches, and gamified activities.', emoji: '🔎' },
+              { step: 'Activate', desc: 'Knowledge applied through graded readers or a mini presentation.', emoji: '🎤' },
+              { step: 'Explore', desc: 'Independent project - craft, research, or creative challenge.', emoji: '🚀' },
+            ].map((phase, i) => (
+              <div key={phase.step} className="rounded-xl border border-border bg-card p-5 text-center relative">
+                <div className="text-3xl mb-3">{phase.emoji}</div>
+                <div className="font-headline font-bold text-lg mb-2">{phase.step}</div>
+                <div className="text-sm text-muted-foreground">{phase.desc}</div>
+                {i < 3 && (
+                  <div className="hidden md:block absolute top-1/2 -right-2 text-muted-foreground text-lg z-10">→</div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Dragon Levels */}
+          <h3 className="text-2xl font-headline font-bold text-center mb-8 flex items-center justify-center gap-2">Enter the Dragon <DragonDork /></h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {DRAGONS.map((dragon) => (
+              <div key={dragon.name} className={`rounded-xl bg-gradient-to-br ${dragon.color} p-5`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`font-headline font-bold text-lg ${dragon.text}`}>{dragon.name}</span>
+                  <span className={`text-xs font-mono font-bold ${dragon.text} opacity-70`}>{dragon.level}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tutor-login-password">Password</Label>
-                  <div className="relative">
-                    <Input id="tutor-login-password" type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="********" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="pr-10" />
-                    <button type="button" onClick={() => setShowLoginPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                <div className={`text-xs font-medium mb-2 ${dragon.text} opacity-60`}>Ages {dragon.ages}</div>
+                <p className={`text-sm ${dragon.text} opacity-80`}>{dragon.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── COURSES ── */}
+      <section id="courses" className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-headline font-bold mb-3">Courses</h2>
+            <p className="text-muted-foreground text-lg">Something for every kind of learner.</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {COURSES.map((course) => (
+              <div key={course.title} className="rounded-xl border border-border bg-card p-6 flex flex-col gap-3 relative">
+                {course.badge && (
+                  <span className="absolute top-4 right-4 text-xs font-bold bg-primary/15 text-primary px-2 py-0.5 rounded-full border border-primary/30">
+                    {course.badge}
+                  </span>
+                )}
+                <div className="text-4xl">{course.emoji}</div>
+                <div>
+                  <h3 className="font-headline font-bold text-xl">{course.title}</h3>
+                  <p className="text-sm text-primary font-medium">{course.subtitle}</p>
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Logging in...' : 'Log In'}
-                </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleTutorSignup} className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tutor-signup-email">Email</Label>
-                  <Input id="tutor-signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
+                <p className="text-muted-foreground text-sm leading-relaxed">{course.description}</p>
+                <Link href="/login" className="mt-auto">
+                  <Button variant="outline" size="sm" className="border-primary/30 hover:border-primary">
+                    Book a Trial →
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MEDIA ── */}
+      <section id="media" className="py-24 px-6 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-headline font-bold mb-3">Free Content</h2>
+            <p className="text-muted-foreground text-lg">Videos, podcasts and more - completely free.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { img: '/FIF.png', title: 'Phonics in a Flash', desc: 'Hilarious shorts covering the entire English phonics system with Dork & Larry.' },
+              { img: '/FunVentures.png', title: 'FunVentures with Larry', desc: 'Curiosity videos about amazing topics from around the world.' },
+              { img: '/KiddieQuests.png', title: 'Kiddie Quests', desc: 'Group English adventures - stories, quests, and language fun.' },
+              { img: '/OUP.png', title: 'Oxford University Press', desc: 'Official collaboration - curriculum aligned with global standards.' },
+            ].map((item) => (
+              <div key={item.title} className="rounded-xl border border-border bg-card p-5 flex flex-col items-center text-center gap-3">
+                <div className="h-20 flex items-center justify-center">
+                  <img src={item.img} alt={item.title} className="max-h-full max-w-full object-contain" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tutor-signup-password">Password</Label>
-                  <div className="relative">
-                    <Input id="tutor-signup-password" type={showSignupPassword ? 'text' : 'password'} placeholder="********" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="pr-10" />
-                    <button type="button" onClick={() => setShowSignupPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tutor-signup-confirm">Confirm Password</Label>
-                  <div className="relative">
-                    <Input id="tutor-signup-confirm" type={showSignupConfirm ? 'text' : 'password'} placeholder="********" value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} required className="pr-10" />
-                    <button type="button" onClick={() => setShowSignupConfirm((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showSignupConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Sign Up'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+                <h3 className="font-headline font-bold text-sm">{item.title}</h3>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ── */}
+      <section className="py-24 px-6 text-center">
+        <div className="max-w-2xl mx-auto">
+          <img src="/Logo Star Big.png" alt="Dork" className="w-20 h-20 object-contain mx-auto mb-6" />
+          <h2 className="text-4xl font-headline font-bold mb-4 primary-gradient-text">
+            Ready to start the adventure?
+          </h2>
+          <p className="text-muted-foreground text-lg mb-8">
+            First trial lesson is on us. No commitment, no pressure - just a fun class to see if it's the right fit.
+          </p>
+          <Link href="/login">
+            <Button size="lg" className="text-lg px-10 py-6 font-headline">
+              Book Your Free Trial 🚀
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      <ContactFAB />
+
+      {/* ── FOOTER ── */}
+      <footer className="border-t border-border py-8 px-6 text-center text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <img src="/Logo Star Big.png" alt="Dork" className="w-6 h-6 object-contain" />
+          <span className="font-headline font-bold">Kiddoland</span>
+        </div>
+        <p>Powered by <Link href="/login" className="text-primary hover:underline">LessonLink</Link> · Teacher Jon · Lisbon, Portugal</p>
+      </footer>
     </div>
   );
 }

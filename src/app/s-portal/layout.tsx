@@ -19,6 +19,7 @@ export default function StudentPortalLayout({
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (authLoading) {
@@ -66,6 +67,12 @@ export default function StudentPortalLayout({
 
   }, [user, authLoading, router]);
 
+  useEffect(() => {
+    if (!isAuthorized) return;
+    const timer = setTimeout(() => setSidebarOpen(false), 3000);
+    return () => clearTimeout(timer);
+  }, [isAuthorized]);
+
   if (isChecking || authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -81,9 +88,9 @@ export default function StudentPortalLayout({
     // Should have been redirected, but as a fallback, show nothing
     return null;
   }
-  
+
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <Sidebar variant="sidebar" collapsible="icon">
         <StudentAppSidebar />
       </Sidebar>

@@ -1,4 +1,4 @@
-# LessonLink | Complete Roadmap (Q4G — April 16, 2026, Updated)
+# LessonLink | Complete Roadmap (Q4J — April 19, 2026)
 
 ---
 
@@ -693,8 +693,158 @@ Discovered and resolved critical Firebase Storage authentication blocker: all pu
 
 **Status:** ✅ 100% complete and verified working. Math tested with Max profile. Both portals synchronized on identical logic.
 
-**BLOCKER FOR PHASE 17:** 
-🔴 **New Task Identified:** Backfill `xpSpent: 0` field to all existing learner profiles (most missing this new field). Required before Phase 17 can begin. Suggested approach: Cloud Function or batch REST API script.
+---
+
+### ✅ Sidebar Collapse — Collapsible Icon Rail (Q4I)
+
+**Completed:** April 19, 2026.
+
+Both S-portal and T-portal sidebars now collapse to a narrow icon rail. Hover to expand. Nav items cascade in with a staggered animation.
+
+**Key changes:**
+- `SidebarProvider defaultOpen={false}` in both layout files
+- Replaced internal `navOpen` state with `useSidebar().open` — one state drives both width animation and nav cascade
+- Hover handlers on `SidebarContent` and `SidebarFooter` (covers full height including empty space below menu items)
+- `OPEN_DELAY` reduced 500ms → 200ms
+- "LessonLink" title transitions with `transition-[width,opacity]` so it fades out smoothly during collapse (no snap)
+- `flex-shrink-0` on logo icon prevents it from being squeezed during sibling transitions
+- Graduation cap gets `group-data-[collapsible=icon]:px-2` in collapsed state to match icon alignment
+
+**Files modified:**
+- `src/components/s-app-sidebar.tsx`
+- `src/components/t-app-sidebar.tsx`
+- `src/app/s-portal/layout.tsx`
+- `src/app/t-portal/layout.tsx`
+
+---
+
+### ✅ Sidebar Auto-Peek on Login (Q4J)
+
+**Completed:** April 19, 2026.
+
+Both S-portal and T-portal sidebars now start open on login to signal to users that the sidebar exists, then auto-collapse after 3 seconds.
+
+**Key changes:**
+- `useState(true)` for `sidebarOpen` — starts open
+- `useEffect` sets 3-second timeout → `setSidebarOpen(false)`
+- `SidebarProvider` controlled: `open={sidebarOpen} onOpenChange={setSidebarOpen}`
+- `useEffect` placed **above all conditional returns** (Rules of Hooks compliance)
+
+**Files modified:**
+- `src/app/s-portal/layout.tsx`
+- `src/app/t-portal/layout.tsx`
+
+---
+
+### ✅ iPad Responsiveness (Q4I)
+
+**Completed:** April 19, 2026.
+
+All layout fixes use viewport-width Tailwind breakpoints (`sm:` = 640px, `md:` = 768px, `lg:` = 1024px). No device detection — works correctly when any browser window is resized to tablet width.
+
+| Component | Change |
+|-----------|--------|
+| S-portal calendar grid | `grid-cols-2 sm:grid-cols-4 lg:grid-cols-7` (was `md:grid-cols-7`) |
+| Petland memory match grid | `grid-cols-3 sm:grid-cols-4` (was `grid-cols-4`) — 3-column on mobile/iPad |
+| Live session panels | `clamp(120px, 15vw, 158px)` right, `clamp(100px, 13vw, 135px)` left |
+| S-portal dashboard grid | `md:grid-cols-2` (was `lg:grid-cols-2`) |
+| S-portal settings grid | `md:grid-cols-2` (was `lg:grid-cols-2`) |
+| T-portal package stats | `grid-cols-2 md:grid-cols-3` (was `grid-cols-3`) |
+
+**Files modified:**
+- `src/app/s-portal/calendar/page.tsx`
+- `src/modules/petland/components/student-dashboard.tsx`
+- `src/app/t-portal/sessions/live/[sessionInstanceId]/page.tsx`
+- `src/app/s-portal/page.tsx`
+- `src/app/s-portal/settings/page.tsx`
+- `src/app/t-portal/page.tsx`
+
+---
+
+### ✅ xpSpent Backfill (Q4I)
+
+**Completed:** April 19, 2026.
+
+Ran `backfillXpSpentField` via one-time Admin page button. All four active learners confirmed updated with `xpSpent: 0` baseline. Button added to `src/app/admin/page.tsx` then fully removed after use.
+
+| Learner | UID | Status |
+|---------|-----|--------|
+| Arina | `iaWH8v359kXT3qMTuIwT7OHpCRJ2` | ✅ backfilled |
+| Luke | `ylhpEoEIIHULLlzqS3re0K7lKSl1` | ✅ backfilled |
+| Gordon | `kF86mIJ3MNZPe7dosNbKfaS5YIt1` | ✅ backfilled |
+| Mark | `8wa5iV5RA9NsqpR4PD74TLxep952` | ✅ backfilled |
+
+---
+
+### ✅ Kiddoland Landing Page (Q4I–Q4J)
+
+**Goal:** Public marketing page for Kiddoland, hosted inside LessonLink repo. No auth required.
+
+**Completed:** April 19, 2026 (Q4I). Refined and routing restructured Q4J.
+
+**Route:** `src/app/page.tsx` — now at `/` (root). `/kiddoland` redirects here. Login/signup moved to `/login`.
+
+**Sections:** Sticky nav (NavBrand + LLButton expandLeft flagsDown + Login button), hero (Logo Star Big.png with marble bounce), About Jon (bio + stat cards + YouTube embed), Program (cyclical learning 4-step + 6 dragon levels), Courses (4 types), Media (4 logos), CTA + footer.
+
+**Stats:** 5,000+ students, 50,000+ lessons, 5.0 Average Rating, 25 yrs experience.
+
+**Credentials:** TESOL Trinity (1998), BFA NYU (1997), Cambridge Speaking Examiner (2014–2020), Curriculum Developer & Content Creator.
+
+**Bounce system (Q4J):**
+- `damped-bounce` keyframe (physics-based marble bounce, 7s, shrinking heights) moved to `globals.css`
+- `HeroLogo` client component — always bounces on load; replays on NavBrand click (custom window event `kiddoland-bounce`); replays on navigate-back via `?bounce=1` URL param + `useSearchParams` (Suspense-wrapped); `router.replace('/')` cleans param after trigger; animation restart uses DOM reflow technique (`remove class → void el.offsetWidth → add class`)
+- `NavBrand` client component — clicking star logo or "Kiddoland" title in nav: `window.scrollTo({ top: 0 })` + `dispatchEvent('kiddoland-bounce')`
+- `DragonDork` client component — `/Dork2.png` at w-12 h-12; `IntersectionObserver` (threshold: 0.5) triggers damped bounce every time "Enter the Dragon" section scrolls into view — no cap, repeats on every scroll-in. Note: Star = Kiddoland brand logo. Dork = dragon character (Dork1.png, Dork2.png). Separate assets.
+- LLButton home button navigates to `/?bounce=1` (no bounce on the icon itself — bounce is landing page only)
+- LLButton panel order: **theme toggle → LL logo (home) → flag selector**
+
+**Quote carousel (Q4J):**
+- `QuoteCarousel` component — 28 real iTalki parent reviews from `src/lib/seed-reviews.ts`
+- Auto-rotates every 6 seconds; prev/next chevron buttons; dot navigation
+- Chinese/Portuguese quotes show "🌐 Show translation" toggle; resets on quote change
+- Pinned: Huiwei (Gordon's dad, 60 lessons), Daria (Ilya's mom, 200 lessons), Luciana Mendes
+
+**Contact (Q4J):**
+- `ContactFAB` — floating action button fixed bottom-right, Mail icon
+- Opens modal with name/email/message fields
+- POSTs to `/api/email/send-contact` using Resend `sendEmail()` (same pattern as homework/feedback)
+- `replyTo` set to sender's email so replies go directly to them
+- Shows "Sending…" state + error display on failure
+
+**Login improvements (Q4J):**
+- Reset password added to both Learner and Tutor login dialogs
+- `resetPassword()` in `src/lib/auth.ts` uses Firebase `sendPasswordResetEmail`
+- `ForgotPassword` sub-component: idle → form → sent states
+- Pre-fills email from login field; "Check your inbox ✉️" on success
+
+**Namecheap DNS (Q4J):**
+- MX records added: `@ → fwd1.pns.ch (10)`, `@ → fwd2.pns.ch (20)`
+- Existing: `send.updates → feedback-smtp.eu-west-1.amazonses.com` (Resend outbound, unchanged)
+- **Awaiting propagation** — Captain to add email forwards once live: `kiddo`/`hello`/`notifications` → `jwag.lang@gmail.com`
+
+**New files (Q4I–Q4J):**
+- `src/app/page.tsx` — Kiddoland landing page (was /kiddoland)
+- `src/app/login/page.tsx` — LessonLink login/signup (moved from /)
+- `src/app/kiddoland/page.tsx` — redirect to /
+- `src/components/hero-logo.tsx` — HeroLogo bounce client component
+- `src/components/dragon-dork.tsx` — DragonDork scroll-triggered bounce
+- `src/components/nav-brand.tsx` — NavBrand clickable logo+title
+- `src/components/quote-carousel.tsx` — Real iTalki review carousel
+- `src/components/contact-modal.tsx` — ContactFAB + ContactForm
+- `src/app/api/email/send-contact/route.ts` — Resend contact form API
+
+**Images in public/:** `FIF.png`, `FunVentures.png`, `KiddieQuests.png`, `OUP.png`, `Logo Star Big.png`, `Dork1.png`, `Dork2.png`
+
+**Pending:**
+- [ ] Real photo of Jon → replace placeholder in About section (Captain)
+- [ ] Namecheap email forwarding once MX propagates (Captain)
+
+**Architecture:**
+```
+/               → Kiddoland public landing page
+/login          → LessonLink login/signup
+/kiddoland      → redirect to /
+```
 
 ---
 
@@ -755,7 +905,6 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 **Remaining for Phase 17 completion:**
 - 🟡 Grammar/phonics diary inputs → Firestore (`addSessionGrammar`, `addSessionPhonics`)
 - 🟡 Session End button + `endSession()` flow
-- 🟡 xpSpent backfill (all learner profiles except Max missing this field)
 - ⬜ End-of-session scoreboard/summary overlay
 - ⬜ Ocean/Farm/Desert/City backgrounds
 
@@ -767,27 +916,11 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 
 ---
 
-### 🔧 Phase 17B: Review System Integration → Petland
+### ✅ Phase 17B: Review System Integration → Petland
 
 **Goal:** Automatically push classroom vocabulary/grammar/phonics into Petland's spaced repetition system after session ends.
 
-**Status:** Not started. **NEW PRIORITY** as of April 12, 2026.
-
-**Flow:**
-
-1. Session ends (T closes it)
-2. Items added during session (vocabulary/grammar/phonics) tagged with `sessionId` + `timestamp`
-3. Auto-push to student's review queue in Petland
-4. Items appear with `nextReviewDate` calculated by spaced repetition algorithm
-5. Student sees review reminders on Petland dashboard
-
-**Implementation:**
-
-- [ ] Build webhook: `/api/rewards/session-complete` to receive session close event from Petland
-- [ ] Extract items from `sessionProgress.vocabulary` / `grammar` / `phonics`
-- [ ] Call Petland API to add to review queue (or sync via reverse webhook if already architected)
-- [ ] Tag items with session metadata for learner history tracking
-- [ ] Calculate initial `nextReviewDate` based on spaced repetition algorithm (1 day, 3 days, 7 days, etc.)
+**Status:** ✅ **COMPLETE** (confirmed Q4I) — grammar/phonics from live sessions already wired into unified SRS flashcard review in Petland. No additional build required.
 
 ---
 
@@ -795,7 +928,7 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 
 **Goal:** Display celebratory scoreboard when session ends showing total points, breakdown by category, comparison to previous sessions, and celebration animations for high performance.
 
-**Status:** Not started. **NEW PRIORITY** as of April 12, 2026.
+**Status:** Not started. **Next priority after grammar/phonics diary inputs.**
 
 **Implementation:**
 
@@ -809,7 +942,7 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 
 **Priority Ranking:**
 - Phase 17 (Live Background) — MUST have for classroom experience
-- Phase 17B (Review Integration) — SHOULD have for spaced repetition loop
+- Phase 17B (Review Integration) — ✅ COMPLETE
 - Phase 17C (Scoreboard) — NICE to have for engagement/celebration, but can come after Phase 17 if needed
 
 ---
@@ -818,7 +951,7 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 
 **Goal:** Create engaging, themed progress dashboard with visual analytics — the parent/student-facing showcase of the holistic progress system. Builds on Phase 17 (Live Background + rewards data) and Phase 17B (Petland integration).
 
-**Status:** Stacked until Phases 17/17B/17C complete. Build after live session system is proven.
+**Status:** Stacked until Phases 17/17C complete. Build after live session system is proven.
 
 - **Theme:** Kiddoland Doctor gives student a checkup
 - **Aesthetic:** Medical chart style (clipboard, stethoscope icons)
@@ -844,6 +977,18 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 
 ---
 
+### ⬜ Client/Student Procurement Strategy
+
+**Status:** Stacked — Captain flagged as 1000% important in Q4J. Topic lost to context compaction. **Re-raise first thing next session.**
+
+---
+
+### ⬜ Publisher Proposal — ELT Curriculum
+
+**Status:** Stacked by Captain. Build when capacity available.
+
+---
+
 ## TECHNICAL INFRASTRUCTURE
 
 ### Current Stack
@@ -857,6 +1002,7 @@ Stars are retired. Brainfarts renamed to Oopsies. Buttons fire directly (no sele
 | **Authentication** | Firebase Authentication       | Email/password auth           |
 | **Payments**       | Stripe (Checkout + Webhooks)  | Package purchases, payment links |
 | **AI**             | DeepSeek (primary), MiniMax (failover), Claude (ready) | Assessment analysis, reports, translation |
+| **Email**          | Resend (via notifications@updates.kiddoland.co) | Transactional email (feedback, homework, contact form) |
 | **Hosting**        | Netlify (from GitHub)         | Production deployment         |
 | **Version Control**| Git + GitHub                  | Code repository               |
 | **Server-Side**    | Firebase Admin SDK            | Secure webhook writes         |
@@ -875,17 +1021,19 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 
 ### Planned Integrations
 
-- **Email:** ✅ Resend (Phase 15/16) — transactional emails from notifications@updates.kiddoland.co
+- **Email:** ✅ Resend (Phase 15/16 + Q4J contact form) — transactional emails from notifications@updates.kiddoland.co
 - **Rewards:** Petland webhook (Phase 17) for XP/HP sync
 - **Calendar:** ✅ iCal export (Phase 15-D) — subscribe from Google Calendar, Apple Calendar, Outlook
 
 ---
 
-## ROUTES STRUCTURE (Full Detail)
+## ROUTES STRUCTURE (Full Detail — Updated Q4J)
 
 | Route            | Purpose                          | Access                          |
 | ---------------- | -------------------------------- | ------------------------------- |
-| `/`              | Landing page with dual login     | Public                          |
+| `/`              | **Kiddoland public landing page** | Public                         |
+| `/login`         | **LessonLink login/signup**      | Public                          |
+| `/kiddoland`     | Redirect → `/`                   | Public                          |
 | `/t-portal/`     | Teacher dashboard and management | Teacher only                    |
 | `/s-portal/`     | Student portal and booking       | Students only                   |
 | `/admin/`        | Platform administration          | Admin only (jwag.lang@gmail.com)|
@@ -939,6 +1087,9 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 - `/api/ai/analyze-assessment` — POST: AI assessment analysis (multi-provider)
 - `/api/homework/assign` — POST: Send homework assignment email with optional attachment
 - `/api/email/send-homework-graded` — POST: Send homework graded notification email
+- `/api/email/send-feedback` — POST: Send session feedback email to parent
+- `/api/email/send-parent-report` — POST: Send parent assessment report email
+- `/api/email/send-contact` — POST: Send contact form email via Resend (Q4J)
 - `/api/rewards/sync` — POST: Receive XP/HP updates from Petland (Phase 17)
 - `/api/calendar/ical/tutor` — GET: T calendar iCal feed
 - `/api/calendar/ical/learner` — GET: L calendar iCal feed
@@ -985,6 +1136,9 @@ When a previously working feature starts failing:
 - ✅ ~~L Settings save errors~~ — Fixed Feb 24. Conditional spread pattern + cleanContact() helper + Firestore rules update.
 - ✅ ~~Stripe webhook 500 errors~~ — Fixed March 1. Root cause: Node.js auto-updated to v27 via Glary Utilities, breaking `buffer-equal-constant-time` package used by Firebase Admin SDK. Fix: downgraded to Node 24 LTS, pinned via `.node-version` file in project root.
 - ✅ ~~Email attachment for homework assignment~~ — Implemented April 1. Resend attachment with 6MB file size guard. Email failure warning toast. Status flips to 'delivered'.
+- ✅ ~~xpSpent missing field~~ — Backfilled for all active learners (Q4I).
+- ✅ ~~Contact form mailto~~ — Replaced with Resend API route `/api/email/send-contact` (Q4J).
+- ⚠️ **Namecheap email forwarding** — MX records added (fwd1/fwd2.pns.ch @ root). Awaiting DNS propagation. Captain to add forwards: `kiddo`/`hello`/`notifications` → `jwag.lang@gmail.com`.
 - ⚠️ **Booking flow requires courseId** — L calendar booking still requires courseId/unitId/sessionId in URL params. Top Up credit works but L must select a course to book. Correct behavior, but UX from Top Up → Book not seamless yet.
 - ⚠️ **Calendar tab-switch refresh** — Availability doesn't re-fetch when switching tabs (Schedule ↔ Availability). Requires page reload.
 - ⚠️ **T calendar optimistic UI** — Slots flip after Firestore confirms, not instantly. Minor delay.
@@ -997,6 +1151,8 @@ When a previously working feature starts failing:
 - ⚠️ **Old teacherProfile `A9YKGu2jOgRAEVtR8n0E`** — stacked, contains seed data for migration. Disabled in Firestore.
 - ⚠️ **`isPublished` on teacherProfiles** must be boolean `true`, not string `"true"` — fixed March 3
 - ⚠️ **Dead API routes** — `/api/homework/[id]/upload-results` and `/api/homework/[id]/grade` are unused (homework-tab does both client-side). Deletion pending.
+- ⚠️ **Gordon `studentProgress.unitId`** — currently `'starter'`. Captain must update to actual unit in Firebase Console.
+- ⚠️ **Kiddoland landing page photo** — placeholder in About section. Captain to supply real photo of Jon.
 
 ---
 
@@ -1070,20 +1226,22 @@ All balances stored in Firestore as integers (Copper). Gold/Silver/Copper is a d
 
 ---
 
-## CURRENT STATUS (April 18, 2026 — Updated Q4H)
+## CURRENT STATUS (April 19, 2026 — Updated Q4J)
 
 - ✅ **Phases 1–16:** Complete and production-ready
-- ✅ **Dork Economy:** Complete — Cash-In Station, Pet Shop migrated to Dorks, denomination display
-- ✅ **XP Budget:** Finalized — 5,000 XP/level, 60/40 Engagement/Mastery split
-- ✅ **Reward System:** Updated — Treasure Chests (XP), Wows (behavioral), Oopsies (data), behavior deductions. Stars retired.
-- ✅ **Phase 17 Spec + Mockup:** Complete — `LessonLink-Phase17-LiveSession-Spec-Q4D.md` + `LessonLink-Phase17-LiveSession-Mockup-Q4D.html`
-- ✅ **PhonicsGame mechanic:** Complete — picture + audio sentence, Match/Mismatch game, gameData stored with card
-- ✅ **Phonics Repository:** Complete — shared `phonicsRepository` collection, repo-check on phoneme select, backfill button, browse (scroll all)
-- ✅ **Grammar/Phonics list cards:** Complete — two-column layout matching Vocabulary UI
-- ✅ **GrammarFront/Back:** Updated to new field names (rule, errorWords, answer, correctSentence)
-- ✅ **Enrollment flow hardened (Q4H):** Trial → active pipeline fully wired. Approval sets `status: active` + `assignedTeacherId`. Free Trial UI in calendar. Credit gate errors surfaced. Package form creates both docs. All 4 real learners clean.
+- ✅ **Phase 17A:** Core live session + all 7 reward animations + vocab → Firestore wired. Grammar/phonics diary + session-end flow pending.
+- ✅ **Phase 17B:** Review system confirmed wired into SRS (grammar/phonics already flowing from live sessions).
+- ✅ **Dork Economy + xpSpent:** Complete and backfilled for all active learners.
+- ✅ **Sidebar collapse:** Both portals — icon rail on collapse, hover to expand, cascade animation. OPEN_DELAY 200ms.
+- ✅ **Sidebar auto-peek:** Both portals start open on login, auto-collapse after 3 seconds.
+- ✅ **iPad responsiveness:** Calendar, Petland, Live Session panels, S/T dashboards all responsive at 768px+.
+- ✅ **Kiddoland landing page:** `/` — full marketing page, hero bounce system, DragonDork scroll trigger, quote carousel (28 real reviews), contact FAB via Resend, dragon levels, courses, media logos.
+- ✅ **Login/signup:** `/login` — reset password in both Learner and Tutor dialogs.
+- ✅ **LLButton:** Expandable panel — theme toggle → LL logo (home, navigates to /?bounce=1) → flag selector.
+- ✅ **Email routing:** Resend handles all transactional email. Namecheap MX records added for inbound forwarding (propagating).
+- ✅ **Enrollment flow hardened (Q4H):** Trial → active pipeline fully wired. All 4 real learners clean.
 - ✅ **Firestore rules deployed (Q4H):** `isTeacher()` bypass on messages create. `phonicsRepository` rules also deployed.
-- 🟡 **In progress:** Phase 17 — grammar/phonics diary inputs, session end flow, xpSpent backfill
-- ⬜ **Stacked:** Phases A/B/C (Curriculum AI), Phases 17B/17C, Phases 18–23, Vocab/Grammar repositories
-- **Next:** E2E enrollment test → Gordon `studentProgress.unitId` fix → xpSpent backfill → grammar/phonics diary inputs → session end flow → Phase 17B/17C
-- **Estimated sessions to Phase 17 completion:** 1–2 (core flow); additional for theme backgrounds
+- 🔧 **In progress:** Phase 17 — grammar/phonics diary inputs → session-end flow → Phase 17C scoreboard
+- ⬜ **Stacked:** Client procurement strategy (1000% important — re-raise next session), Publisher proposal, Phases A/B/C (Curriculum AI), Phases 18–23, Language translation, Ocean/Farm/Desert/City themes (Ocean next)
+- **Next session:** Re-raise client procurement → Phase 17C scoreboard → check Namecheap email forwards → real photo of Jon
+- **Captain action items:** Namecheap email forwards once propagated; Firebase Console courses for Arina/Luke/Gordon/Mark; update Gordon `studentProgress.unitId`; real photo of Jon

@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   User,
 } from 'firebase/auth';
 import app from './firebase';
@@ -18,6 +19,10 @@ export async function signUp(email: string, password: string) {
 export async function logIn(email: string, password: string) {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   return userCredential.user;
+}
+
+export async function resetPassword(email: string) {
+  await sendPasswordResetEmail(auth, email);
 }
 
 export async function logOut() {

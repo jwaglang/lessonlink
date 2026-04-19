@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Wrench, Flag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Moon, Sun, Wrench, Flag, BookOpenCheck } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 
 const OPEN_DELAY  = 500;
@@ -28,13 +29,14 @@ function FlagImg({ cc, label }: { cc: string; label: string }) {
   );
 }
 
-export function LLButton() {
+export function LLButton({ expandLeft = false, flagsDown = false }: { expandLeft?: boolean; flagsDown?: boolean } = {}) {
   const [panelOpen,    setPanelOpen]    = useState(false);
   const [flagsOpen,    setFlagsOpen]    = useState(false);
   const [visibleFlags, setVisibleFlags] = useState(0);
   const [selectedLang, setSelectedLang] = useState('en');
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   const openTimer  = useRef<NodeJS.Timeout | null>(null);
   const closeTimer = useRef<NodeJS.Timeout | null>(null);
@@ -84,6 +86,10 @@ export function LLButton() {
     }, CLOSE_DELAY);
   }, []);
 
+  function handleHomeClick() {
+    router.push('/?bounce=1');
+  }
+
   function toggleTheme() {
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   }
@@ -98,9 +104,92 @@ export function LLButton() {
   const currentLang = LANGUAGES.find((l) => l.code === selectedLang) ?? LANGUAGES[0];
   const isDark = mounted && resolvedTheme === 'dark';
 
+  const themeBtn = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      className="h-8 w-8 rounded-lg border border-primary/30 bg-background flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-colors flex-shrink-0"
+    >
+      {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4 text-yellow-500" />}
+    </button>
+  );
+
+  const homeBtn = (
+    <button
+      type="button"
+      onClick={handleHomeClick}
+      title="Back to Kiddoland"
+      className="h-8 w-8 rounded-lg border border-primary/30 bg-background flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-colors flex-shrink-0"
+    >
+      <GradientIcon icon={BookOpenCheck} id="ll-home-btn" className="h-4 w-4" />
+    </button>
+  );
+
+  const flagBtn = (
+    <div className="relative flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setFlagsOpen((f) => !f)}
+          title="Language Selector"
+          className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors
+            ${flagsOpen
+              ? 'border-primary bg-primary/15'
+              : 'border-primary/30 bg-background hover:bg-primary/10 hover:border-primary'}`}
+        >
+          <GradientIcon icon={Flag} id="ll-flag-btn" className="h-4 w-4" />
+        </button>
+
+        {/* Flags unfurl — direction controlled by prop */}
+        <div className={`absolute ${flagsDown ? 'top-full mt-1.5 flex-col' : 'bottom-full mb-1.5 flex-col-reverse'} left-0 flex gap-1`}>
+          {LANGUAGES.map((lang, i) => (
+            <div
+              key={lang.code}
+              className={`transition-all duration-150
+                ${visibleFlags > i
+                  ? 'opacity-100 translate-y-0 pointer-events-auto'
+                  : 'opacity-0 translate-y-1.5 pointer-events-none'}`}
+            >
+              <button
+                type="button"
+                onClick={() => selectLanguage(lang.code)}
+                title={lang.label}
+                className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors
+                  ${lang.code === selectedLang
+                    ? 'border-primary bg-primary/15'
+                    : 'border-primary/30 bg-background hover:bg-primary/10 hover:border-primary'}`}
+              >
+                <FlagImg cc={lang.cc} label={lang.label} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+  );
+
+  const controls = <>{themeBtn}{flagBtn}</>;
+
+  if (expandLeft) {
+    return (
+      <div
+        className="relative h-10 w-10 flex items-center justify-center flex-shrink-0"
+        onMouseEnter={scheduleOpen}
+        onMouseLeave={scheduleClose}
+      >
+        <GradientIcon icon={Wrench} id="ll-footer-btn" className="w-7 h-7" />
+        {/* Panel floats absolutely to the LEFT — doesn't affect surrounding layout */}
+        <div
+          className={`absolute right-full top-1/2 -translate-y-1/2 flex items-center gap-2 pr-3
+            transition-all duration-300 ease-out
+            ${panelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        >
+          {themeBtn}{homeBtn}{flagBtn}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    /* Outer hover zone — onMouseEnter/Leave fires only when truly entering/leaving
-       the whole zone including the absolutely-positioned flag popover */
     <div
       className="relative flex items-center gap-2"
       onMouseEnter={scheduleOpen}
@@ -116,58 +205,7 @@ export function LLButton() {
         className={`flex items-center gap-2 overflow-visible transition-all duration-300 ease-out
           ${panelOpen ? 'max-w-[120px] opacity-100' : 'max-w-0 opacity-0'}`}
       >
-        {/* Dark / Light toggle */}
-        <button
-          type="button"
-          onClick={toggleTheme}
-          title={isDark ? 'Light mode' : 'Dark mode'}
-          className="h-8 w-8 rounded-lg border border-primary/30 bg-background flex items-center justify-center hover:bg-primary/10 hover:border-primary transition-colors flex-shrink-0"
-        >
-          {isDark
-            ? <Moon className="h-4 w-4" />
-            : <Sun className="h-4 w-4 text-yellow-500" />}
-        </button>
-
-        {/* Flag button */}
-        <div className="relative flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => setFlagsOpen((f) => !f)}
-            title="Language Selector"
-            className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors
-              ${flagsOpen
-                ? 'border-primary bg-primary/15'
-                : 'border-primary/30 bg-background hover:bg-primary/10 hover:border-primary'}`}
-          >
-            <GradientIcon icon={Flag} id="ll-flag-btn" className="h-4 w-4" />
-          </button>
-
-          {/* Flags unfurl vertically upward.
-              Still inside the outer onMouseEnter zone so hover-close is cancelled. */}
-          <div className="absolute bottom-full left-0 mb-1.5 flex flex-col-reverse gap-1">
-            {LANGUAGES.map((lang, i) => (
-              <div
-                key={lang.code}
-                className={`transition-all duration-150
-                  ${visibleFlags > i
-                    ? 'opacity-100 translate-y-0 pointer-events-auto'
-                    : 'opacity-0 translate-y-1.5 pointer-events-none'}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => selectLanguage(lang.code)}
-                  title={lang.label}
-                  className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors
-                    ${lang.code === selectedLang
-                      ? 'border-primary bg-primary/15'
-                      : 'border-primary/30 bg-background hover:bg-primary/10 hover:border-primary'}`}
-                >
-                  <FlagImg cc={lang.cc} label={lang.label} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        {controls}
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ export default function TeacherPortalLayout({
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Check if this is a live session page (no sidebar)
   const isLiveSession = pathname.includes('/sessions/live/');
@@ -60,6 +61,12 @@ export default function TeacherPortalLayout({
 
   }, [user, authLoading, router]);
 
+  useEffect(() => {
+    if (!isAuthorized) return;
+    const timer = setTimeout(() => setSidebarOpen(false), 3000);
+    return () => clearTimeout(timer);
+  }, [isAuthorized]);
+
   if (!user) return null;
 
   if (isChecking || authLoading) {
@@ -88,7 +95,7 @@ export default function TeacherPortalLayout({
   }
   
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <Sidebar variant="sidebar" collapsible="icon">
         <AppSidebar />
       </Sidebar>
