@@ -418,7 +418,7 @@ function MemoryGame({
             }
           `}</style>
 
-          <div className="grid grid-cols-4 gap-3 max-w-2xl mx-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 max-w-2xl mx-auto">
             {cards.map((card, index) => (
               <div
                 key={card.id}
@@ -514,7 +514,7 @@ function MemoryGame({
             background: white;
           }
         `}</style>
-        <div className="grid grid-cols-4 gap-2 max-w-2xl">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-w-2xl">
           {cards.map((card, index) => (
             <div
               key={card.id}

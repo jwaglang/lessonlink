@@ -103,7 +103,7 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
-  if (loading) {
+if (loading) {
     return (
       <div className="p-8">
         <p>Loading dashboard...</p>

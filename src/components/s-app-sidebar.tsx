@@ -48,7 +48,7 @@ import { Button } from './ui/button';
 const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 
 /* ── Delay constants (ms) ── */
-const OPEN_DELAY = 500;
+const OPEN_DELAY = 200;
 const CLOSE_DELAY = 300;
 
 /* ── Helper: Generate cascading delays with quadratic acceleration ── */
@@ -245,16 +245,15 @@ const StudentAppSidebar = () => {
         onMouseEnter={scheduleNavOpen}
         onMouseLeave={scheduleNavClose}
       >
-        <div className="flex items-center gap-2 p-2">
-          <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8" />
-          <h1 className="text-xl font-headline font-bold primary-gradient-text">
+        <div className="flex items-center gap-2">
+          <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8 flex-shrink-0" />
+          <h1 className="text-xl font-headline font-bold primary-gradient-text overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             LessonLink
           </h1>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        <div onMouseEnter={scheduleNavOpen} onMouseLeave={scheduleNavClose}>
+      <SidebarContent onMouseEnter={scheduleNavOpen} onMouseLeave={scheduleNavClose}>
         <SidebarMenu>
           {/* ── Dashboard (no subs) ── */}
           <div className={`transition-all duration-200 ${navVisibleItems > 0 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
@@ -555,7 +554,6 @@ const StudentAppSidebar = () => {
           </div>
           </div>
         </SidebarMenu>
-        </div>
       </SidebarContent>
 
       {/* ── Footer ── */}
@@ -569,7 +567,7 @@ const StudentAppSidebar = () => {
             onMouseEnter={() => scheduleOpen('learner', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('learner')}
           >
-            <div className="p-4 pb-2 cursor-pointer">
+            <div className="p-4 pb-2 cursor-pointer group-data-[collapsible=icon]:px-2">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
                   <GraduationCap className="h-4 w-4 text-sidebar-accent-foreground" />

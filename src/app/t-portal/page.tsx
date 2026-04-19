@@ -378,7 +378,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="rounded-md border p-3 text-center">
                 <p className="text-2xl font-bold">{activePackages.length}</p>
                 <p className="text-xs text-muted-foreground">Active</p>

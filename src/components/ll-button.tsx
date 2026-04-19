@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, BookOpenCheck, Flag } from 'lucide-react';
+import { Moon, Sun, Wrench, Flag } from 'lucide-react';
 import { GradientIcon } from './gradient-icon';
 
 const OPEN_DELAY  = 500;
@@ -102,13 +102,13 @@ export function LLButton() {
     /* Outer hover zone — onMouseEnter/Leave fires only when truly entering/leaving
        the whole zone including the absolutely-positioned flag popover */
     <div
-      className="relative flex items-center gap-2 p-2"
+      className="relative flex items-center gap-2"
       onMouseEnter={scheduleOpen}
       onMouseLeave={scheduleClose}
     >
       {/* ── LL logo ── */}
       <div className="h-10 w-10 flex items-center justify-center flex-shrink-0">
-        <GradientIcon icon={BookOpenCheck} id="ll-footer-btn" className="w-7 h-7" />
+        <GradientIcon icon={Wrench} id="ll-footer-btn" className="w-7 h-7" />
       </div>
 
       {/* ── Slide-out row (mode + flag) ── */}

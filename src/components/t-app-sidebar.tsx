@@ -62,7 +62,7 @@ interface LevelWithDetails extends Level {
 }
 
 /* ── Delay constants (ms) ── */
-const OPEN_DELAY = 500;       // main menu hover → open
+const OPEN_DELAY = 200;       // main menu hover → open
 const SUB_OPEN_DELAY = 300;   // submenu hover → cascade open
 const CLOSE_DELAY = 300;      // mouse-leave → close
 
@@ -340,16 +340,15 @@ const AppSidebar = () => {
         onMouseEnter={scheduleNavOpen}
         onMouseLeave={scheduleNavClose}
       >
-        <div className="flex items-center gap-2 p-2">
-          <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8" />
-          <h1 className="text-xl font-headline font-bold primary-gradient-text">
+        <div className="flex items-center gap-2">
+          <GradientIcon icon={BookOpenCheck} id="logo" className="w-8 h-8 flex-shrink-0" />
+          <h1 className="text-xl font-headline font-bold primary-gradient-text overflow-hidden whitespace-nowrap transition-[width,opacity] duration-200 ease-linear group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             LessonLink
           </h1>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        <div onMouseEnter={scheduleNavOpen} onMouseLeave={scheduleNavClose}>
+      <SidebarContent onMouseEnter={scheduleNavOpen} onMouseLeave={scheduleNavClose}>
         <SidebarMenu>
           {/* ── Dashboard (no subs) ── */}
           <div className={`transition-all duration-200 ${navVisibleItems > 0 ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
@@ -728,7 +727,6 @@ const AppSidebar = () => {
           </div>
           </div>
         </SidebarMenu>
-        </div>
       </SidebarContent>
 
       {/* ── Footer ── */}
@@ -742,7 +740,7 @@ const AppSidebar = () => {
             onMouseEnter={() => scheduleOpen('tutor', OPEN_DELAY)}
             onMouseLeave={() => scheduleClose('tutor')}
           >
-            <div className="p-4 pb-2 cursor-pointer">
+            <div className="p-4 pb-2 cursor-pointer group-data-[collapsible=icon]:px-2">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
                   <BookOpen className="h-4 w-4 text-sidebar-accent-foreground" />
