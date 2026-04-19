@@ -53,6 +53,7 @@ export default function SessionPrepPage() {
   const [magicWord, setMagicWord] = useState('');
   const [classGoals, setClassGoals] = useState('');
   const [xpTarget, setXpTarget] = useState(60);
+  const [selectedTheme, setSelectedTheme] = useState<'space' | 'ocean'>('space');
 
   // Prep items (local state before launch)
   const [vocabulary, setVocabulary] = useState<PrepItem[]>([]);
@@ -207,7 +208,7 @@ export default function SessionPrepPage() {
           sessionQuestion: classGoals,
           sessionAim: classGoals,
           xpTarget,
-          theme: 'space',
+          theme: selectedTheme,
         }
       );
 
@@ -499,6 +500,25 @@ export default function SessionPrepPage() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Theme Selector */}
+      <div className="flex gap-3 items-center">
+        <span className="text-sm font-medium text-muted-foreground">Background:</span>
+        <Button
+          size="sm"
+          variant={selectedTheme === 'space' ? 'default' : 'outline'}
+          onClick={() => setSelectedTheme('space')}
+        >
+          🚀 Space
+        </Button>
+        <Button
+          size="sm"
+          variant={selectedTheme === 'ocean' ? 'default' : 'outline'}
+          onClick={() => setSelectedTheme('ocean')}
+        >
+          🌊 Ocean
+        </Button>
       </div>
 
       {/* Launch Button */}
