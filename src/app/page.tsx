@@ -251,7 +251,7 @@ export default function KiddolandPage() {
               { img: '/FIF.png', title: 'Phonics in a Flash', desc: 'Hilarious shorts covering the entire English phonics system with Dork & Larry.' },
               { img: '/FunVentures.png', title: 'FunVentures with Larry', desc: 'Curiosity videos about amazing topics from around the world.' },
               { img: '/KiddieQuests.png', title: 'Kiddie Quests', desc: 'Group English adventures - stories, quests, and language fun.' },
-              { img: '/OUP.png', title: 'Oxford University Press', desc: 'Official collaboration - curriculum aligned with global standards.' },
+              { img: '/OUP.png', title: 'Once Upon A Pillow', desc: 'Original ESL podcast for kids - stories for listening and learning English.' },
             ].map((item) => (
               <div key={item.title} className="rounded-xl border border-border bg-card p-5 flex flex-col items-center text-center gap-3">
                 <div className="h-20 flex items-center justify-center">
