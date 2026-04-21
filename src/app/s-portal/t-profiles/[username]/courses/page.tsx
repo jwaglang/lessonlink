@@ -8,7 +8,7 @@ import Image from 'next/image';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, BookOpen, Library, ChevronDown, ChevronUp } from 'lucide-react';
+import { BookOpen, Library, ChevronDown, ChevronUp } from 'lucide-react';
 import { getTeacherProfileByUsername, getCourses } from '@/lib/firestore';
 import type { TeacherProfile, Course } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -111,15 +111,6 @@ function TeacherCoursesPageContent() {
 
   return (
     <div className="flex flex-col gap-8 p-4 md:p-8">
-      <div className="mb-6">
-          <Link href="/s-portal/t-profiles">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Teachers
-            </Button>
-          </Link>
-        </div>
-
       <PageHeader
         title={`Courses by ${profile.name}`}
         description={`Browse and select a course to book`}

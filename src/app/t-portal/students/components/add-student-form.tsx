@@ -45,7 +45,10 @@ export default function AddStudentForm({ onSuccess }: AddStudentFormProps) {
       try {
         const student = await getStudentByEmail(values.email);
         if (student) {
-          await updateStudent(student.id, { assignedTeacherId: user!.uid });
+          await updateStudent(student.id, {
+            assignedTeacherId: user!.uid,
+            assignedTeacherIds: [...(student.assignedTeacherIds ?? []), user!.uid].filter((v, i, a) => a.indexOf(v) === i),
+          });
           toast({
             title: 'Learner Found',
             description: `${student.name} has been added to your roster.`,

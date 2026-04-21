@@ -54,7 +54,8 @@ export interface Student {
   avatarUrl: string;
   status: StudentStatus;
   isNewStudent?: boolean; // true if never had a completed booking
-  assignedTeacherId?: string; // teacherUid of assigned teacher
+  assignedTeacherId?: string; // teacherUid of assigned teacher (legacy — single T)
+  assignedTeacherIds?: string[]; // teacherUids of all assigned teachers
   starredTutorIds?: string[]; // teacherUids the student has starred/saved
   starredCourseIds?: string[]; // courseIds the student has starred/saved
   notes?: string; // T private notes on learner
@@ -109,6 +110,7 @@ export interface Availability {
   date: string; // ISO string for the date
   time: string; // "HH:00" format
   isAvailable: boolean;
+  teacherUid?: string; // owner — added for multi-teacher support
 }
 
 export interface LearnerAvailability {
@@ -134,6 +136,8 @@ export interface Course {
   discount60min?: number; // Optional % discount for 60-min lessons (0-100)
   thumbnailUrl: string;
   imageUrl: string;
+  imagePosition?: string;
+  deletedAt?: string;
 }
 
 export interface Level {
@@ -593,6 +597,14 @@ export interface SessionFeedback {
     suggestedActivities: string;
     language: 'en' | 'zh' | 'pt';
     generatedAt: string;
+  } | null;
+
+  // English copy always saved for T records (even when sent in another language)
+  englishReport?: {
+    summary: string;
+    progressHighlights: string;
+    suggestedActivities: string;
+    savedAt: string;
   } | null;
 
   // AI provider info

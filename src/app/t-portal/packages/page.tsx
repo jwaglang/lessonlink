@@ -114,7 +114,7 @@ export default function PackagesPage() {
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader
-                title="Learner Packages"
+                title="Packages"
                 description="Manage credit packages for your learners."
             >
                 <Button onClick={handleAddClick}>

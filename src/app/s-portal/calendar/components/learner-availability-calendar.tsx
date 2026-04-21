@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import type { LearnerAvailability, SessionInstance } from '@/lib/types';
+import type { LearnerAvailability, SessionInstance, Availability } from '@/lib/types';
 import { setLearnerAvailabilityBulk } from '@/lib/firestore';
 
 const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
@@ -76,12 +76,16 @@ interface LearnerAvailabilityCalendarProps {
   studentId: string;
   initialAvailability: LearnerAvailability[];
   sessionInstances: SessionInstance[];
+  teacherAvailability?: Availability[];
+  onSlotDoubleClick?: (date: Date, time: string) => void;
 }
 
 export default function LearnerAvailabilityCalendar({
   studentId,
   initialAvailability,
   sessionInstances,
+  teacherAvailability = [],
+  onSlotDoubleClick,
 }: LearnerAvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
@@ -291,18 +295,27 @@ export default function LearnerAvailabilityCalendar({
                 const isAvailable = availableSlot?.isAvailable ?? false;
                 const isBooked = !!bookedSession;
                 const isHighlighted = highlightedSlots.has(`${day.getTime()}-${hour}`);
+                const dayISO = startOfDay(day).toISOString();
+                const isTeacherAvailable = teacherAvailability.some(
+                  a => startOfDay(parseISO(a.date)).toISOString() === dayISO && a.time === hour && a.isAvailable
+                );
+                const isOverlap = isAvailable && isTeacherAvailable;
 
                 return (
                   <div
                     key={`${day.toString()}-${hour}`}
-                    className={`border-b border-r p-1 cursor-pointer transition-colors min-h-[2rem] ${
+                    className={`border-b border-r p-1 transition-colors min-h-[2rem] ${
                       isHighlighted
-                        ? 'bg-amber-200 dark:bg-amber-600'
+                        ? 'bg-amber-200 dark:bg-amber-600 cursor-pointer'
                         : isBooked
-                        ? 'bg-blue-100 dark:bg-blue-900 cursor-not-allowed'
+                        ? 'bg-violet-200 dark:bg-violet-800 cursor-not-allowed'
+                        : isOverlap
+                        ? 'bg-emerald-300 dark:bg-emerald-700 hover:bg-emerald-400 dark:hover:bg-emerald-600 cursor-pointer'
+                        : isTeacherAvailable
+                        ? 'bg-sky-100 dark:bg-sky-900 hover:bg-sky-200 dark:hover:bg-sky-800 cursor-pointer'
                         : isAvailable
-                        ? 'bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800'
-                        : 'hover:bg-muted/50'
+                        ? 'bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 cursor-pointer'
+                        : 'hover:bg-muted/50 cursor-pointer'
                     }`}
                     onMouseDown={() => {
                       if (!isBooked) handleMouseDown(day, hour);
@@ -310,15 +323,22 @@ export default function LearnerAvailabilityCalendar({
                     onMouseEnter={() => {
                       if (!isBooked) handleMouseEnter(day, hour);
                     }}
-                    onMouseUp={() => {
-                      // handled by global mouseup
+                    onMouseUp={() => {}}
+                    onDoubleClick={() => {
+                      if (isTeacherAvailable && !isBooked && onSlotDoubleClick) {
+                        onSlotDoubleClick(day, hour);
+                      }
                     }}
                     title={
                       isBooked
                         ? 'Session booked'
+                        : isOverlap
+                        ? 'You & teacher are both free — double-click to book'
+                        : isTeacherAvailable
+                        ? 'Teacher available — double-click to book'
                         : isAvailable
-                        ? 'Available — click to remove'
-                        : 'Click to mark as available'
+                        ? 'You are available — click to remove'
+                        : 'Click to mark yourself as available'
                     }
                   />
                 );
@@ -328,13 +348,21 @@ export default function LearnerAvailabilityCalendar({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-6 mt-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-6 mt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-sm bg-green-200 dark:bg-green-800" />
-            <span>Available</span>
+            <div className="h-3 w-3 rounded-sm bg-emerald-300 dark:bg-emerald-700" />
+            <span>Both free — double-click to book</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-sm bg-blue-200 dark:bg-blue-800" />
+            <div className="h-3 w-3 rounded-sm bg-green-200 dark:bg-green-800" />
+            <span>You&apos;re available</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-sm bg-sky-200 dark:bg-sky-800" />
+            <span>Teacher available</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-3 w-3 rounded-sm bg-violet-200 dark:bg-violet-800" />
             <span>Session booked</span>
           </div>
           <div className="flex items-center gap-1.5">

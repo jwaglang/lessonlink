@@ -401,7 +401,7 @@ const AppSidebar = () => {
                     <SidebarMenuSubButton asChild>
                       <Link href="/t-portal/calendar?tab=availability" className="flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5" />
-                        Availability
+                        Booking
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
@@ -610,7 +610,7 @@ const AppSidebar = () => {
                     <SidebarMenuSubButton asChild isActive={pathname.startsWith('/t-portal/students')}>
                       <Link href="/t-portal/students" className="flex items-center gap-2">
                         <Users className="h-3.5 w-3.5" />
-                        Learner Roster
+                        Roster
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
@@ -620,7 +620,7 @@ const AppSidebar = () => {
                     <SidebarMenuSubButton asChild isActive={pathname === '/t-portal/packages'}>
                       <Link href="/t-portal/packages" className="flex items-center gap-2">
                         <CreditCard className="h-3.5 w-3.5" />
-                        Learner Packages
+                        Packages
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

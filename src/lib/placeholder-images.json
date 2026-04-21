@@ -31,64 +31,40 @@
       "imageHint": "person portrait"
     },
     {
-      "id": "course-thumb1",
-      "description": "Thumbnail for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1758685848766-06f00193020e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhbGdlYnJhJTIwZXF1YXRpb25zfGVufDB8fHx8MTc2ODMzMTU3NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "algebra equations"
+      "id": "pet-egg",
+      "description": "Dragon egg",
+      "imageUrl": "https://storage.googleapis.com/studio-3824588486-46768.firebasestorage.app/petland/egg/dragon-egg.png",
+      "imageHint": "dragon egg"
     },
     {
-      "id": "course-hero1",
-      "description": "Hero for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1758685734640-5a539c096aed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjaGFsa2JvYXJkJTIwbWF0aHxlbnwwfHx8fDE3NjgzMzE1NzZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "chalkboard math"
+      "id": "course-thumb-funphonics1",
+      "description": "Fun Phonics Kids Class",
+      "imageUrl": "/fun phonics2 .png",
+      "imageHint": "fun phonics kids class"
     },
     {
-      "id": "course-thumb2",
-      "description": "Thumbnail for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1651936716857-eddd11d0d56d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3cml0aW5nJTIwcGVufGVufDB8fHx8MTc2ODI5MTk5NHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "writing pen"
+      "id": "course-thumb-FunPhonics1",
+      "description": "Fun Phonics 1",
+      "imageUrl": "/FunPhonics1.png",
+      "imageHint": "fun phonics 1"
     },
     {
-      "id": "course-hero2",
-      "description": "Hero for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1591195852468-03a01d1375d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxvcGVuJTIwYm9va3xlbnwwfHx8fDE3NjgzMjU1MDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "id": "course-thumb-FastFluency1",
+      "description": "Fast Fluency 1",
+      "imageUrl": "/FastFluency1.png",
+      "imageHint": "fast fluency 1"
+    },
+    {
+      "id": "course-thumb-openbook",
+      "description": "Open Book",
+      "imageUrl": "/open book3.png",
       "imageHint": "open book"
     },
     {
-      "id": "course-thumb3",
-      "description": "Thumbnail for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1706609608665-ec3a51a35488?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8aGlzdG9yeSUyMHNjcm9sbHxlbnwwfHx8fDE3NjgyNDk1NjZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "history scroll"
-    },
-    {
-      "id": "course-hero3",
-      "description": "Hero for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1580102488613-fa55ab5de62a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhbmNpZW50JTIwcnVpbnN8ZW58MHx8fHwxNzY4MjMxMzQ2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "ancient ruins"
-    },
-    {
-      "id": "course-thumb4",
-      "description": "Thumbnail for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1765205560418-60bb4138c283?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwaHlzaWNzJTIwYXRvbXxlbnwwfHx8fDE3NjgzMDM4NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "physics atom"
-    },
-    {
-      "id": "course-hero4",
-      "description": "Hero for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1677108170350-468b8f32ab82?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwYXJ0aWNsZSUyMGFjY2VsZXJhdG9yfGVufDB8fHx8MTc2ODMzMTU3NXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "particle accelerator"
-    },
-    {
-      "id": "course-thumb5",
-      "description": "Thumbnail for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1719260282422-f66b9909b2f6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzcGFpbiUyMGZsYWd8ZW58MHx8fHwxNzY4MzMxNTc1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "spain flag"
-    },
-    {
-      "id": "course-hero5",
-      "description": "Hero for a course",
-      "imageUrl": "https://images.unsplash.com/photo-1703694791524-5b05b7a7b25a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxiYXJjZWxvbmElMjBzdHJlZXR8ZW58MHx8fHwxNzY4MzMxNTc1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "barcelona street"
+      "id": "course-thumb-reallyreading1",
+      "description": "Really Reading",
+      "imageUrl": "/ReallyReading1.png",
+      "imageHint": "really reading"
     }
   ]
 }

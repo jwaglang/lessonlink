@@ -171,9 +171,12 @@ export default function UnitsPage() {
         try {
             const student = students.find(s => s.id === selectedStudent);
             
-            // Fallback: ensure assignedTeacherId is set
+            // Fallback: ensure assignedTeacherId(s) is set
             if (student && !student.assignedTeacherId) {
-                await updateStudent(selectedStudent, { assignedTeacherId: user!.uid });
+                await updateStudent(selectedStudent, {
+                  assignedTeacherId: user!.uid,
+                  assignedTeacherIds: [...(student.assignedTeacherIds ?? []), user!.uid].filter((v, i, a) => a.indexOf(v) === i),
+                });
             }
 
             // Reserve credit (throws on failure)

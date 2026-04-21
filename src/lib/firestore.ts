@@ -37,6 +37,7 @@ import {
   runTransaction,
   writeBatch,
   increment,
+  arrayUnion,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -203,14 +204,31 @@ export async function updateCourse(courseId: string, updates: Partial<Course>): 
 }
 
 export async function deleteCourse(courseId: string): Promise<void> {
-  await deleteDoc(doc(db, 'courses', courseId));
+  await updateDoc(doc(db, 'courses', courseId), { deletedAt: nowIso() });
 }
 
-/** Real-time listener for courses */
+export async function restoreCourse(courseId: string): Promise<void> {
+  await updateDoc(doc(db, 'courses', courseId), { deletedAt: null });
+}
+
+/** Real-time listener for active (non-deleted) courses */
 export function onCoursesUpdate(callback: (courses: Course[]) => void): Unsubscribe {
   const q = query(coursesCollection, orderBy('title', 'asc'));
   return onSnapshot(q, (snapshot) => {
-    const courses = snapshot.docs.map(d => asId<Course>(d.id, d.data()));
+    const courses = snapshot.docs
+      .map(d => asId<Course>(d.id, d.data()))
+      .filter(c => !c.deletedAt);
+    callback(courses);
+  });
+}
+
+/** Real-time listener for trashed courses */
+export function onTrashedCoursesUpdate(callback: (courses: Course[]) => void): Unsubscribe {
+  const q = query(coursesCollection, orderBy('title', 'asc'));
+  return onSnapshot(q, (snapshot) => {
+    const courses = snapshot.docs
+      .map(d => asId<Course>(d.id, d.data()))
+      .filter(c => !!c.deletedAt);
     callback(courses);
   });
 }
@@ -406,6 +424,7 @@ export async function getOrCreateStudentByEmail(
     status: defaults?.status ?? 'active',
     isNewStudent: defaults?.isNewStudent ?? true,
     assignedTeacherId: defaults?.assignedTeacherId,
+    assignedTeacherIds: defaults?.assignedTeacherIds ?? (defaults?.assignedTeacherId ? [defaults.assignedTeacherId] : []),
     // New demographic fields
     birthday: defaults?.birthday,
     gender: defaults?.gender,
@@ -500,11 +519,14 @@ export async function bookLesson(input: {
   // Gate 1: T-L relationship exists (unless trial)
   if (input.billingType !== 'trial') {
     const studentDoc = await getStudentById(input.studentId);
-    if (!studentDoc?.assignedTeacherId) {
+    const assignedIds = studentDoc?.assignedTeacherIds?.length
+      ? studentDoc.assignedTeacherIds
+      : studentDoc?.assignedTeacherId ? [studentDoc.assignedTeacherId] : [];
+    if (assignedIds.length === 0) {
       throw new Error('No tutor assigned. Please select a tutor first.');
     }
-    if (studentDoc.assignedTeacherId !== input.teacherUid) {
-      throw new Error('You can only book sessions with your assigned tutor.');
+    if (!assignedIds.includes(input.teacherUid)) {
+      throw new Error('You can only book sessions with your assigned tutors.');
     }
   }
 
@@ -792,6 +814,14 @@ export async function getAvailability(): Promise<Availability[]> {
   return snapshot.docs.map(d => asId<Availability>(d.id, d.data()));
 }
 
+export async function getAvailabilityByTeacherUid(teacherUid: string): Promise<Availability[]> {
+  // Docs written before multi-teacher support have no teacherUid — fall back to all available slots
+  const withUid = await getDocs(query(availabilityCollection, where('teacherUid', '==', teacherUid), where('isAvailable', '==', true)));
+  if (!withUid.empty) return withUid.docs.map(d => asId<Availability>(d.id, d.data()));
+  // Fallback: return all available slots (single-teacher legacy data)
+  return getAvailableSlots();
+}
+
 export async function toggleAvailability(date: Date, time: string): Promise<Availability> {
   const { formatISO, startOfDay } = await import('date-fns');
   const dateISO = formatISO(startOfDay(date));
@@ -996,7 +1026,8 @@ export async function toggleLearnerAvailabilityBulk(
  */
 export async function setAvailabilityBulk(
   slots: { date: Date; time: string }[],
-  isAvailable: boolean
+  isAvailable: boolean,
+  teacherUid?: string
 ): Promise<Availability[]> {
   const { formatISO, startOfDay: sodFn } = await import('date-fns');
   const batch = writeBatch(db);
@@ -1030,6 +1061,7 @@ export async function setAvailabilityBulk(
         date: dateISO,
         time: slot.time,
         isAvailable,
+        ...(teacherUid ? { teacherUid } : {}),
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
@@ -1188,6 +1220,7 @@ export async function resolveApprovalRequest(
       isNewStudent: false,
       status: 'active',
       ...(req.teacherUid ? { assignedTeacherId: req.teacherUid } : {}),
+      ...(req.teacherUid ? { assignedTeacherIds: arrayUnion(req.teacherUid) } : {}),
       updatedAt: nowIso(),
     } as any);
 
@@ -1233,6 +1266,7 @@ export async function resolveApprovalRequest(
       const studentRef = doc(db, 'students', req.studentId);
       await updateDoc(studentRef, {
         assignedTeacherId: req.teacherUid,
+        assignedTeacherIds: arrayUnion(req.teacherUid),
         updatedAt: nowIso(),
       } as any);
 
@@ -1919,13 +1953,10 @@ export async function getSessionFeedbackByInstance(sessionInstanceId: string): P
 }
 
 export async function getSessionFeedbackByStudent(studentId: string): Promise<SessionFeedback[]> {
-  const q = query(
-    sessionFeedbackCollection,
-    where('studentId', '==', studentId),
-    orderBy('createdAt', 'desc')
-  );
+  const q = query(sessionFeedbackCollection, where('studentId', '==', studentId));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as SessionFeedback));
+  const results = snap.docs.map(d => ({ id: d.id, ...d.data() } as SessionFeedback));
+  return results.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function updateSessionFeedback(id: string, data: Partial<SessionFeedback>): Promise<void> {

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, useRef, useEffect, useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,8 +13,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { addCourse, updateCourse } from '@/lib/firestore';
 import { Loader2 } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -26,6 +24,7 @@ const formSchema = z.object({
     hourlyRate: z.coerce.number().min(0, { message: 'Hourly rate must be 0 or a positive number.' }),
     discount60min: z.coerce.number().min(0).max(100).optional(),
     thumbnailUrl: z.string().optional(),
+    imagePosition: z.string().optional(),
   });
 
 interface CourseFormProps {
@@ -33,8 +32,73 @@ interface CourseFormProps {
     onSuccess: (course: Course) => void;
 }
 
-// Get only course thumbnail placeholders
 const courseThumbnails = PlaceHolderImages.filter(p => p.id.startsWith('course-thumb'));
+
+function parsePos(v: string) {
+    const [x = '50', y = '50'] = (v || '50% 50%').split(' ');
+    return { x: parseFloat(x), y: parseFloat(y) };
+}
+
+function ImagePositionPicker({ src, value, onChange }: {
+    src: string;
+    value: string;
+    onChange: (val: string) => void;
+}) {
+    const posRef = useRef(parsePos(value));
+    const dragRef = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
+    const [displayPos, setDisplayPos] = useState(posRef.current);
+
+    const commit = useCallback((x: number, y: number) => {
+        const cx = Math.max(0, Math.min(100, x));
+        const cy = Math.max(0, Math.min(100, y));
+        posRef.current = { x: cx, y: cy };
+        setDisplayPos({ x: cx, y: cy });
+        onChange(`${Math.round(cx)}% ${Math.round(cy)}%`);
+    }, [onChange]);
+
+    useEffect(() => {
+        posRef.current = { x: 50, y: 50 };
+        setDisplayPos({ x: 50, y: 50 });
+        onChange('50% 50%');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [src]);
+
+    useEffect(() => {
+        const onMove = (e: MouseEvent) => {
+            if (!dragRef.current) return;
+            const dx = (e.clientX - dragRef.current.mx) * 0.4;
+            const dy = (e.clientY - dragRef.current.my) * 0.4;
+            commit(dragRef.current.px + dx, dragRef.current.py + dy);
+        };
+        const onUp = () => { dragRef.current = null; };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, [commit]);
+
+    return (
+        <div
+            className="relative h-40 w-full rounded-md overflow-hidden cursor-grab active:cursor-grabbing select-none border"
+            onMouseDown={(e) => {
+                e.preventDefault();
+                dragRef.current = { mx: e.clientX, my: e.clientY, px: posRef.current.x, py: posRef.current.y };
+            }}
+        >
+            <Image
+                src={src}
+                alt="Reframe preview"
+                fill
+                style={{ objectFit: 'cover', objectPosition: `${displayPos.x}% ${displayPos.y}%` }}
+            />
+            <div className="absolute bottom-2 left-2 text-white text-xs bg-black/50 rounded px-2 py-0.5 pointer-events-none">
+                Drag to reframe
+            </div>
+        </div>
+    );
+}
 
 
 export default function CourseForm({ course, onSuccess }: CourseFormProps) {
@@ -50,6 +114,7 @@ export default function CourseForm({ course, onSuccess }: CourseFormProps) {
             hourlyRate: course?.hourlyRate ?? 0,
             discount60min: course?.discount60min ?? undefined,
             thumbnailUrl: course?.thumbnailUrl || '',
+            imagePosition: course?.imagePosition ?? 'center',
         },
     });
 
@@ -62,10 +127,11 @@ export default function CourseForm({ course, onSuccess }: CourseFormProps) {
                 
                 const courseData = {
                     ...values,
-                    thumbnailUrl: values.thumbnailUrl || 'course-thumb1', // default if none selected
+                    thumbnailUrl: values.thumbnailUrl || 'course-thumb1',
                     imageUrl: newHeroUrl,
                     description: values.description ?? '',
                     pitch: values.pitch ?? '',
+                    imagePosition: values.imagePosition ?? 'center',
                 };
 
                 let savedCourse;
@@ -186,39 +252,55 @@ export default function CourseForm({ course, onSuccess }: CourseFormProps) {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Course Thumbnail</FormLabel>
-                             <FormDescription>Select an image for your course card.</FormDescription>
-                            <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="grid grid-cols-3 gap-4 pt-2"
-                                >
-                                    {courseThumbnails.map((thumb) => (
-                                        <FormItem key={thumb.id} className="space-y-0">
-                                            <FormControl>
-                                                <RadioGroupItem value={thumb.id} className="sr-only" />
-                                            </FormControl>
-                                            <Label className={cn(
-                                                "cursor-pointer rounded-md overflow-hidden border-2 border-transparent transition-all",
-                                                "ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                                                field.value === thumb.id && "border-primary"
-                                            )}>
-                                                <Image 
-                                                    src={thumb.imageUrl} 
-                                                    alt={thumb.description} 
-                                                    width={200} height={112} 
-                                                    className="aspect-video object-cover w-full" 
-                                                    data-ai-hint={thumb.imageHint}
-                                                />
-                                            </Label>
-                                        </FormItem>
-                                    ))}
-                                </RadioGroup>
-                            </FormControl>
+                            <FormDescription>Select an image for your course card.</FormDescription>
+                            <div className="grid grid-cols-3 gap-4 pt-2">
+                                {courseThumbnails.map((thumb) => (
+                                    <div
+                                        key={thumb.id}
+                                        onClick={() => field.onChange(thumb.id)}
+                                        className={cn(
+                                            "cursor-pointer rounded-md overflow-hidden border-2 border-transparent transition-all",
+                                            field.value === thumb.id && "border-primary ring-2 ring-primary ring-offset-2"
+                                        )}
+                                    >
+                                        <Image
+                                            src={thumb.imageUrl}
+                                            alt={thumb.description}
+                                            width={200} height={112}
+                                            className="aspect-video object-cover w-full"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
+                {(() => {
+                    const thumbId = form.watch('thumbnailUrl');
+                    const imageUrl = thumbId?.startsWith('/')
+                        ? thumbId
+                        : courseThumbnails.find(t => t.id === thumbId)?.imageUrl;
+                    if (!imageUrl) return null;
+                    return (
+                        <FormField
+                            control={form.control}
+                            name="imagePosition"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reframe Image</FormLabel>
+                                    <FormDescription>Drag to adjust what's visible in the card.</FormDescription>
+                                    <ImagePositionPicker
+                                        src={imageUrl}
+                                        value={field.value || '50% 50%'}
+                                        onChange={field.onChange}
+                                    />
+                                </FormItem>
+                            )}
+                        />
+                    );
+                })()}
 
                 <Button type="submit" disabled={isPending} className="w-full mt-4">
                     {isPending ? <Loader2 className="animate-spin" /> : 'Save Course'}

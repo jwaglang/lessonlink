@@ -303,7 +303,7 @@ const StudentAppSidebar = () => {
                     <SidebarMenuSubButton asChild>
                       <Link href="/s-portal/calendar?tab=availability" className="flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5" />
-                        Availability
+                        Booking
                       </Link>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>

@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Student, SessionInstance } from '@/lib/types';
+import type { Student, SessionInstance, SessionFeedback } from '@/lib/types';
 import {
   getSessionInstancesByStudentId,
   completeSession,
   cancelSessionInstance,
+  getSessionFeedbackByStudent,
+  updateSessionFeedback,
+  createSessionFeedback,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +34,8 @@ import {
   CalendarPlus,
   Sparkles,
   BookOpen,
+  FileText,
+  Pencil,
 } from 'lucide-react';
 import { format, parseISO, isFuture, startOfDay, differenceInHours } from 'date-fns';
 import Link from 'next/link';
@@ -39,7 +44,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import AssignHomeworkForm from '@/components/assign-homework-form';
 
 interface SessionsTabProps {
@@ -55,12 +63,26 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
   const [cancelling, setCancelling] = useState(false);
   const [hwDialogSession, setHwDialogSession] = useState<SessionInstance | null>(null);
 
+  // Feedback state
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, SessionFeedback>>({});
+  const [feedbackDialog, setFeedbackDialog] = useState<{ session: SessionInstance; feedback: SessionFeedback | null } | null>(null);
+  const [editingFeedback, setEditingFeedback] = useState(false);
+  const [editLines, setEditLines] = useState('');
+  const [savingFeedback, setSavingFeedback] = useState(false);
+  const { toast } = useToast();
+
   useEffect(() => {
     async function fetchSessions() {
       setLoading(true);
       try {
-        const data = await getSessionInstancesByStudentId(studentId);
+        const [data, feedbacks] = await Promise.all([
+          getSessionInstancesByStudentId(studentId),
+          getSessionFeedbackByStudent(studentId),
+        ]);
         setSessions(data);
+        const map: Record<string, SessionFeedback> = {};
+        for (const fb of feedbacks) map[fb.sessionInstanceId] = fb;
+        setFeedbackMap(map);
       } catch (err) {
         console.error('Error fetching sessions:', err);
       } finally {
@@ -69,6 +91,54 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
     }
     fetchSessions();
   }, [studentId]);
+
+  function openFeedbackDialog(session: SessionInstance) {
+    const fb = feedbackMap[session.id] ?? null;
+    setFeedbackDialog({ session, feedback: fb });
+    setEditingFeedback(!fb?.englishReport);
+    setEditLines(fb?.englishReport
+      ? `${fb.englishReport.summary}\n\n${fb.englishReport.progressHighlights}\n\n${fb.englishReport.suggestedActivities}`
+      : '');
+  }
+
+  async function handleSaveFeedbackText() {
+    if (!feedbackDialog) return;
+    setSavingFeedback(true);
+    try {
+      const text = editLines.trim();
+      const englishReport = { summary: text, progressHighlights: '', suggestedActivities: '', savedAt: new Date().toISOString() };
+      const existing = feedbackDialog.feedback;
+      let docId = existing?.id;
+      if (docId) {
+        await updateSessionFeedback(docId, { englishReport });
+      } else {
+        docId = await createSessionFeedback({
+          sessionInstanceId: feedbackDialog.session.id,
+          studentId,
+          teacherId: feedbackDialog.session.teacherUid || '',
+          courseId: feedbackDialog.session.courseId || '',
+          unitId: feedbackDialog.session.unitId || '',
+          sessionTitle: feedbackDialog.session.title || 'Untitled Session',
+          sessionDate: feedbackDialog.session.lessonDate || '',
+          teacherNotes: '',
+          parentReport: null,
+          englishReport,
+          status: 'draft',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      const updated = { ...(existing ?? { id: docId! }), englishReport } as SessionFeedback;
+      setFeedbackMap(prev => ({ ...prev, [feedbackDialog.session.id]: updated }));
+      setFeedbackDialog(prev => prev ? { ...prev, feedback: updated } : null);
+      setEditingFeedback(false);
+      toast({ title: 'Saved', description: 'Feedback notes saved to learner record.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingFeedback(false);
+    }
+  }
 
   // Derived lists
   const upcoming = sessions
@@ -284,9 +354,11 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
                           <Button
                             size="sm"
                             className="w-full"
-                            onClick={() => window.location.href = '/t-portal/calendar'}
+                            variant={feedbackMap[session.id]?.englishReport ? 'outline' : 'default'}
+                            onClick={() => openFeedbackDialog(session)}
                           >
-                            <Sparkles className="h-3 w-3 mr-1" /> Feedback
+                            <FileText className="h-3 w-3 mr-1" />
+                            {feedbackMap[session.id]?.englishReport ? 'Notes' : 'Add Notes'}
                           </Button>
                           <Button
                             size="sm"
@@ -361,6 +433,70 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Feedback Notes Dialog */}
+      <Dialog open={!!feedbackDialog} onOpenChange={() => setFeedbackDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Session Feedback Notes
+            </DialogTitle>
+            {feedbackDialog && (
+              <p className="text-sm text-muted-foreground">
+                {feedbackDialog.session.title || 'Untitled Session'} — {feedbackDialog.session.lessonDate}
+              </p>
+            )}
+          </DialogHeader>
+
+          {feedbackDialog?.feedback?.englishReport && !editingFeedback ? (
+            <div className="space-y-3 text-sm">
+              <p className="whitespace-pre-wrap">{feedbackDialog.feedback.englishReport.summary}</p>
+              {feedbackDialog.feedback.englishReport.progressHighlights && (
+                <p className="whitespace-pre-wrap text-muted-foreground">{feedbackDialog.feedback.englishReport.progressHighlights}</p>
+              )}
+              {feedbackDialog.feedback.englishReport.suggestedActivities && (
+                <p className="whitespace-pre-wrap text-muted-foreground">{feedbackDialog.feedback.englishReport.suggestedActivities}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Saved {new Date(feedbackDialog.feedback.englishReport.savedAt).toLocaleString()}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Paste or type the English feedback. You can include all sections as plain text.
+              </p>
+              <Textarea
+                rows={8}
+                placeholder="Summary, progress highlights, suggested activities..."
+                value={editLines}
+                onChange={e => setEditLines(e.target.value)}
+              />
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            {feedbackDialog?.feedback?.englishReport && !editingFeedback ? (
+              <Button variant="outline" size="sm" onClick={() => {
+                const r = feedbackDialog.feedback!.englishReport!;
+                setEditLines([r.summary, r.progressHighlights, r.suggestedActivities].filter(Boolean).join('\n\n'));
+                setEditingFeedback(true);
+              }}>
+                <Pencil className="h-3 w-3 mr-1" /> Edit
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setFeedbackDialog(null)}>Cancel</Button>
+                <Button size="sm" onClick={handleSaveFeedbackText} disabled={savingFeedback || !editLines.trim()}>
+                  {savingFeedback ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Save
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Assign Homework Dialog */}
       <Dialog open={!!hwDialogSession} onOpenChange={() => setHwDialogSession(null)}>

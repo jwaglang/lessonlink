@@ -68,6 +68,7 @@ const [feedbackNotes, setFeedbackNotes] = useState('');
 const [generatingFeedback, setGeneratingFeedback] = useState(false);
 const [feedbackResult, setFeedbackResult] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
 const [editedFeedback, setEditedFeedback] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
+const [englishFeedback, setEnglishFeedback] = useState<{ summary: string; progressHighlights: string; suggestedActivities: string } | null>(null);
 const [feedbackLanguage, setFeedbackLanguage] = useState<'en' | 'zh' | 'pt'>('en');
 const [translatingFeedback, setTranslatingFeedback] = useState(false);
 const [savingFeedback, setSavingFeedback] = useState(false);
@@ -119,6 +120,8 @@ async function handleTranslateFeedback(lang: 'zh' | 'pt') {
   if (!editedFeedback) return;
   setTranslatingFeedback(true);
   try {
+    // Capture the T's English before it gets replaced by the translation
+    if (feedbackLanguage === 'en') setEnglishFeedback(editedFeedback);
     const res = await fetch('/api/ai/translate-report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,6 +143,9 @@ async function handleSaveAndSendFeedback() {
   if (!selectedSession || !editedFeedback) return;
   setSavingFeedback(true);
   try {
+    // englishFeedback = T's edited English captured before any translation
+    // editedFeedback = T's English if no translation happened
+    const englishSource = englishFeedback ?? (feedbackLanguage === 'en' ? editedFeedback : null);
     const feedbackData = {
       sessionInstanceId: selectedSession.id,
       studentId: selectedSession.studentId,
@@ -154,6 +160,12 @@ async function handleSaveAndSendFeedback() {
         language: feedbackLanguage,
         generatedAt: new Date().toISOString(),
       },
+      englishReport: englishSource ? {
+        summary: englishSource.summary,
+        progressHighlights: englishSource.progressHighlights,
+        suggestedActivities: englishSource.suggestedActivities,
+        savedAt: new Date().toISOString(),
+      } : null,
       status: 'sent' as const,
       sentAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
@@ -211,6 +223,7 @@ function resetFeedbackState() {
   setFeedbackNotes('');
   setFeedbackResult(null);
   setEditedFeedback(null);
+  setEnglishFeedback(null);
   setFeedbackLanguage('en');
   setFeedbackSaved(false);
   setFeedbackDocId(null);

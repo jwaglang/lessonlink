@@ -767,7 +767,7 @@ function PetStatus({
         <CardHeader className="text-center">
           <div className="flex items-center justify-center gap-2">
             <BookUser className="h-6 w-6 text-gray-400" />
-            <CardTitle className="text-3xl text-gray-400">Passport</CardTitle>
+            <CardTitle className="text-3xl font-headline font-bold text-gray-400">Passport</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4 py-8">
@@ -823,7 +823,7 @@ function PetStatus({
       <CardHeader className="text-center">
         <div className="flex items-center justify-center gap-2">
           <BookUser className="h-6 w-6 text-primary" />
-          <CardTitle className="text-3xl">Passport</CardTitle>
+          <CardTitle className="text-3xl font-headline font-bold primary-gradient-text">Passport</CardTitle>
         </div>
         <CardDescription>Your personal stats and pet's status</CardDescription>
       </CardHeader>
@@ -2132,19 +2132,19 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
         <TabsList className="mb-6">
           <TabsTrigger value="home">
             <BookUser className="mr-2 h-4 w-4" />
-            Passport
+            <span className="font-headline font-bold">Passport</span>
           </TabsTrigger>
           <TabsTrigger value="play">
             <Gamepad2 className="mr-2 h-4 w-4" />
-            Playground
+            <span className="font-headline font-bold">Playground</span>
           </TabsTrigger>
           <TabsTrigger value="shop">
             <ShoppingBag className="mr-2 h-4 w-4" />
-            Pet Shop
+            <span className="font-headline font-bold">Pet Shop</span>
           </TabsTrigger>
           <TabsTrigger value="brochures">
             <MapIcon className="mr-2 h-4 w-4" />
-            Travel Agent
+            <span className="font-headline font-bold">Travel Agent</span>
           </TabsTrigger>
         </TabsList>
 
@@ -2372,7 +2372,7 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
         <TabsContent value="shop">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 font-headline font-bold primary-gradient-text">
                 <ShoppingBag className="w-5 h-5" />
                 Pet Shop
               </CardTitle>

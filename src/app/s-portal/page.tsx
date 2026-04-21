@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { LogOut, Calendar, GraduationCap, Clock, Plus, CalendarClock, X, AlertCircle, CheckCircle, Star, MessageSquare, ShoppingCart, BookOpen, Trophy, ShieldAlert, Wallet } from 'lucide-react';
-import { format, parseISO, isFuture, isPast, startOfDay } from 'date-fns';
+import { format, parseISO, isFuture, isPast, isToday, startOfDay } from 'date-fns';
 import type { SessionInstance, Student, Availability, StudentCredit, StudentPackage, StudentProgress as SP, StudentRewards } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
@@ -155,9 +155,10 @@ export default function StudentPortalPage() {
         );
         setLearnerAlerts(generatedAlerts);
 
-        // Fetch teacher ID (from student assignment)
-        if (studentRecord.assignedTeacherId) {
-          const teacherProfile = await getTeacherProfileById(studentRecord.assignedTeacherId);
+        // Fetch teacher ID (primary assigned T)
+        const primaryTeacherId = studentRecord.assignedTeacherIds?.[0] ?? studentRecord.assignedTeacherId;
+        if (primaryTeacherId) {
+          const teacherProfile = await getTeacherProfileById(primaryTeacherId);
           if (teacherProfile) {
             setTeacherId(teacherProfile.id);
           }
@@ -342,11 +343,11 @@ export default function StudentPortalPage() {
   }
 
   const upcomingSessions = sessions
-    .filter((l) => isFuture(parseISO(instanceDateIso(l))))
+    .filter((l) => isFuture(parseISO(instanceDateIso(l))) || isToday(parseISO(instanceDateIso(l))))
     .sort((a, b) => new Date(instanceDateIso(a)).getTime() - new Date(instanceDateIso(b)).getTime());
 
   const pastSessions = sessions
-    .filter((l) => isPast(parseISO(instanceDateIso(l))))
+    .filter((l) => isPast(parseISO(instanceDateIso(l))) && !isToday(parseISO(instanceDateIso(l))))
     .sort((a, b) => new Date(instanceDateIso(b)).getTime() - new Date(instanceDateIso(a)).getTime());
 
   const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {

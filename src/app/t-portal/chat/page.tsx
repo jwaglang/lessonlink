@@ -215,7 +215,7 @@ export default function TeacherChatPage() {
       <div className="flex gap-6 h-[80vh]">
         <Card className="w-1/3">
           <CardHeader>
-            <CardTitle>Students</CardTitle>
+            <CardTitle className="font-headline font-bold primary-gradient-text">Students</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {students.map(s => (
@@ -234,7 +234,6 @@ export default function TeacherChatPage() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">{s.email}</p>
               </button>
             ))}
           </CardContent>
@@ -242,7 +241,7 @@ export default function TeacherChatPage() {
 
         <Card className="flex-1 flex flex-col">
           <CardHeader>
-            <CardTitle>
+            <CardTitle className="font-headline font-bold primary-gradient-text">
               {selectedStudent
                 ? `Chat with ${selectedStudent.name}`
                 : 'Select a student'}

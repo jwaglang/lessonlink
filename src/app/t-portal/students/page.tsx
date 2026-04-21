@@ -31,7 +31,7 @@ export default function StudentsPage() {
     return (
         <div className="flex flex-col gap-8 p-4 md:p-8">
             <PageHeader 
-                title="Learner Roster" 
+                title="Roster" 
                 description="Manage your learner profiles, track their progress, and update their status."
             >
                 <Button onClick={() => setIsSheetOpen(true)}>

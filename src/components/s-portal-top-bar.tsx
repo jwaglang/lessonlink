@@ -46,9 +46,10 @@ export default function SPortalTopBar() {
       );
       setHoursRemaining(remaining);
 
-      // Fetch assigned tutor profile
-      if (student?.assignedTeacherId) {
-        const tutor = await getTeacherProfileById(student.assignedTeacherId);
+      // Fetch assigned tutor profile (primary T)
+      const primaryId = student?.assignedTeacherIds?.[0] ?? student?.assignedTeacherId;
+      if (primaryId) {
+        const tutor = await getTeacherProfileById(primaryId);
         setAssignedTutor(tutor);
       }
     }

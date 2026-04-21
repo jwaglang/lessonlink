@@ -23,7 +23,10 @@ interface CourseCardProps {
 export default function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
 
-    const thumbnailUrl = PlaceHolderImages.find(p => p.id === course.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
+    const thumbnailUrl = course.thumbnailUrl?.startsWith('/')
+        ? course.thumbnailUrl
+        : PlaceHolderImages.find(p => p.id === course.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
+    const objectPosition = course.imagePosition ?? '50% 50%';
     
     const currencySymbol = '$';
 
@@ -41,7 +44,7 @@ export default function CourseCard({ course, onEdit, onDelete }: CourseCardProps
         <Card className="flex flex-col overflow-hidden">
             <CardHeader className="p-0">
                 <div className="relative h-40 w-full">
-                    <Image src={thumbnailUrl} alt={course.title} layout="fill" objectFit="cover" />
+                    <Image src={thumbnailUrl} alt={course.title} layout="fill" objectFit="cover" objectPosition={objectPosition} />
                     <div className="absolute top-2 right-2">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

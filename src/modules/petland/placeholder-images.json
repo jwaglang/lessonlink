@@ -3,8 +3,8 @@
     {
       "id": "pet-egg",
       "description": "A mysterious and colorful pet egg.",
-      "imageUrl": "https://images.unsplash.com/photo-1649738633025-7c30fd33a806?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxlZ2clMjBwYXR0ZXJufGVufDB8fHx8MTc2ODEzNzc0MHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "egg pattern"
+      "imageUrl": "https://storage.googleapis.com/studio-3824588486-46768.firebasestorage.app/petland/egg/dragon-egg.png",
+      "imageHint": "dragon egg"
     },
     {
       "id": "pet-hatched",

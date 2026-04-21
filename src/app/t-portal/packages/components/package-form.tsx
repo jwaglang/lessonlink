@@ -156,7 +156,7 @@ export default function PackageForm({ students, courses, credit, onSuccess }: Pa
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Course</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!credit}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a course" />

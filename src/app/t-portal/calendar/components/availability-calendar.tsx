@@ -75,12 +75,14 @@ interface AvailabilityCalendarProps {
   initialAvailability: Availability[];
   sessionInstances: SessionInstance[];
   onSlotDoubleClick: (date: Date, time: string) => void;
+  teacherUid?: string;
 }
 
-export default function AvailabilityCalendar({ 
-  initialAvailability, 
-  sessionInstances, 
-  onSlotDoubleClick 
+export default function AvailabilityCalendar({
+  initialAvailability,
+  sessionInstances,
+  onSlotDoubleClick,
+  teacherUid,
 }: AvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availability, setAvailability] = useState(initialAvailability);
@@ -194,7 +196,7 @@ export default function AvailabilityCalendar({
 
     // BACKGROUND: write to Firestore (single batch call)
     try {
-      const updatedSlots = await setAvailabilityBulk(slotsToSet, targetValue);
+      const updatedSlots = await setAvailabilityBulk(slotsToSet, targetValue, teacherUid);
       
       // Replace optimistic entries with real Firestore data
       setAvailability(prev => {

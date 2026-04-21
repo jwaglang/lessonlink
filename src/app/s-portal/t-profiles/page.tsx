@@ -127,7 +127,7 @@ export default function TProfilesPage() {
 
   const [allProfiles, setAllProfiles] = useState<TeacherProfile[]>([]);
   const [student, setStudent] = useState<Student | null>(null);
-  const [assignedTutor, setAssignedTutor] = useState<TeacherProfile | null>(null);
+  const [assignedTutors, setAssignedTutors] = useState<TeacherProfile[]>([]);
   const [pendingTeacherIds, setPendingTeacherIds] = useState<string[]>([]); // teacherId with pending requests
   const [loading, setLoading] = useState(true);
 
@@ -144,10 +144,13 @@ export default function TProfilesPage() {
       setAllProfiles(profiles);
       setStudent(studentData);
 
-      // Fetch assigned tutor profile if exists
-      if (studentData?.assignedTeacherId) {
-        const assigned = await getTeacherProfileById(studentData.assignedTeacherId);
-        setAssignedTutor(assigned);
+      // Fetch all assigned tutor profiles
+      const assignedIds = studentData?.assignedTeacherIds?.length
+        ? studentData.assignedTeacherIds
+        : studentData?.assignedTeacherId ? [studentData.assignedTeacherId] : [];
+      if (assignedIds.length > 0) {
+        const profiles = await Promise.all(assignedIds.map(id => getTeacherProfileById(id)));
+        setAssignedTutors(profiles.filter((p): p is TeacherProfile => p !== null));
       }
 
       // NEW: Get list of teachers with pending requests
@@ -287,7 +290,10 @@ export default function TProfilesPage() {
         {filteredProfiles.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProfiles.map((profile) => {
-              const isMyTutor = student?.assignedTeacherId === profile.id;
+              const assignedIds = student?.assignedTeacherIds?.length
+                ? student.assignedTeacherIds
+                : student?.assignedTeacherId ? [student.assignedTeacherId] : [];
+              const isMyTutor = assignedIds.includes(profile.id);
               const hasPendingRequest = pendingTeacherIds.includes(profile.id);
 
               return (
@@ -367,7 +373,7 @@ export default function TProfilesPage() {
       </section>
 
       {/* ── Section 3: My Tutors (currently working with) ── */}
-      {assignedTutor && (
+      {assignedTutors.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-primary" />
@@ -377,11 +383,14 @@ export default function TProfilesPage() {
             Tutors you are currently taking classes with.
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <TutorCard
-              profile={assignedTutor}
-              isStarred={starredIds.includes(assignedTutor.id)}
-              onToggleStar={handleToggleStar}
-            />
+            {assignedTutors.map(tutor => (
+              <TutorCard
+                key={tutor.id}
+                profile={tutor}
+                isStarred={starredIds.includes(tutor.id)}
+                onToggleStar={handleToggleStar}
+              />
+            ))}
           </div>
         </section>
       )}

@@ -105,7 +105,7 @@ export default function CalendarPage() {
                 <div className="flex items-center justify-between mb-4">
                     <TabsList>
                         <TabsTrigger value="sessions">Schedule</TabsTrigger>
-                        <TabsTrigger value="availability">Availability</TabsTrigger>
+                        <TabsTrigger value="availability">Booking</TabsTrigger>
                     </TabsList>
                     <Button
                         variant="outline"
@@ -134,10 +134,11 @@ export default function CalendarPage() {
                     />
                 </TabsContent>
                 <TabsContent value="availability">
-                    <AvailabilityCalendar 
+                    <AvailabilityCalendar
                         initialAvailability={availability}
                         sessionInstances={sessionInstances}
                         onSlotDoubleClick={handleSlotDoubleClick}
+                        teacherUid={user?.uid}
                     />
                 </TabsContent>
             </Tabs>

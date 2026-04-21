@@ -226,22 +226,18 @@ export default function ScheduleTemplateModal({
     });
 
     try {
-      // For each week in the range, compute actual dates and batch write
-      for (let w = 0; w < weeks; w++) {
-        const weekOffset = w * 7;
-        const weekStartDate = startOfWeek(addDays(today, weekOffset));
-
+      // Compute all weeks in parallel
+      const weekPromises = Array.from({ length: weeks }, (_, w) => {
+        const weekStartDate = startOfWeek(addDays(today, w * 7));
         const dateSlotsForWeek = slotsArray.map(s => ({
-          date: addDays(weekStartDate, s.day), // day 0=Sun matches startOfWeek
+          date: addDays(weekStartDate, s.day),
           time: s.time,
         }));
-
-        if (ownerType === 'teacher') {
-          await setAvailabilityBulk(dateSlotsForWeek, true);
-        } else {
-          await setLearnerAvailabilityBulk(ownerId, dateSlotsForWeek, true);
-        }
-      }
+        return ownerType === 'teacher'
+          ? setAvailabilityBulk(dateSlotsForWeek, true)
+          : setLearnerAvailabilityBulk(ownerId, dateSlotsForWeek, true);
+      });
+      await Promise.all(weekPromises);
 
       onApplied?.();
       onOpenChange(false);

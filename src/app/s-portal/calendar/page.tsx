@@ -16,9 +16,11 @@ import {
   getUnitsByLevelId,
   getLearnerAvailability,
   getSessionInstancesByStudentId,
+  getAvailabilityByTeacherUid,
 } from '@/lib/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LearnerAvailabilityCalendar from './components/learner-availability-calendar';
+import LearnerWeeklyCalendar from './components/learner-weekly-calendar';
 import type { LearnerAvailability, SessionInstance } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,10 +68,11 @@ function BookingPageContent() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isNew, setIsNew] = useState(false);
   const [learnerAvailability, setLearnerAvailability] = useState<LearnerAvailability[]>([]);
+  const [teacherAvailability, setTeacherAvailability] = useState<Availability[]>([]);
   const [sessionInstances, setSessionInstances] = useState<SessionInstance[]>([]);
   const [copied, setCopied] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
-  
+
   // Booking dialog state
   const [selectedSlot, setSelectedSlot] = useState<Availability | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
@@ -160,16 +163,20 @@ function BookingPageContent() {
         const newStudent = await isNewStudent(studentRecord.id);
         setIsNew(newStudent);
         
-        const [slots, courseList, availData, instanceData] = await Promise.all([
+        const primaryTeacherUid = studentRecord.assignedTeacherIds?.[0] ?? studentRecord.assignedTeacherId;
+
+        const [slots, courseList, availData, instanceData, teacherAvailData] = await Promise.all([
           getAvailableSlots(),
           getCourses(),
           getLearnerAvailability(studentRecord.id),
           getSessionInstancesByStudentId(studentRecord.id),
+          primaryTeacherUid ? getAvailabilityByTeacherUid(primaryTeacherUid) : Promise.resolve([]),
         ]);
         setAvailableSlots(slots);
         setCourses(courseList);
         setLearnerAvailability(availData);
         setSessionInstances(instanceData);
+        setTeacherAvailability(teacherAvailData);
         
         setLoadingData(false);
       }
@@ -179,7 +186,7 @@ function BookingPageContent() {
 
   async function handleBookLesson() {
     if (!selectedSlot || !selectedCourse || !student || !user?.uid) return;
-    const teacherUid = student.assignedTeacherId ?? '';
+    const teacherUid = student.assignedTeacherIds?.[0] ?? student.assignedTeacherId ?? '';
 
     // Block booking if profile is incomplete
     if (!isProfileComplete(student)) {
@@ -351,7 +358,7 @@ function BookingPageContent() {
           <div className="flex items-center justify-between mb-6">
             <TabsList>
               <TabsTrigger value="schedule">Schedule</TabsTrigger>
-              <TabsTrigger value="availability">My Availability</TabsTrigger>
+              <TabsTrigger value="availability">Booking</TabsTrigger>
             </TabsList>
             <Button
               variant="outline"
@@ -373,95 +380,37 @@ function BookingPageContent() {
             </Button>
           </div>
 
+          <TabsContent value="schedule">
+            {isNew && (
+              <p className="text-sm text-amber-600 mb-4 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                As a new student, your first booking will require teacher approval.
+              </p>
+            )}
+            {student && (
+              <LearnerWeeklyCalendar
+                sessionInstances={sessionInstances}
+                setSessionInstances={setSessionInstances}
+                studentId={student.id}
+              />
+            )}
+          </TabsContent>
+
           <TabsContent value="availability">
             {student && (
               <LearnerAvailabilityCalendar
                 studentId={student.id}
                 initialAvailability={learnerAvailability}
                 sessionInstances={sessionInstances}
+                teacherAvailability={teacherAvailability}
+                onSlotDoubleClick={(date, time) => {
+                  const slot = teacherAvailability.find(
+                    a => startOfDay(new Date(a.date)).getTime() === startOfDay(date).getTime() && a.time === time
+                  );
+                  if (slot) setSelectedSlot(slot);
+                }}
               />
             )}
-          </TabsContent>
-
-          <TabsContent value="schedule">
-        {isNew && (
-            <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
-            <AlertCircle className="h-4 w-4" />
-            As a new student, your first booking will require teacher approval.
-            </p>
-        )}
-
-        <div className="flex items-center justify-between my-8">
-          <h2 className="text-xl font-semibold">
-            {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentDate(addDays(currentDate, -7))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentDate(new Date())}
-            >
-              This Week
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentDate(addDays(currentDate, 7))}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-4">
-          {slotsByDay.map(({ date, slots }) => (
-            <Card key={date.toISOString()} className={slots.length === 0 ? 'opacity-50' : ''}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-center text-sm">
-                  {format(date, 'EEE')}
-                </CardTitle>
-                <CardDescription className="text-center text-lg font-semibold">
-                  {format(date, 'd')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {slots.length > 0 ? (
-                  slots.map(slot => (
-                    <Button
-                      key={slot.id}
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => setSelectedSlot(slot)}
-                    >
-                      <Clock className="h-4 w-4 mr-2" />
-                      {slot.time}
-                    </Button>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center py-4">
-                    No slots
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {futureSlots.length === 0 && (
-          <Card className="mt-8">
-            <CardContent className="py-8 text-center">
-              <GraduationCap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">No available time slots at the moment.</p>
-              <p className="text-sm text-muted-foreground">Please check back later!</p>
-            </CardContent>
-          </Card>
-        )}
           </TabsContent>
         </Tabs>
       </main>
@@ -506,36 +455,14 @@ function BookingPageContent() {
                 <label className="text-sm font-medium mb-2 block">Select Duration</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[30, 60].map(duration => {
-                    const course = courses.find(c => c.id === selectedCourse);
-                    if (!course) return null;
-
-                    const price = calculateLessonPrice(
-                      course.hourlyRate,
-                      duration as 30 | 60,
-                      course.discount60min
-                    );
-                    const hasDiscount = duration === 60 && course.discount60min && course.discount60min > 0;
-
                     return (
                       <Button
                         key={duration}
                         variant={selectedDuration === duration ? 'default' : 'outline'}
-                        className="h-auto py-3 flex flex-col items-start"
+                        className="h-auto py-3"
                         onClick={() => setSelectedDuration(duration as 30 | 60)}
                       >
                         <span className="font-semibold">{duration} minutes</span>
-                        {isNew ? (
-                          <span className="text-sm text-green-600 font-medium">Free Trial</span>
-                        ) : (
-                          <span className="text-sm">
-                            ${price.toFixed(2)}
-                            {hasDiscount && (
-                              <span className="text-xs ml-1">
-                                ({course.discount60min}% off! ðŸ¥³)
-                              </span>
-                            )}
-                          </span>
-                        )}
                       </Button>
                     );
                   })}

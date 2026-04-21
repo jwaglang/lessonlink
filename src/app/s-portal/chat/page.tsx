@@ -47,9 +47,10 @@ export default function StudentChatPage() {
 
     (async () => {
       const s = await getStudentById(user.uid);
-      if (!s || !s.assignedTeacherId) return;
+      const primaryTeacherId = s?.assignedTeacherIds?.[0] ?? s?.assignedTeacherId;
+      if (!s || !primaryTeacherId) return;
       setStudent(s);
-      setTeacherId(s.assignedTeacherId);
+      setTeacherId(primaryTeacherId);
     })();
   }, [user]);
 

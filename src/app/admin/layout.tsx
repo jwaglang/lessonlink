@@ -18,6 +18,8 @@ import {
   Menu,
   X,
   BookOpenCheck,
+  ImageIcon,
+  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GradientIcon } from '@/components/gradient-icon';
@@ -28,6 +30,7 @@ const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
+  { href: '/admin/image-generator', label: 'Image Generator', icon: ImageIcon },
   // Future sections:
   // { href: '/admin/students', label: 'Students', icon: Users },
   // { href: '/admin/lessons', label: 'Lessons', icon: Calendar },
@@ -135,6 +138,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
               </div>
+              <Link href="/t-portal" className="block mb-2">
+                <Button size="sm" variant="outline" className="w-full">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Tutor Account
+                </Button>
+              </Link>
               <Button size="sm" className="w-full" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Log Out
