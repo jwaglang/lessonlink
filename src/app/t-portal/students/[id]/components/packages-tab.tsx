@@ -46,6 +46,16 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
+// Handles ISO strings, Firestore Timestamps ({seconds, nanoseconds}), and Date objects
+function toDate(value: any): Date {
+  if (!value) return new Date();
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') return parseISO(value);
+  if (typeof value.toDate === 'function') return value.toDate();
+  if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+  return new Date(value);
+}
+
 const ADMIN_EMAIL = 'jwag.lang@gmail.com';
 
 interface PackagesTabProps {
@@ -235,11 +245,11 @@ export default function PackagesTab({ studentId, student }: PackagesTabProps) {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Field
                     label="Purchased"
-                    value={format(parseISO(pkg.purchaseDate), 'MMM d, yyyy')}
+                    value={format(toDate(pkg.purchaseDate), 'MMM d, yyyy')}
                   />
                   <Field
                     label="Expires"
-                    value={format(parseISO(pkg.expiresAt), 'MMM d, yyyy')}
+                    value={format(toDate(pkg.expiresAt), 'MMM d, yyyy')}
                   />
                   <Field label="Hours Remaining" value={`${pkg.hoursRemaining} / ${pkg.totalHours}`} />
                   <Field
@@ -254,7 +264,7 @@ export default function PackagesTab({ studentId, student }: PackagesTabProps) {
                     <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
                       <AlertTriangle className="h-4 w-4" />
                       <span className="font-medium">
-                        Paused since {format(parseISO(pkg.pausedAt), 'MMM d, yyyy')}
+                        Paused since {format(toDate(pkg.pausedAt), 'MMM d, yyyy')}
                       </span>
                     </div>
                     {pkg.pauseReason && (
@@ -367,7 +377,7 @@ export default function PackagesTab({ studentId, student }: PackagesTabProps) {
               {unpauseTarget?.pausedAt && (
                 <>
                   This package has been paused since{' '}
-                  {format(parseISO(unpauseTarget.pausedAt), 'MMMM d, yyyy')}. The expiration date
+                  {format(toDate(unpauseTarget.pausedAt), 'MMMM d, yyyy')}. The expiration date
                   will be extended to account for the pause duration.
                 </>
               )}
