@@ -25,6 +25,7 @@ interface Props {
 }
 
 function SentenceSwitcherPreview({ sentence, errorWords }: { sentence: string; errorWords: string[] }) {
+  if (!sentence) return null;
   const lower = errorWords.map(w => w.toLowerCase());
   const tokens = sentence.split(/(\s+)/);
   return (
@@ -207,11 +208,18 @@ export default function GrammarManager({ studentId, prefill, onPrefillConsumed }
               <div key={card.id} className="flex items-start justify-between gap-2 text-sm rounded-md border px-3 py-2">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-orange-600 bg-orange-100 rounded px-1.5 py-0.5">{card.rule}</span>
-                    <span className="text-xs text-muted-foreground">{card.target}</span>
+                    <span className="text-xs font-semibold text-orange-600 bg-orange-100 rounded px-1.5 py-0.5">
+                      {(card as any).rule || (card as any).role || '—'}
+                    </span>
+                    {(card as any).target && (
+                      <span className="text-xs text-muted-foreground">{(card as any).target}</span>
+                    )}
                   </div>
                   <p className="text-xs">
-                    <SentenceSwitcherPreview sentence={card.wrongSentence} errorWords={card.errorWords || []} />
+                    {card.wrongSentence
+                      ? <SentenceSwitcherPreview sentence={card.wrongSentence} errorWords={card.errorWords || []} />
+                      : <span className="text-muted-foreground">{(card as any).cloze || '—'}</span>
+                    }
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => handleDelete(card.id)}>
