@@ -250,22 +250,23 @@ export default function SessionDebriefPage() {
       // Create homework draft if any feedback field is filled
       const hasFeedback = hwTitle.trim() || hwDescription.trim() || hwInstructions.trim();
       if (hasFeedback) {
-        await createHomeworkAssignment({
+        const hwPayload: Record<string, any> = {
           studentId,
           teacherId: progress.teacherId,
           courseId: sessionInst?.courseId || '',
           unitId: sessionInst?.unitId || '',
-          sessionId: sessionInst?.sessionId || undefined,
           sessionInstanceId: sessionInstanceIdVal,
           title: hwTitle.trim() || 'Session Homework',
-          description: hwDescription.trim() || undefined,
-          teacherInstructions: hwInstructions.trim() || undefined,
           homeworkType: hwType,
           deliveryMethod: 'manual',
           status: 'assigned',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        });
+        };
+        if (sessionInst?.sessionId) hwPayload.sessionId = sessionInst.sessionId;
+        if (hwDescription.trim()) hwPayload.description = hwDescription.trim();
+        if (hwInstructions.trim()) hwPayload.teacherInstructions = hwInstructions.trim();
+        await createHomeworkAssignment(hwPayload as any);
         toast({ title: 'Homework draft created — edit and send from the learner profile' });
       }
 
