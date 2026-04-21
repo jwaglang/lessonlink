@@ -270,9 +270,10 @@ export default function SessionDebriefPage() {
       }
 
       router.push(studentId !== 'practice' ? `/t-portal/students/${studentId}` : '/t-portal');
-    } catch (err) {
+    } catch (err: any) {
       console.error('[Debrief] handleProcess error:', err);
-      toast({ title: 'Failed to save some items', variant: 'destructive' });
+      const msg = err?.message || String(err) || 'Unknown error';
+      toast({ title: 'Failed to save some items', description: msg, variant: 'destructive' });
     } finally {
       setProcessing(false);
     }
