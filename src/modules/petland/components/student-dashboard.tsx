@@ -1363,10 +1363,29 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
     (async () => {
       try {
         setIsLoadingShop(true);
-        const [items, collectionsRes] = await Promise.all([
+        const [rawItems, collectionsRes] = await Promise.all([
           getPetShopItems(),
           fetch('/api/petshop/collections')
         ]);
+
+        // Refresh signed URLs so images aren't expired (same as teacher pet shop view)
+        const items = await Promise.all(rawItems.map(async (item) => {
+          const storagePath = (item as any).storagePath || (item as any).storePath;
+          if (!storagePath) return item;
+          try {
+            const res = await fetch('/api/petshop/generate-item-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ storagePath }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              return { ...item, imageUrl: data.imageUrl };
+            }
+          } catch { /* fall through to original URL */ }
+          return item;
+        }));
+
         setShopItems(items);
         
         const nameBasedDefaults: Record<string, string> = {
