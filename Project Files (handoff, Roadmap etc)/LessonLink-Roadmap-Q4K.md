@@ -867,7 +867,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 
 ---
 
-## CURRENT STATUS (Q4K — April 20, 2026)
+## CURRENT STATUS (Q4O — April 24, 2026)
 
 - ✅ **Phases 1–18:** Complete and production-ready.
 - 🔧 **Phase 18 needs testing** — end-of-session scoreboard in particular. Functional but untested.
@@ -879,10 +879,15 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 
 **Captain action items:**
 
-- Namecheap email forwards once MX propagates (`kiddo`/`hello`/`notifications` → `jwag.lang@gmail.com`)
 - Firebase Console: create/assign courses for Arina, Luke, Gordon, Mark
 - Update Gordon's `studentProgress.unitId` (currently `'starter'`)
 - Real photo of Jon for landing page About section
+
+---
+
+### Update Q4O — Infrastructure (April 24, 2026)
+
+Email forwarding for `kiddoland.co` and `jonericvoice.com` configured via **ImprovMX** (free tier) + **Gmail "Send As"**. Resend outbound and ImprovMX inbound forwarding now coexist under Custom MX. Gmail "Send As" requires an **App Password** (Google Account → 2-Step Verification → App Passwords) — without this, sending from custom domain addresses in Gmail fails silently or throws authentication errors. No code changes to LL.
 
 **Repository:** https://github.com/jwaglang/lessonlink
 
@@ -899,7 +904,7 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 ## KNOWN ISSUES & WORKAROUNDS
 
 - ✅ All resolved through Q4J: AI_USE_MOCK, Resend domain, feedback duplicate, TS errors, calendar availability, `.toFixed`, L Settings saves, Stripe webhook 500s, homework attachment, xpSpent backfill, contact form mailto.
-- ⚠️ **Namecheap email forwarding** — MX records added (fwd1/fwd2.pns.ch). Awaiting DNS propagation.
+- ✅ **Email forwarding** — ImprovMX configured for `kiddoland.co` and `jonericvoice.com`. Gmail "Send As" set up with App Password. Resend outbound + ImprovMX inbound coexist under Custom MX.
 - ⚠️ **Booking flow requires courseId** — L calendar booking still requires courseId/unitId/sessionId in URL params. Top Up credit works but L must select a course to book.
 - ⚠️ **Calendar tab-switch refresh** — Availability doesn't re-fetch when switching tabs. Requires page reload.
 - ⚠️ **T calendar optimistic UI** — Slots flip after Firestore confirms, not instantly. Minor delay.
@@ -944,6 +949,6 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 20, 2026 (Q4K)
+**Last Updated:** April 24, 2026 (Q4O)
 
-**Version:** Q4K (6.0) — Phases 16, 17, 18 marked complete. Sonnet's bloat removed. Next Projects section added (TMS / PCS / BARS).
+**Version:** Q4O (6.1) — Infrastructure update: ImprovMX email forwarding + Gmail Send As. Admin email test tool added. Known issue resolved.

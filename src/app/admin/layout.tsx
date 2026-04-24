@@ -20,6 +20,7 @@ import {
   BookOpenCheck,
   ImageIcon,
   ArrowLeft,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GradientIcon } from '@/components/gradient-icon';
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
   { href: '/admin/image-generator', label: 'Image Generator', icon: ImageIcon },
+  { href: '/admin/email-test', label: 'Email Test', icon: Mail },
   // Future sections:
   // { href: '/admin/students', label: 'Students', icon: Users },
   // { href: '/admin/lessons', label: 'Lessons', icon: Calendar },
