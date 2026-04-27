@@ -1,5 +1,36 @@
 # LessonLink | Complete Roadmap
 
+**Version:** Q4Q (7.0) — Consolidated. Roadmap + Supplement merged. Strategic Context added (relationship to Kiddoland Studios). Phases affected by Kiddoland reframe flagged inline.
+
+**Last Updated:** April 26, 2026 (Q4Q)
+
+---
+
+## STRATEGIC CONTEXT
+
+**LessonLink is infrastructure. Kiddoland Studios is the universe LessonLink delivers.**
+
+This roadmap was previously written as if LessonLink were a standalone product. As of Q4Q, that framing has been clarified, not changed. LessonLink is one of three coordinated entities:
+
+- **Kiddoland Studios produces** — stories, characters, world, games, adventures, tournaments. The creative output. The IP.
+- **LessonLink delivers** — the infrastructure that gets Studios output to learners. Lesson tools, course pages, homework distribution, billing. This is plumbing. It should be invisible when working well.
+- **Petland measures and rewards** — the engagement and economy layer. Tracks learner progress, holds the Dork economy, hosts arcade games, contains pets and avatars and inventory. The bridge between the universe (Studios) and the system (LL).
+
+The three form a single loop. A learner's experience is not segmented into "class time," "homework time," and "play time" — it is one continuous engagement with the universe, where XP is the unifying measurement and Dorks are the economic capacity within it. See `Kiddoland-Studios-White-Paper-Q4Q.md` for the full articulation.
+
+**What this means for LessonLink's roadmap:**
+
+- LessonLink's engineering scope does not change. The phases below remain correct.
+- LessonLink's *purpose* is reframed: it exists to deliver the Kiddoland universe, not to be a generic LMS. The pedagogy-agnostic framing in Product Vision below remains accurate as a SaaS positioning argument (see Module Architecture & Kiddoland Tools section), but the primary use of LL is and will remain Kiddoland.
+- Phases that touch content delivery (homework generation, curriculum AI, course pages) should default to Kiddoland-themed output where applicable. Phases tagged 🔶 below are affected by this reframe.
+- Petland's role is canonical, not auxiliary. Documentation that describes Petland as a "reward layer" is outdated. Petland is the progress system and the economy.
+
+**Project separation:**
+
+- **LessonLink** (Claude project) holds infrastructure specs and engineering work.
+- **Kiddoland Content Creation** (Claude project, created Q4Q) holds creative work — character bibles, story development, brand, world-building, the white paper.
+- Files that bridge the two — e.g., the spec for how Petland items appear in tabletop adventures — live in LessonLink because they are infrastructure decisions, even though their content comes from Studios.
+
 ---
 
 ## PRODUCT VISION
@@ -7,6 +38,8 @@
 **LessonLink is a pedagogy-agnostic LMS for independent online teachers.**
 
 It doesn't care whether you teach ELT, math, piano, or SAT prep. It doesn't care whether you use graded readers, coursebooks, Montessori, or drill-based practice. What it provides is the infrastructure every independent teacher rebuilds badly in spreadsheets and Google Drive: learner progress tracking, AI-assisted lesson planning, AI-assisted feedback and evaluation generation, homework creation and delivery, a gamification layer with spaced repetition and reward mechanics, and a booking and payment system that handles the financial lifecycle cleanly. The teacher plugs in their own curriculum. LessonLink runs the machinery around it.
+
+**Note:** The pedagogy-agnostic framing applies to LL-as-SaaS (when sold to other tutors). The primary instance of LL — running Kiddoland — uses LL specifically to deliver the Kiddoland universe. See Strategic Context above and Module Architecture & Kiddoland Tools below.
 
 ### Core Problem Being Solved
 
@@ -148,7 +181,6 @@ Teachers create lesson plans, homeworks, and assessments, then recreate them man
 
 ### ✅ Phase 5: Public Profiles & Reviews
 
-- Public teacher profiles at `/t/username`
 - Review system (post-session ratings and comments)
 - Admin panel for platform management
 - Profile editor for teachers
@@ -300,7 +332,7 @@ All 14 implementation steps completed: StudentPackage + Student status types, T 
 
 ---
 
-### ✅ Phase 15-B: Homework System
+### ✅ Phase 15-B: Homework System 🔶
 
 **Goal:** T assigns homework linked to sessions, L/parent uploads JSON results from external Kiddoland workbooks, T grades, LL tracks accuracy in `studentProgress`.
 
@@ -313,6 +345,8 @@ All 14 implementation steps completed: StudentPackage + Student status types, T 
 - Email failure warning toast; status flips to `delivered` on send success
 
 **Architecture Decision:** Kiddoland workbook/worksheet HTML mini-apps stay independent. LL handles assign → notify → collect → grade → track only. DB writes go client-side (T is logged in). API routes only for server secrets (emails).
+
+🔶 **Kiddoland reframe note:** Homework artifacts produced by KHGT (see Module Architecture below) are the canonical content for this phase. Generic homework is not the target. Homework templates default to Kiddoland-themed material referencing canonical characters and locations.
 
 **Spec Document:** `LessonLink-Phase-15B-Homework-Spec-Q2N.md`
 
@@ -538,7 +572,7 @@ All seven full-screen direct-fire animations built:
 
 ---
 
-### 🔧 Phase 19: Curriculum-Building Architecture + Session History
+### 🔧 Phase 19: Curriculum-Building Architecture + Session History 🔶
 
 **Goal:** Transform LL from session-management into a curriculum-building platform. Reusable homework templates on units, provider-agnostic AI layer, three integrated modules (KTFT/KCBT/KUPT), unified session timeline, and standalone course pages.
 
@@ -551,11 +585,19 @@ All seven full-screen direct-fire animations built:
 - `LessonLink-Unified-Session-History-Spec-Q2N.md`
 - `LessonLink-Course-Page-Architecture-Spec-Q2N.md`
 
-**Three Modules (all inside LL):**
+**Module Scope Chain (four modules, not three — see Module Architecture & Kiddoland Tools section below):**
+
+**KTFT** (framework) → **KCBT** (course) → **KUPT** (unit) → **KHGT** (homework)
+
+KHGT is the fourth zoom level not yet spec'd in the original Q36 document. Built first as standalone HTML (see Phase 19-K below), migrated inside LL once AI layer (Phase 19-B) is stable.
+
+**Three integrated modules (all inside LL):**
 
 - **KTFT** (Kiddoland Task Framework Tool) — universal pedagogical reference. Seven dragon levels, Robinson dimensions, 4-track system, linguistic emergence. Developmental sequence cross-level view (WHITE→BLACK). Read-only page in T-portal.
 - **KCBT** (Kiddoland Course Building Tool) — per-course planning. Course aims, unit slots, communicative targets, track assignments, build status. Backed by `courseBlueprint` Firestore collection.
 - **KUPT** (Kiddoland Unit Plan Tool) — per-unit design. External HTML tool. Stacked for LL integration.
+
+🔶 **Kiddoland reframe note:** AI-generated content (Phase 19-B) should default to producing Kiddoland-themed output. Templates, character references, and world-consistent vocabulary draw from Kiddoland Studios canonical sources (character bible, world bible — held in the Kiddoland Content Creation project). When LL is sold as SaaS, the Curriculum tier (see SaaS Tier Argument below) carries the Kiddoland method as a premium pedagogy package separable from the universe IP.
 
 **Phase 19-A: Foundation**
 - [ ] HomeworkTemplate, VocabularyMasteryRecord, AI types, templateId on HomeworkAssignment
@@ -588,11 +630,19 @@ All seven full-screen direct-fire animations built:
 - [ ] S-portal sidebar: "My Courses" + "Browse Courses" replaces "Browse Units"
 - [ ] Foundational for multi-T launch
 
+**Phase 19-K: KHGT Standalone (build first, migrate later)**
+- [ ] Build KHGT as standalone HTML per Q42 spec (`Kiddoland-Homework-Generator-Spec-Q42.md`)
+- [ ] Three content types: Workbooks (WHITE), Song Worksheets, Phonics Workbooks
+- [ ] Single-file HTML pattern matching KTFT/KUPT
+- [ ] Estimated build: 1–2 sessions
+- [ ] Migration into LL deferred until Phase 19-B AI layer is stable
+
 **Stacked:**
 - Vocabulary Tracker
 - AI Advisor
 - Admin AI Settings
 - KUPT integration into LL
+- KHGT migration into LL (Option B per Q42 spec)
 
 ---
 
@@ -653,7 +703,7 @@ All seven full-screen direct-fire animations built:
 
 Three big projects beyond LessonLink. Different **strands** of one overarching idea: decouple our time from earning money, but do it in a way we believe in. It has to make money, it has to be good, and it has to be authentic — as much as possible within constraints.
 
-LessonLink itself is infrastructure for all three.
+LessonLink itself is infrastructure for all three. Kiddoland Studios (now its own Claude project) is the IP layer that makes Project 2 a real product, and gives Projects 1 and 3 their differentiating substance.
 
 ---
 
@@ -664,26 +714,31 @@ LessonLink itself is infrastructure for all three.
 Five possible income channels, to be evaluated in the procurement planning session:
 
 1. **Learner Procurement** — fastest cash, soonest. No build. Only a marketing strategy to define.
-2. **Selling LessonLink as SaaS** — arguably the highest-ceiling play. Huge potential, meaningful build (multi-tenancy, onboarding, support infrastructure, marketing site, billing-for-teachers), but most of the hard work is done. The remaining work is productization, not invention. Income is slow to start but compounds.
-3. **Production Company (Project 2 revenue)** — content business and BARS bridge. Narrower and more niche than SaaS. Good product, smaller market.
-4. **Kiddoland as a School** — hire teachers. Downstream of procurement working. You train them on your method and take a margin on their hours. Income no longer capped at your own hours.
+2. **Selling LessonLink as SaaS** — arguably the highest-ceiling play. Huge potential, meaningful build (multi-tenancy, onboarding, support infrastructure, marketing site, billing-for-teachers), but most of the hard work is done. The remaining work is productization, not invention. Income is slow to start but compounds. **Tier structure already defined — see Module Architecture & Kiddoland Tools below.**
+3. **Production Company (Project 2 revenue)** — content business and BARS bridge. Now formalized as Kiddoland Studios with its own Claude project, white paper, and creative roadmap.
+4. **Kiddoland as a School** — hire teachers. Downstream of procurement working. You train them on your method and take a margin on their hours. Income no longer capped at your own hours. **Kiddoland Studios white paper formally commits to this model — Captain transitions from teacher to creator/director, hires teachers selected for charisma and ability to perform inside the Kiddoland universe.**
 5. **Curriculum-as-Product** — sell the curriculum itself. Not destination packs (applied output). Not LessonLink (delivery software). Not RPG games (one instance of the method). The curriculum system — the how-to-teach-this-way — is the artifact. Sold as: book, online course for teachers, certification program, teacher-facing subscription, consulting to schools, or some combination. TEFL teacher training is a real market. So is the "Sold A Story"–era market of teachers hungry for alternatives to the coursebook-and-grammar-drill default.
 
 **Open:** Procurement plan (target number, budget, capacity) to be defined in next session.
 
 ---
 
-### Project 2 — Production Company Strand (PCS)
+### Project 2 — Production Company Strand (PCS) — now Kiddoland Studios
 
-**Pivot to an education media production company. Working name: Kiddoland Studios.**
+**Pivot to an education media production company. Kiddoland Studios.**
+
+**Status update Q4Q:** Formally established as a separate Claude project (`Kiddoland Content Creation`) with founding white paper (`Kiddoland-Studios-White-Paper-Q4Q.md`). Five production pillars defined: Graded Readers, Tabletop Adventures, Arcade Games, Tournaments, and Long-Form Game (deferred R&D).
 
 Closest to real identity. Medium-term — we're already making these materials. May not be filmmaking (what NYU was for), but it's right up the alley: write graded readers, make animated videos, and produce games (especially interactive, immersive, imaginative RPGs as Travel Destination Packs in Petland). **This becomes the product.**
 
 **Existing assets:**
 
 - Kiddoland / Petland content universe
-- RPG practice already running with real learners (Wizard of Oz, etc. — adapted from graded readers, four-to-five station format, party mechanics, HP, skill cards, decisions with consequences)
+- Character bible (draft — held in Kiddoland Content Creation project)
+- Graded readers in active use with current Ls
+- Tabletop RPG practice already running with real learners (Wizard of Oz, etc. — adapted from graded readers, four-to-five station format, party mechanics, HP, skill cards, decisions with consequences)
 - Travel Agent inside Petland — nearly free to build (Pet Shop clone with label swaps: items → destinations, accessories → tickets, collections → regions)
+- Blaster arcade games (built, awaiting Pet Shop integration)
 - LessonLink as the delivery infrastructure (XP/Dork economy → ticket purchase → travel)
 
 **Product line: Destination Packs.** Each pack wraps around a graded reader (Wizard of Oz, The Hobbit, Treasure Island, A Christmas Carol, Charlotte's Web). Contains brochure graphic, destination blurb, station-by-station scenario with encounters/decisions, HP/skill mechanics, teacher's guide.
@@ -694,6 +749,8 @@ Closest to real identity. Medium-term — we're already making these materials. 
 - **Mode B — standalone for other teachers.** PDF / printable / digital download. Teacher runs scenario in their own classroom with their own XP/currency system (or one you provide). No Petland or LessonLink dependency.
 
 **Pedagogical frame:** Task-based language teaching meets extensive reading meets drama-in-education, with a game loop layered on top. Not "educational games" in the drill-wearing-a-costume sense. Language is the medium the game runs on, not the content of the game.
+
+**See:** `Kiddoland-Studios-White-Paper-Q4Q.md` for the full strategic framing — thesis, universe, principles, pillars, economics, the cohesive loop, and founder role.
 
 ---
 
@@ -711,7 +768,7 @@ Publishers don't sign tutors — they sign people with a distinctive body of wor
 
 **The graded-reader connection:** OUP and Cambridge publish graded readers. Graded readers compete on teaching value. A Destination Pack that wraps around one of their existing readers makes their reader more valuable. That's not a pitch to publish your book — it's a pitch for a partnership or supplementary line.
 
-**The curriculum-as-artifact connection:** The method, the tools (KTFT/KCBT/KUPT), the documentation, the philosophy — it's itself a product. Not destination packs (applied output). Not LessonLink (delivery software). Not RPG games (one instance). The curriculum system is the artifact.
+**The curriculum-as-artifact connection:** The method, the tools (KTFT/KCBT/KUPT/KHGT), the documentation, the philosophy — it's itself a product. Not destination packs (applied output). Not LessonLink (delivery software). Not RPG games (one instance). The curriculum system is the artifact.
 
 **Open question (unanswered):** How does a Big 4 ELT publisher (OUP, Cambridge, Pearson, Macmillan / National Geographic Learning) actually sign authors? Need a 30-minute conversation with someone who's published with a Big 4 house before committing serious hours. If the answer is "they were already academics" or "they came from inside publishing," Project 3 needs a different bridge than Project 2.
 
@@ -746,6 +803,77 @@ Publishers don't sign tutors — they sign people with a distinctive body of wor
 | **Kimi** | 🔧 Ready | Alternative provider | `KIMI_API_KEY` |
 
 Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object.
+
+---
+
+## MODULE ARCHITECTURE & KIDDOLAND TOOLS
+
+*(Folded in from Roadmap Supplement Q4K. The Supplement is now retired — this is the canonical version.)*
+
+### Module Architecture — The Scope Chain
+
+LessonLink's curriculum-design side is organized as four modules, each corresponding to a zoom level in curriculum design:
+
+| Module | Scope | Question it answers |
+|--------|-------|---------------------|
+| **KTFT** | Universal | What is the pedagogical framework? |
+| **KCBT** | Per-course | What is the shape of this course? |
+| **KUPT** | Per-unit | What happens inside this unit? |
+| **KHGT** | Per-homework | What homework artifacts does this unit need? |
+
+The logic is zoom levels: KTFT is the atlas, KCBT is the country map, KUPT is the street map, KHGT is the building permit. Together they cover the full design hierarchy from "what is Kiddoland pedagogy?" down to "what is the worksheet for Unit 3 Session 2's homework?"
+
+The original Q36 spec defined three modules. The Q42 Homework Generator spec, reviewed against the architecture, revealed KHGT as the missing fourth zoom level. **KHGT is its own module, not a sub-feature of another.**
+
+### Kiddoland Tools — External → Eventual LL Modules
+
+Production tools that live as standalone HTML outside LessonLink today. They'll be ported inside LL as modules over time, in sync with Phase 19 (Curriculum-AI Architecture).
+
+| Module | Current state | Target state | Build priority |
+|--------|---------------|--------------|----------------|
+| **KTFT** | Standalone HTML (v6) | Inside LL as read-only reference page, seed data in `src/lib/ktft-seed-data.ts` | Phase 19-A12 + 19-C6/C7 (spec'd) |
+| **KCBT** | Does not exist | Inside LL as interactive planning page, `courseBlueprint` Firestore collection | Phase 19-A9–A11 + 19-C8–C12 (spec'd, not built) |
+| **KUPT** | Standalone HTML (v9) | Eventually inside LL, AI-powered | Stacked — integration deferred until AI layer (19-B) stable |
+| **KHGT** | Does not exist. Spec'd as standalone HTML (Q42) | Eventually inside LL, AI-powered (Option B migration path per spec Section 13) | **Phase 19-K — build standalone first** (1–2 sessions). Integrate later. |
+
+The sequencing logic in the Q36 spec says KUPT stays external "until the AI layer is stable." The same logic applies to KHGT — Option A (standalone) now, Option B (inside LL) once Phase 19-B (AI layer) is done. The Q42 spec explicitly says "Option A is a prototype of Option B's output engine."
+
+### KHGT — Kiddoland Homework Generator Tool
+
+**Spec:** `Kiddoland-Homework-Generator-Spec-Q42.md` (April 1, 2026)
+
+**Scope:** Generates complete teacher-version HTML homework files from form input. Three content types: Workbooks (WHITE), Song Worksheets, Phonics Workbooks. No backend, no AI, no tokens.
+
+**Problem solved:** T produces 8–10 homework files per week. Current workflow (prompt Claude, debug broken output, retry) costs 20–40 minutes per file, plus token cost, plus quality variance. KHGT replaces this with a form that produces identical reliable output every time.
+
+**Status:** Not yet built. Spec ready. Captain action item.
+
+**Architecture:** Same single-file HTML pattern as KTFT and KUPT. Opens in browser, no install, works offline.
+
+**Build justification:**
+
+1. **Operational pain is real and weekly.** 8–10 homework files per week × 20–40 minutes each = 3–6 hours of prompt wrangling weekly. The generator pays back within one week of use.
+2. **Zero integration cost.** Pure HTML, no backend, no LL codebase changes, no token cost, works offline. Nothing blocks it. Nothing depends on it.
+3. **Dual-purpose build.** Building KHGT now gives the production infrastructure *and* the prototype of what the Option B module will look like inside LL later. The HTML templates and generation logic transfer directly into Phase 19-B when that phase arrives. Two wins from one build.
+
+**Future path (Option B):** When LL has the AI layer (Phase 19-B), KHGT migrates inside LL. AI populates form fields from unit data. HTML templates and generation logic transfer directly.
+
+### SaaS Tier Argument
+
+The module architecture is the natural structure for tiered LessonLink SaaS pricing. When selling LL to independent tutors outside Kiddoland, modules stack into pricing tiers:
+
+| Tier | Contains | Audience |
+|------|----------|----------|
+| **Core** | Vanilla LMS — bookings, credits, messaging, feedback pipeline, assessments | Any independent tutor who wants to replace their spreadsheet/Calendly/Notion stack |
+| **Gamification** | Core + Petland (progress system, XP/Dork economy, Pet Shop, rewards, SRS) | Tutors teaching kids or anyone who wants engagement mechanics |
+| **Curriculum** | Gamification + KTFT + KCBT + KUPT + KHGT (full curriculum design and content production stack) | Tutors who want to professionalize their practice and build reusable curriculum |
+| **AI** | Curriculum + Phase 19-B AI layer (content generation, advisor, feedback AI) | Tutors who want AI-assisted content at scale |
+
+Four modules, three or four tiers. The tier names are flexible — what matters is the architectural separation. Teachers who want a tutor LMS get the core. Teachers who want the whole Kiddoland method pay for the full stack.
+
+**Why this matters:** Decoupling Kiddoland-specific pedagogy (KTFT's dragon levels, Robinson dimensions, 4-track system) from LessonLink infrastructure is what makes the SaaS pitch honest. The core LMS is pedagogy-agnostic and broadly useful. The curriculum modules encode Captain's pedagogy and are premium because they represent 25 years of method development.
+
+**Important boundary:** The SaaS Curriculum tier sells the *method*. It does not sell the Kiddoland *universe* — that is Studios IP and stays with Kiddoland. A SaaS customer gets the framework (KTFT, KCBT, KUPT, KHGT) and can populate it with their own content. They do not get Dork the Dragon, the graded readers, the Destination Packs, or any other canonical Studios output.
 
 ---
 
@@ -867,27 +995,25 @@ Task routing configured in `src/lib/ai/providers.ts` → `TASK_PROVIDERS` object
 
 ---
 
-## CURRENT STATUS (Q4O — April 24, 2026)
+## CURRENT STATUS (Q4Q — April 26, 2026)
 
 - ✅ **Phases 1–18:** Complete and production-ready.
 - 🔧 **Phase 18 needs testing** — end-of-session scoreboard in particular. Functional but untested.
-- ⬜ **Phase 19:** Curriculum-AI Architecture + Session History + Course Pages. Specs complete, build not started.
+- ⬜ **Phase 19:** Curriculum-AI Architecture + Session History + Course Pages + KHGT. Specs complete, build not started. Now four modules (KTFT/KCBT/KUPT/KHGT).
 - ⬜ **Phases 20–22:** Stacked.
-- 🔥 **Next Projects** — TMS (Project 1), PCS (Project 2), BARS (Project 3) defined. Procurement plan to be drafted first session back.
+- 🔥 **Next Projects** — TMS (Project 1), PCS (Project 2 = Kiddoland Studios), BARS (Project 3) defined. Procurement plan to be drafted first session back.
+- 🆕 **Kiddoland Studios** — formally established as separate Claude project (Q4Q). Founding white paper drafted and added to project files. LL roadmap reframed to acknowledge Studios as the IP layer LL delivers.
 
 **Real learners (4 active):** Arina, Luke, Gordon, Mark. Max (test account).
 
 **Captain action items:**
 
+- Build KHGT standalone HTML (1–2 sessions, Phase 19-K)
+- Namecheap email forwards once MX propagates (`kiddo`/`hello`/`notifications` → `jwag.lang@gmail.com`)
 - Firebase Console: create/assign courses for Arina, Luke, Gordon, Mark
 - Update Gordon's `studentProgress.unitId` (currently `'starter'`)
 - Real photo of Jon for landing page About section
-
----
-
-### Update Q4O — Infrastructure (April 24, 2026)
-
-Email forwarding for `kiddoland.co` and `jonericvoice.com` configured via **ImprovMX** (free tier) + **Gmail "Send As"**. Resend outbound and ImprovMX inbound forwarding now coexist under Custom MX. Gmail "Send As" requires an **App Password** (Google Account → 2-Step Verification → App Passwords) — without this, sending from custom domain addresses in Gmail fails silently or throws authentication errors. No code changes to LL.
+- Add Blaster arcade games to Pet Shop economy (independent of phase work)
 
 **Repository:** https://github.com/jwaglang/lessonlink
 
@@ -904,7 +1030,7 @@ Email forwarding for `kiddoland.co` and `jonericvoice.com` configured via **Impr
 ## KNOWN ISSUES & WORKAROUNDS
 
 - ✅ All resolved through Q4J: AI_USE_MOCK, Resend domain, feedback duplicate, TS errors, calendar availability, `.toFixed`, L Settings saves, Stripe webhook 500s, homework attachment, xpSpent backfill, contact form mailto.
-- ✅ **Email forwarding** — ImprovMX configured for `kiddoland.co` and `jonericvoice.com`. Gmail "Send As" set up with App Password. Resend outbound + ImprovMX inbound coexist under Custom MX.
+- ⚠️ **Namecheap email forwarding** — MX records added (fwd1/fwd2.pns.ch). Awaiting DNS propagation.
 - ⚠️ **Booking flow requires courseId** — L calendar booking still requires courseId/unitId/sessionId in URL params. Top Up credit works but L must select a course to book.
 - ⚠️ **Calendar tab-switch refresh** — Availability doesn't re-fetch when switching tabs. Requires page reload.
 - ⚠️ **T calendar optimistic UI** — Slots flip after Firestore confirms, not instantly. Minor delay.
@@ -917,6 +1043,7 @@ Email forwarding for `kiddoland.co` and `jonericvoice.com` configured via **Impr
 - ⚠️ **Old teacherProfile `A9YKGu2jOgRAEVtR8n0E`** — disabled in Firestore, stacked for deletion.
 - ⚠️ **Dead API routes** — `/api/homework/[id]/upload-results` and `/api/homework/[id]/grade` unused. Deletion pending.
 - ⚠️ **Phase 18 end-of-session scoreboard** — functional but untested.
+- ⚠️ **Petland documentation language** — Petland-GAME_MECHANICS-Q45 and Petland-Playground-Build-Spec-Q45 describe Petland as a "reward system" or feature of LL. Per Kiddoland Studios reframe, Petland is the progress system and economy bridge. Documentation pass deferred — not urgent, mechanics are correct.
 
 ---
 
@@ -949,6 +1076,8 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 24, 2026 (Q4O)
+**Last Updated:** April 26, 2026 (Q4Q)
 
-**Version:** Q4O (6.1) — Infrastructure update: ImprovMX email forwarding + Gmail Send As. Admin email test tool added. Known issue resolved.
+**Version:** Q4Q (7.0) — Roadmap + Supplement consolidated. Strategic Context section added (LL ↔ Kiddoland Studios relationship). Module Architecture & Kiddoland Tools folded in as canonical section. Phase 19 expanded to four modules (added KHGT as Phase 19-K). Phases affected by Kiddoland reframe flagged with 🔶. Petland documentation flagged for future revision pass.
+
+**Supersedes:** `LessonLink-Roadmap-Q4K.md` (v6.0) and `LessonLink-Roadmap-Supplement-Q4K.md`. Both retired.

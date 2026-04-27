@@ -1,0 +1,357 @@
+{
+  "meta": {
+    "schemaVersion": "1.0",
+    "hexdate": "Q4R",
+    "kuptVersion": "v11",
+    "sourceKtft": {
+      "level": "WHITE DRAGON",
+      "track": "narrative",
+      "gse": "10-21",
+      "stage": "Pre-Primary / Beginners",
+      "sessions": 4,
+      "robinson": {
+        "elements": "1",
+        "displacement": "+Here-and-Now",
+        "reasoning": "-None"
+      },
+      "complexity": {
+        "elements": "Single element focus (one object, one character)",
+        "timeReference": "Here-and-now only; no time displacement",
+        "reasoning": "None required; simple identification and labeling",
+        "sequencing": "Single actions; no sequencing",
+        "context": "Immediate physical environment; fully visual support"
+      },
+      "unitSpecs": {
+        "lexicalBoundary": {
+          "maxWords": 50,
+          "complexity": "Single words and formulaic chunks only.",
+          "forbidden": ["because", "however", "therefore", "although", "since"]
+        },
+        "trackLogic": {
+          "narrative": { "format": "Picture Story", "assets": ["Thematic Scene", "Object Cards"], "mechanics": "Point and Name" },
+          "informational": { "format": "Living Infographic", "assets": ["Attribute Icons"], "mechanics": "Color/Size Identification" },
+          "inquiry": { "format": "Visual Evidence", "assets": ["Macro Close-ups"], "mechanics": "Visual Guessing" },
+          "functional": { "format": "Shop Scenario", "assets": ["Inventory List"], "mechanics": "Basic Requests" }
+        }
+      },
+      "trackLogic": { "format": "Picture Story", "assets": ["Thematic Scene", "Object Cards"], "mechanics": "Point and Name" },
+      "textType": "Picture Stories",
+      "textDescription": "Wordless story pictures; learner creates simple here-and-now descriptions using vocabulary targets as aids",
+      "tbltTasks": {
+        "pretask": { "name": "Thematic Scene", "description": "View visual scene related to topic. Teacher points and names. Student identifies/labels 2-3 key elements.", "outcome": "Elements identified" },
+        "inputtask": { "name": "Listen-and-Do", "description": "TPR commands or object selection. \"Give me the cat.\" \"Point to the red ball.\"", "outcome": "Correct object selected/action performed (binary)" },
+        "maintask": { "name": "Listen-and-Select", "description": "Teacher describes; student selects from distractors. Simple information gap.", "outcome": "Correct item selected", "gap": "Information gap" },
+        "transfer": { "name": "Show-and-Tell", "description": "Student shows their drawing/selection and names elements.", "outcome": "Verbal identification of own work" }
+      },
+      "linguisticTargets": {
+        "morphology": ["No verb inflection: jump, sit, run", "No plural marking required", "No possessive -'s required"],
+        "syntax": ["Single words: \"Cat.\" \"Ball.\"", "Two-word chunks: \"Big dog.\"", "Formulaic frames: \"It's a ___.\"", "Imperatives: \"Sit down.\""],
+        "vocabulary": ["Concrete nouns: cat, dog, ball, apple", "Body parts: head, eyes, nose", "Colors: red, blue, green, yellow", "Numbers: 1-10", "Action verbs: jump, run, sit"],
+        "examples": ["\"Cat.\"", "\"Red ball.\"", "\"It's a dog.\"", "\"Jump!\""]
+      }
+    },
+    "generatedBy": "claude"
+  },
+
+  "course": {
+    "id": "45Jkyfg94otjc4d22dZT",
+    "title": "🌟 Fast Fluency 🌟"
+  },
+
+  "level": {
+    "id": null,
+    "title": "White Dragon",
+    "description": "Welcome to White Dragon — where every Kiddoland adventure begins! We'll learn our first English words through silly songs, picture stories, and games that make us laugh. By the time we're done, we'll be naming animals, telling tiny stories, and feeling proud of every word we say.",
+    "order": 1,
+    "targetHours": 45,
+    "gse": "10-21"
+  },
+
+  "unit": {
+    "title": "Farm Animals",
+    "bigQuestion": "What animals live on the farm?",
+    "description": "In Farm Animals, we'll knock on the doors of Kiddoland's big red barn to meet all the friends who live there. We'll sing along with Barky the dog, learn a Dr-Seuss-style rhyme for every animal, and finish with a farm scavenger hunt that hides a secret message just for us!",
+    "estimatedHours": 2.0,
+    "thumbnailUrl": null,
+    "track": "narrative",
+    "visualMotif": "barn-door reveals",
+    "protagonist": {
+      "name": "Barky",
+      "species": "Farm Dog",
+      "description": "A friendly black dog who lives in the big red barn."
+    },
+    "masterText": "Barky lives on the farm. A cow says moo. A pig says oink. A sheep says baa. A horse says neigh. A duck says quack. A hen says cluck. A goat says maa. Barky barks. The farm is happy!",
+    "vocabulary": ["Barky", "farm", "barn", "cow", "pig", "sheep", "horse", "duck", "hen", "goat", "dog", "happy"],
+    "forbiddenJargon": ["because", "however", "therefore", "although", "since"],
+    "assessmentLoop": {
+      "tinyTalk": {
+        "session": 1,
+        "target": "L names 3 of 5 farm animals on Tiny Talk cards using single-word labels."
+      },
+      "evaluationMonologue": {
+        "session": 4,
+        "target": "L narrates the Farm Animals master text from picture cues, naming 8 of 10 animals and producing 5+ \"It's a ___\" frames."
+      }
+    }
+  },
+
+  "sessions": [
+    {
+      "title": "Knock, Knock! Who's in the Barn?",
+      "littleQuestion": "Who lives behind the barn doors?",
+      "description": "Today we knock on the big red barn doors and meet Barky the farm dog! Behind every door is a new friend — a cow, a pig, a sheep — and we get to say their names out loud as each barn door swings open.",
+      "order": 1,
+      "duration": 30,
+      "phase": "A",
+      "tbltTask": "thematic-scene",
+      "sessionAims": {
+        "linguistic": "Produce single-word labels for 5 farm animals (cow, pig, sheep, horse, duck).",
+        "cognitive": "Match an auditory cue (T's word) to a visual referent (animal behind the barn door)."
+      },
+      "materials": [
+        { "type": "asset", "name": "Barn-Door Vocab Cards (cow, pig, sheep, horse, duck)", "purpose": "Phase A vocabulary introduction; each card opens to reveal one animal", "url": null, "assetCode": "A" },
+        { "type": "asset", "name": "Tiny Talk assessment card set", "purpose": "End-of-session quick assessment; T points, L names", "url": null, "assetCode": "B" },
+        { "type": "video", "name": "What do you hear?", "purpose": "Anchor song for the unit; opens every session", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc", "assetCode": null }
+      ],
+      "recasts": [
+        { "likelyError": "L says \"Cow.\" with no frame.", "recast": "T affirms then models: \"Yes! It's a cow.\"" },
+        { "likelyError": "L says \"Is cow.\" (wrong frame)", "recast": "T models: \"It IS a cow! It's a cow.\"" },
+        { "likelyError": "L mispronounces /ʃ/ in \"sheep\" as \"seep\".", "recast": "T exaggerates: \"Sssshhheep,\" finger to lips, L echoes." },
+        { "likelyError": "L hesitates and points without naming.", "recast": "T offers binary choice: \"Cow or pig?\" L picks." }
+      ],
+      "taskBrief": "We open barn doors one at a time. I'll point at the door. You tell me what's inside. Then it's your turn to point — and I have to guess!",
+      "operationalMechanics": "Five barn-door cards on the deck. T clicks one — door opens, animal revealed. T asks \"What's this?\" L produces \"It's a ___.\" After 5 rounds T-leads, swap roles: L picks the door, T deliberately gets some wrong to provoke L correction. End with Tiny Talk assessment: 5 cards, L names 3+ to pass."
+    },
+    {
+      "title": "Barky's Big Story",
+      "littleQuestion": "What story does Barky want to tell?",
+      "description": "Barky has a story for us! Today we hear the Farm Animals tale for the very first time, with every animal making its own silly sound. We listen, we echo, and we follow Barky from door to door across Kiddoland's farm.",
+      "order": 2,
+      "duration": 30,
+      "phase": "B",
+      "tbltTask": "listen-and-do",
+      "sessionAims": {
+        "linguistic": "Comprehend imperatives (\"Give me the cow,\" \"Point to the duck\") and animal-sound pairings (cow-moo, pig-oink).",
+        "cognitive": "Bind each animal to its signature sound; perform actions on auditory command."
+      },
+      "materials": [
+        { "type": "asset", "name": "Barn-Door Vocab Cards (full set, 10 animals)", "purpose": "Spread on screen for Listen-and-Do TPR commands", "url": null, "assetCode": "A" },
+        { "type": "asset", "name": "Master Text Story Panels (10 illustrated panels)", "purpose": "First reveal of Barky's story; T narrates, L echoes line by line", "url": null, "assetCode": "B" },
+        { "type": "video", "name": "What do you hear?", "purpose": "Anchor song", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc", "assetCode": null }
+      ],
+      "recasts": [
+        { "likelyError": "L grabs wrong animal silently.", "recast": "T mimes confusion: \"The cow? Or the horse?\" L self-corrects." },
+        { "likelyError": "L names instead of acting on \"Give me the cow.\"", "recast": "T models both: \"You can SAY 'cow,' OR you can GIVE me the cow!\"" },
+        { "likelyError": "L drops object: \"Give cow.\"", "recast": "T expands: \"Give me the cow! Yes — give me the cow.\"" },
+        { "likelyError": "L echoes story line incorrectly: \"Cow moo.\"", "recast": "T models full frame: \"A cow says moo.\" L echoes." }
+      ],
+      "taskBrief": "Barky has friends on the farm. I'll tell you what to do with them. Pick them up, point at them, hand them to me. Listen carefully — go!",
+      "operationalMechanics": "10 animal cards spread on the deck. T issues 12 TPR commands across 8 minutes (\"Give me the duck,\" \"Point to the goat,\" \"Put the cow next to the pig\"). L performs each. Track binary correct/incorrect on a visible scoreboard. After commands, T reveals master text via 10 illustrated story panels (cumulative — one panel per click), reading aloud, L echoes each line."
+    },
+    {
+      "title": "Tell It Back to Barky",
+      "littleQuestion": "Can you tell Barky's story in your own words?",
+      "description": "Now it's our turn! Barky listens while we tell the farm story ourselves, one animal at a time. The barn doors open one by one — and we name every friend before the next one shows up.",
+      "order": 3,
+      "duration": 30,
+      "phase": "B/C",
+      "tbltTask": "listen-and-select",
+      "sessionAims": {
+        "linguistic": "Produce 2-3 word formulaic strings (\"It's a cow,\" \"Big pig,\" \"A duck swims\").",
+        "cognitive": "Sequence pictures into a meaningful narrative; select correct referent under auditory distractor pressure."
+      },
+      "materials": [
+        { "type": "asset", "name": "Cumulative Reveal Slides (animals accumulate one at a time)", "purpose": "Phase B/C review mechanic; L names each new animal as it appears", "url": null, "assetCode": "A" },
+        { "type": "asset", "name": "Listen-and-Select description cards (6 ambiguous-then-resolving descriptions)", "purpose": "Information gap activation task", "url": null, "assetCode": "B" },
+        { "type": "video", "name": "What do you hear?", "purpose": "Anchor song", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc", "assetCode": null }
+      ],
+      "recasts": [
+        { "likelyError": "L jumps to answer mid-clue.", "recast": "T raises hand: \"Wait — listen ALL the clues!\"" },
+        { "likelyError": "L produces \"Cow run.\" (no -s).", "recast": "Accept at White Dragon level. No correction (per KTFT: no verb inflection)." },
+        { "likelyError": "L can't sequence the cumulative reveal.", "recast": "T offers binary choice: \"Cow first, or pig first?\"" },
+        { "likelyError": "L drops article: \"It pig.\"", "recast": "T models with emphasis: \"It's a pig! It's. A. Pig.\"" }
+      ],
+      "taskBrief": "I'll describe a farm friend. Don't shout the answer too fast — listen to ALL the clues, then pick the right one!",
+      "operationalMechanics": "Cumulative reveal slides first: animals appear one at a time on a single scene; L names each new arrival, then re-names all visible animals. Then 6 rounds of Listen-and-Select. T reads description (\"It is big. It is in the barn. It says moo.\") — L scans visible animals, points at correct one. Information gap: T has knowledge L lacks. Difficulty escalates — later descriptions force L to wait for the third clue before deciding."
+    },
+    {
+      "title": "The Farm's Secret Message",
+      "littleQuestion": "What is the farm trying to tell us?",
+      "description": "It's the big day! Barky takes us on a farm scavenger hunt — every barn door, haystack, and pond hides an animal with a word. Find them all, put the words in the right order, and the farm's secret message appears!",
+      "order": 4,
+      "duration": 30,
+      "phase": "C",
+      "tbltTask": "show-and-tell",
+      "sessionAims": {
+        "linguistic": "Produce full \"It's a ___\" frames under self-direction; read short single-word cues aloud.",
+        "cognitive": "Decode a position-based message; reconstruct ordered output from numbered cues."
+      },
+      "materials": [
+        { "type": "asset", "name": "Scavenger Map (8 numbered hotspots on a farm scene)", "purpose": "Final task playing field; each hotspot hides an animal carrying a word", "url": null, "assetCode": "A" },
+        { "type": "asset", "name": "Secret Message Word Strip (1=I, 2=LOVE, 3=THE, 4=FARM, 5=AND, 6=ALL, 7=ITS, 8=FRIENDS)", "purpose": "Decoded payoff — L assembles the message from numbered cues", "url": null, "assetCode": "B" },
+        { "type": "asset", "name": "Evaluation Monologue Picture Cues (master text panels, no captions)", "purpose": "Final assessment; L narrates from images alone", "url": null, "assetCode": "C" },
+        { "type": "video", "name": "What do you hear?", "purpose": "Anchor song", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc", "assetCode": null }
+      ],
+      "recasts": [
+        { "likelyError": "L skips ordering, just reads words at random.", "recast": "T points at numbers: \"Wait — what number? Let's start at ONE.\"" },
+        { "likelyError": "L drops article: \"Is cat.\"", "recast": "T models: \"It's a cat. Yes!\"" },
+        { "likelyError": "L reads message word-by-word with no flow.", "recast": "T models intonation; L echoes the whole sentence." },
+        { "likelyError": "L energy drops at hotspot 6+.", "recast": "T amps up: \"Two more! What's hiding here?!\"" }
+      ],
+      "taskBrief": "Every hotspot on the farm hides one of Barky's friends. They each have a word. Find them all, put the words in number order, and the farm's secret message will appear!",
+      "operationalMechanics": "L clicks hotspots 1-8 on the farm scavenger map. Each click reveals an animal carrying a word. T tracks number→word on a sidebar. Once all 8 found, L assembles secret message in number order: \"I LOVE THE FARM AND ALL ITS FRIENDS.\" L performs Show-and-Tell: holds up each animal in order, says \"It's a [animal]\" + the word it had. Final flourish: L reads the full secret message aloud. Then Evaluation Monologue — picture cues only, L narrates the story from memory."
+    }
+  ],
+
+  "deckSpec": {
+    "sessions": [
+      {
+        "sessionOrder": 1,
+        "slides": [
+          { "type": "title", "order": 1, "layout": "Big red barn centered, 'FARM ANIMALS' in Kiddoland blue script, 'White Dragon' badge top-left, copyright bottom.", "content": { "unitTitle": "Farm Animals", "levelBadge": "White Dragon", "copyright": "© Kiddoland.co" } },
+          { "type": "song", "order": 2, "layout": "Lyric column left, Barky-the-dog illustration right, music notes scattered, 'LET'S SING!' pink banner, click-me link.", "content": { "title": "What do you hear?", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc", "lyricsExcerpt": "What do you hear, what do you hear?" } },
+          { "type": "phonics-caps", "order": 3, "layout": "6 large primary-colored capital letters spaced across white space.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "phonics-caps-lower", "order": 4, "layout": "6 capital + lowercase pairs, primary colors, spaced evenly.", "content": { "pairs": ["B b", "C c", "D d", "G g", "H h", "P p"] } },
+          { "type": "phonics-caps-recall", "order": 5, "layout": "Same caps as slide 3, presented as recall.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "framing", "order": 6, "layout": "Centered text on pastel background, Barky icon top-right.", "content": { "text": "In this lesson, we knock on the barn doors and meet Barky's farm friends!" } },
+          { "type": "vocab-card", "order": 7, "layout": "Large barn-door illustration center; door is closed. Caption left: 'Knock, knock!'", "content": { "word": "cow", "state": "closed-door", "caption": "Knock, knock!" }, "tPrompt": "Who's behind the barn door?", "expectedLResponse": "(silence / guess)" },
+          { "type": "vocab-card", "order": 8, "layout": "Same barn but doors now open, cow inside, caption: 'It's a cow! Cows say moo.'", "content": { "word": "cow", "state": "open-door", "animal": "cow", "caption": "It's a cow! Cows say moo." }, "tPrompt": "What's this?", "expectedLResponse": "It's a cow." },
+          { "type": "vocab-card", "order": 9, "layout": "New closed barn door.", "content": { "word": "pig", "state": "closed-door", "caption": "Knock, knock!" }, "tPrompt": "Who's next?", "expectedLResponse": "(guess)" },
+          { "type": "vocab-card", "order": 10, "layout": "Same barn doors open, pig inside, caption.", "content": { "word": "pig", "state": "open-door", "animal": "pig", "caption": "It's a pig! Pigs say oink." }, "tPrompt": "What's this?", "expectedLResponse": "It's a pig." },
+          { "type": "vocab-card", "order": 11, "layout": "Closed door.", "content": { "word": "sheep", "state": "closed-door" } },
+          { "type": "vocab-card", "order": 12, "layout": "Open door, sheep.", "content": { "word": "sheep", "state": "open-door", "animal": "sheep", "caption": "It's a sheep! Sheep say baa." } },
+          { "type": "vocab-card", "order": 13, "layout": "Closed door.", "content": { "word": "horse", "state": "closed-door" } },
+          { "type": "vocab-card", "order": 14, "layout": "Open door, horse.", "content": { "word": "horse", "state": "open-door", "animal": "horse", "caption": "It's a horse! Horses say neigh." } },
+          { "type": "vocab-card", "order": 15, "layout": "Closed door.", "content": { "word": "duck", "state": "closed-door" } },
+          { "type": "vocab-card", "order": 16, "layout": "Open door, duck.", "content": { "word": "duck", "state": "open-door", "animal": "duck", "caption": "It's a duck! Ducks say quack." } },
+          { "type": "evaluation", "order": 17, "layout": "Five animal cards in a row, all face-up. Tiny Talk banner.", "content": { "items": ["cow", "pig", "sheep", "horse", "duck"], "label": "Tiny Talk!", "target": "Name 3 of 5." }, "tPrompt": "Tiny Talk! What's this?", "expectedLResponse": "It's a [animal]." }
+        ]
+      },
+      {
+        "sessionOrder": 2,
+        "slides": [
+          { "type": "title", "order": 1, "layout": "Same barn title slide.", "content": { "unitTitle": "Farm Animals", "levelBadge": "White Dragon" } },
+          { "type": "song", "order": 2, "layout": "Anchor song slide.", "content": { "title": "What do you hear?", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc" } },
+          { "type": "phonics-caps", "order": 3, "layout": "Same letters.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "phonics-caps-lower", "order": 4, "layout": "Pairs.", "content": { "pairs": ["B b", "C c", "D d", "G g", "H h", "P p"] } },
+          { "type": "phonics-caps-recall", "order": 5, "layout": "Recall.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "framing", "order": 6, "layout": "Centered text.", "content": { "text": "Today, Barky tells us a story — and every animal joins in!" } },
+          { "type": "transition", "order": 7, "layout": "All 10 barn doors visible in a 2x5 grid, all open with animals visible.", "content": { "animals": ["cow", "pig", "sheep", "horse", "duck", "hen", "goat", "dog", "cat", "barn"] }, "tPrompt": "Look! All Barky's friends.", "expectedLResponse": "(echoes names)" },
+          { "type": "vocab-card", "order": 8, "layout": "TPR command card: 'Give me the cow.' Big text, cow card lit up.", "content": { "command": "Give me the cow.", "target": "cow" } },
+          { "type": "vocab-card", "order": 9, "layout": "TPR: 'Point to the duck.'", "content": { "command": "Point to the duck.", "target": "duck" } },
+          { "type": "vocab-card", "order": 10, "layout": "TPR: 'Put the pig next to the sheep.'", "content": { "command": "Put the pig next to the sheep.", "target": ["pig", "sheep"] } },
+          { "type": "vocab-card", "order": 11, "layout": "TPR: 'Hide the goat behind the barn.'", "content": { "command": "Hide the goat behind the barn.", "target": "goat" } },
+          { "type": "story-panel", "order": 12, "layout": "Picture story panel 1 of 10: Barky standing in front of red barn at sunrise.", "content": { "panelNumber": 1, "text": "Barky lives on the farm.", "illustration": "Barky in front of barn at sunrise" }, "tPrompt": "Barky lives on the farm.", "expectedLResponse": "Barky lives on the farm." },
+          { "type": "story-panel", "order": 13, "layout": "Panel 2: cow in field.", "content": { "panelNumber": 2, "text": "A cow says moo.", "illustration": "Cow in green field" } },
+          { "type": "story-panel", "order": 14, "layout": "Panel 3: pig in mud.", "content": { "panelNumber": 3, "text": "A pig says oink.", "illustration": "Pig in mud puddle" } },
+          { "type": "story-panel", "order": 15, "layout": "Panel 4: sheep on grass.", "content": { "panelNumber": 4, "text": "A sheep says baa.", "illustration": "Fluffy sheep on grass" } },
+          { "type": "story-panel", "order": 16, "layout": "Panel 5: horse running.", "content": { "panelNumber": 5, "text": "A horse says neigh.", "illustration": "Brown horse mid-gallop" } },
+          { "type": "story-panel", "order": 17, "layout": "Panel 6: duck on pond.", "content": { "panelNumber": 6, "text": "A duck says quack.", "illustration": "Yellow duck on blue pond" } },
+          { "type": "story-panel", "order": 18, "layout": "Panel 7: hen with eggs.", "content": { "panelNumber": 7, "text": "A hen says cluck.", "illustration": "Hen sitting on nest" } },
+          { "type": "story-panel", "order": 19, "layout": "Panel 8: goat on rock.", "content": { "panelNumber": 8, "text": "A goat says maa.", "illustration": "Goat on tall rock" } },
+          { "type": "story-panel", "order": 20, "layout": "Panel 9: Barky barking happily.", "content": { "panelNumber": 9, "text": "Barky barks.", "illustration": "Barky mid-bark, tail wagging" } },
+          { "type": "story-panel", "order": 21, "layout": "Panel 10: full farm scene, all animals visible, sunshine.", "content": { "panelNumber": 10, "text": "The farm is happy!", "illustration": "Full farm scene with all animals + Barky" } }
+        ]
+      },
+      {
+        "sessionOrder": 3,
+        "slides": [
+          { "type": "title", "order": 1, "layout": "Title slide.", "content": { "unitTitle": "Farm Animals", "levelBadge": "White Dragon" } },
+          { "type": "song", "order": 2, "layout": "Song slide.", "content": { "title": "What do you hear?", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc" } },
+          { "type": "phonics-caps", "order": 3, "layout": "Caps.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "phonics-caps-lower", "order": 4, "layout": "Pairs.", "content": { "pairs": ["B b", "C c", "D d", "G g", "H h", "P p"] } },
+          { "type": "phonics-caps-recall", "order": 5, "layout": "Recall.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "framing", "order": 6, "layout": "Centered text.", "content": { "text": "Today YOU tell Barky's story. The farm is listening!" } },
+          { "type": "cumulative-reveal", "order": 7, "layout": "Empty farm scene. 'THE COW.' caption.", "content": { "visible": ["cow"], "captionPattern": "THE COW. THE ___" }, "tPrompt": "What's this?", "expectedLResponse": "The cow." },
+          { "type": "cumulative-reveal", "order": 8, "layout": "Cow + pig now visible.", "content": { "visible": ["cow", "pig"], "captionPattern": "THE COW. THE PIG. THE ___" } },
+          { "type": "cumulative-reveal", "order": 9, "layout": "Cow + pig + sheep.", "content": { "visible": ["cow", "pig", "sheep"], "captionPattern": "THE COW. THE PIG. THE SHEEP. THE ___" } },
+          { "type": "cumulative-reveal", "order": 10, "layout": "Add horse.", "content": { "visible": ["cow", "pig", "sheep", "horse"], "captionPattern": "... THE HORSE. THE ___" } },
+          { "type": "cumulative-reveal", "order": 11, "layout": "Add duck.", "content": { "visible": ["cow", "pig", "sheep", "horse", "duck"], "captionPattern": "... THE DUCK. THE ___" } },
+          { "type": "cumulative-reveal", "order": 12, "layout": "Add hen.", "content": { "visible": ["cow", "pig", "sheep", "horse", "duck", "hen"], "captionPattern": "... THE HEN. THE ___" } },
+          { "type": "cumulative-reveal", "order": 13, "layout": "Add goat.", "content": { "visible": ["cow", "pig", "sheep", "horse", "duck", "hen", "goat"], "captionPattern": "... THE GOAT. THE ___" } },
+          { "type": "cumulative-reveal", "order": 14, "layout": "All 8 + Barky.", "content": { "visible": ["cow", "pig", "sheep", "horse", "duck", "hen", "goat", "Barky"], "captionPattern": "...AND BARKY!" } },
+          { "type": "vocab-card", "order": 15, "layout": "Description card: 'It is big. It is in the barn. It says moo.' Six animals as candidates below.", "content": { "description": "It is big. It is in the barn. It says moo.", "options": ["cow", "pig", "sheep", "horse", "duck", "hen"], "answer": "cow", "gapType": "information-gap" }, "tPrompt": "Listen carefully. Which one?", "expectedLResponse": "Cow." },
+          { "type": "vocab-card", "order": 16, "layout": "Description: 'It is small. It is on a pond. It says quack.'", "content": { "description": "It is small. It is on a pond. It says quack.", "options": ["cow", "pig", "sheep", "horse", "duck", "hen"], "answer": "duck", "gapType": "information-gap" } },
+          { "type": "vocab-card", "order": 17, "layout": "Description: 'It is fluffy. It is on the grass. It says baa.'", "content": { "description": "It is fluffy. It is on the grass. It says baa.", "answer": "sheep" } },
+          { "type": "vocab-card", "order": 18, "layout": "Description: 'It is fast. It says neigh.'", "content": { "description": "It is fast. It says neigh.", "answer": "horse" } },
+          { "type": "vocab-card", "order": 19, "layout": "Description: 'It lays eggs. It says cluck.'", "content": { "description": "It lays eggs. It says cluck.", "answer": "hen" } },
+          { "type": "vocab-card", "order": 20, "layout": "Description: 'It jumps high. It says maa.'", "content": { "description": "It jumps high. It says maa.", "answer": "goat" } }
+        ]
+      },
+      {
+        "sessionOrder": 4,
+        "slides": [
+          { "type": "title", "order": 1, "layout": "Title slide.", "content": { "unitTitle": "Farm Animals", "levelBadge": "White Dragon" } },
+          { "type": "song", "order": 2, "layout": "Song slide.", "content": { "title": "What do you hear?", "url": "https://www.youtube.com/watch?v=YVgv1EFJZHc" } },
+          { "type": "phonics-caps", "order": 3, "layout": "Caps.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "phonics-caps-lower", "order": 4, "layout": "Pairs.", "content": { "pairs": ["B b", "C c", "D d", "G g", "H h", "P p"] } },
+          { "type": "phonics-caps-recall", "order": 5, "layout": "Recall.", "content": { "letters": ["B", "C", "D", "G", "H", "P"] } },
+          { "type": "framing", "order": 6, "layout": "Centered text.", "content": { "text": "Today is the BIG day. The farm has a secret message just for us!" } },
+          { "type": "final-task", "order": 7, "layout": "Wide farm scavenger map: red barn (1), apple tree (2), chicken coop (3), pasture (4), pond (5), goat rock (6), kennel (7), haystack (8). Numbers visible on each location.", "content": { "task": "scavenger-hunt", "hotspots": [{"id": 1, "location": "barn", "animal": "cow", "word": "I"}, {"id": 2, "location": "apple-tree", "animal": "hen", "word": "LOVE"}, {"id": 3, "location": "chicken-coop", "animal": "pig", "word": "THE"}, {"id": 4, "location": "pasture", "animal": "sheep", "word": "FARM"}, {"id": 5, "location": "pond", "animal": "duck", "word": "AND"}, {"id": 6, "location": "goat-rock", "animal": "goat", "word": "ALL"}, {"id": 7, "location": "kennel", "animal": "horse", "word": "ITS"}, {"id": 8, "location": "haystack", "animal": "Barky", "word": "FRIENDS"}] }, "tPrompt": "Click each spot. Find the animal. What word does it have?", "expectedLResponse": "It's a [animal]. The word is [word]." },
+          { "type": "final-task", "order": 8, "layout": "All 8 animals revealed in a row, each carrying their word. Numbers above. Empty sentence-line below.", "content": { "task": "assemble-message", "secretMessage": "I LOVE THE FARM AND ALL ITS FRIENDS." }, "tPrompt": "Now — put the words in order. What's the secret message?", "expectedLResponse": "I love the farm and all its friends." },
+          { "type": "evaluation", "order": 9, "layout": "10 picture-only story panels (no captions) presented in sequence.", "content": { "task": "evaluation-monologue", "panels": ["Barky-at-barn", "cow", "pig", "sheep", "horse", "duck", "hen", "goat", "Barky-barking", "full-farm-scene"], "target": "L narrates the full master text from images alone, 8/10 animals named, 5+ \"It's a ___\" frames produced." }, "tPrompt": "Tell Barky the story.", "expectedLResponse": "(L narrates master text from picture cues)" }
+        ]
+      }
+    ]
+  },
+
+  "homework": {
+    "title": "Farm Animals",
+    "level": "CEFR 10-21",
+    "flashcards": [
+      { "word": "cow", "image": "🐄" },
+      { "word": "pig", "image": "🐖" },
+      { "word": "sheep", "image": "🐑" },
+      { "word": "horse", "image": "🐴" },
+      { "word": "duck", "image": "🦆" },
+      { "word": "hen", "image": "🐔" },
+      { "word": "goat", "image": "🐐" },
+      { "word": "dog", "image": "🐕" }
+    ],
+    "readingText": "Barky lives on the farm. A cow says moo. A pig says oink. A sheep says baa. A horse says neigh. A duck says quack. A hen says cluck. A goat says maa. Barky barks. The farm is happy!",
+    "memoryPairs": [
+      { "word": "cow", "match": "🐄" },
+      { "word": "pig", "match": "🐖" },
+      { "word": "sheep", "match": "🐑" },
+      { "word": "horse", "match": "🐴" },
+      { "word": "duck", "match": "🦆" },
+      { "word": "hen", "match": "🐔" },
+      { "word": "goat", "match": "🐐" },
+      { "word": "dog", "match": "🐕" }
+    ],
+    "minimalPairs": [
+      { "word1": "cow", "word2": "cot", "audioText": "cow", "correct": 0 },
+      { "word1": "pig", "word2": "pin", "audioText": "pig", "correct": 0 },
+      { "word1": "duck", "word2": "dock", "audioText": "duck", "correct": 0 },
+      { "word1": "hen", "word2": "ten", "audioText": "hen", "correct": 0 }
+    ],
+    "fillInBlanks": [
+      { "text": "A ___ says moo.", "answer": "cow" },
+      { "text": "A ___ says oink.", "answer": "pig" },
+      { "text": "A ___ says baa.", "answer": "sheep" },
+      { "text": "A ___ says neigh.", "answer": "horse" },
+      { "text": "A ___ says quack.", "answer": "duck" },
+      { "text": "A ___ says cluck.", "answer": "hen" },
+      { "text": "A ___ says maa.", "answer": "goat" },
+      { "text": "Barky is a ___.", "answer": "dog" }
+    ],
+    "wordBank": ["cow", "pig", "sheep", "horse", "duck", "hen", "goat", "dog"],
+    "matchingPairs": [
+      { "left": "cow", "right": "says moo" },
+      { "left": "pig", "right": "says oink" },
+      { "left": "sheep", "right": "is fluffy" },
+      { "left": "horse", "right": "runs fast" },
+      { "left": "duck", "right": "swims on the pond" },
+      { "left": "hen", "right": "lays eggs" },
+      { "left": "goat", "right": "jumps high" },
+      { "left": "dog", "right": "is named Barky" }
+    ],
+    "listeningQuestions": [
+      { "audioText": "I am big. I live in the barn. I say moo. What am I?", "question": "What is this?", "options": ["cow", "pig", "duck", "hen"], "correct": 0 },
+      { "audioText": "I love the mud. I am pink. I say oink. What am I?", "question": "What is this?", "options": ["sheep", "pig", "horse", "goat"], "correct": 1 },
+      { "audioText": "I have feathers. I swim on the pond. I say quack. What am I?", "question": "What is this?", "options": ["hen", "goat", "duck", "dog"], "correct": 2 },
+      { "audioText": "I jump high. I have horns. I say maa. What am I?", "question": "What is this?", "options": ["goat", "horse", "cow", "sheep"], "correct": 0 }
+    ],
+    "finalTask": "Click each numbered hiding spot on Kiddoland's farm to find an animal carrying a word. Put all the words in number order to reveal the farm's secret message!"
+  }
+}

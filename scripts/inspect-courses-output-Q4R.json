@@ -1,0 +1,1140 @@
+{
+  "inspectedAt": "2026-04-26T23:44:33.446Z",
+  "hexdate": "Q4R",
+  "collections": {
+    "courses": {
+      "count": 3,
+      "docs": [
+        {
+          "id": "45Jkyfg94otjc4d22dZT",
+          "description": "🌟 I am happy to introduce my unique course, designed to help kids speak English fluently faster than ever. This isn’t just another language program. It’s a special experience made with care, expertise, and a deep understanding of how kids learn best.\n\n✨ Made Just for Your Child:\nThis course is built from the start, based on my 25 years of teaching and my work as a Cambridge speaking examiner. Every lesson, activity, and material is made carefully to make sure your child succeeds.\n\n🚀 Proven to Help Kids Learn Faster:\nUnlike traditional methods, this course uses topics that match your child’s real interests. By focusing on what they love, we make learning fun, interesting, and immersive. This encourages their natural curiosity and helps them learn faster.\n\n📚 Fully Adapted for Your Child:\nNo two kids are the same, and neither are my lessons. Every class is fully customized to your child’s level and personal interests. Whether they are a beginner or advanced, they get the right mix of challenge and support to stay motivated and improve.\n\n✔ All-In-One Learning:\nThis course covers speaking, listening, reading, and writing—all while keeping your child interested and excited. Also, every course package comes with discounts of up to 20%!\n\n✔ Made for Success:\nWith a practical and complete approach, we create an immersive experience. Your child gets all the feedback and professional help they need. Together, we set clear, realistic goals and help them reach fluency faster than you imagined.\n\n🚀 Ready for learning that is educational, effective, and fun? Let’s get started!\n\n❓ For more information, please contact me here or on WeChat: ID kiddoland.",
+          "discount60min": 0,
+          "duration": 60,
+          "rate": 25,
+          "imageUrl": "course-hero3",
+          "hourlyRate": 35.2,
+          "pitch": "Speaking skills for young learners.",
+          "title": "🌟 Fast Fluency 🌟",
+          "thumbnailUrl": "course-thumb-FastFluency1",
+          "imagePosition": "50% 30%",
+          "updatedAt": {
+            "_seconds": 1776730237,
+            "_nanoseconds": 686000000
+          }
+        },
+        {
+          "id": "EFVANTW1gYtYgU2La7s8",
+          "description": "🌟 I'm excited to introduce a phonics program that turns letter sounds into reading superpowers! This isn’t just about memorizing sounds—it’s about discovering the magic of reading through fun, organized learning that kids love.\n\nHere’s what makes this course special:\n\n✨ Step-by-Step Success\nStarting with simple sounds (like /a/ and /m/) and building to advanced words (like \"splash\" and \"bright\"), we move at the perfect speed to build confidence and skill.\n\n🚀 Learning That Feels Like Play\nWho says phonics has to be boring? Through games, songs, and hands-on activities, we make every sound easy to remember and every word a fun discovery!\n\n📚 Real Reading from Day One\nYour child won’t just practice sounds—they’ll use them right away in fun decodable books, feeling the joy of real reading from the very start.\n\n🎯 Skills That Last\nBy mixing phonics with sight words and understanding, we create readers who don’t just sound out words but truly enjoy and understand what they read.\n\nPerfect for:\n• Preschoolers starting their reading journey\n• Young students mastering the basics\n• Older students who need more confidence\n\nReady to watch your child’s reading skills grow fast? Let’s begin the phonics adventure! 🚀",
+          "discount60min": 0,
+          "duration": 30,
+          "hourlyRate": 35.2,
+          "imageUrl": "course-hero2",
+          "pitch": "Learn phonics the fun way!",
+          "rate": 25,
+          "title": "🔤 Fun Phonics 🔤",
+          "thumbnailUrl": "course-thumb-FunPhonics1",
+          "imagePosition": "51% 24%",
+          "updatedAt": {
+            "_seconds": 1776728976,
+            "_nanoseconds": 62000000
+          }
+        },
+        {
+          "id": "elW693MdfK6M1c2pkK6x",
+          "description": "🌟 I'm excited to introduce a leveled reading course that turns learning into a fun adventure! This course is about more than reading. It builds confidence, curiosity, and thinking skills, one great book at a time.\n\n✨ Foundations for Young Readers (Levels A–J)\nWe start with the basics: learning sounds, sight words, and understanding stories. Your child will enjoy fun, simple stories with pictures. They will practice following the words, guessing what happens next, and remembering story details. This builds a strong reading base.\n\n🚀 Becoming More Independent (Levels K–P)\nAs stories get longer, skills grow too! We read longer fiction and nonfiction books. This improves reading speed and introduces important skills like comparing stories and summarizing. Watch their vocabulary grow as they find main ideas and read with feeling!\n\n📚 Learning to Think Critically (Levels Q–Z)\nNow, students learn to analyze deeper themes, special language, and the author's goal. They will combine information from different texts, support their opinions with proof, and practice close reading—changing from learners to thinkers.\n\n🎯 Skills That Grow With Your Child\nEvery level practices core skills while adding new challenges:\n- Early Readers: Predict, connect to self, and check understanding.\n- Developing Readers: Summarize, read between the lines, and use text structure.\n- Advanced Readers: Evaluate, discuss, and use thinking strategies.\n\n💡 Why It Works\nWith support that slowly decreases—from guided help to independent reading—your child moves smoothly from learning to read to reading to learn. Best of all, they will enjoy every step thanks to interesting books and fun, interactive methods.\n\nReady to open a world of stories, knowledge, and confidence? Let's begin! 📖",
+          "hourlyRate": 35.2,
+          "thumbnailUrl": "course-thumb-reallyreading1",
+          "imageUrl": "course-hero-reallyreading1",
+          "createdAt": {
+            "_seconds": 1776727794,
+            "_nanoseconds": 327000000
+          },
+          "discount60min": 0,
+          "pitch": "Reading skills for young learners.",
+          "title": "📚 Really Reading 📚",
+          "imagePosition": "50% 35%",
+          "updatedAt": {
+            "_seconds": 1776728999,
+            "_nanoseconds": 713000000
+          }
+        }
+      ]
+    },
+    "units": {
+      "count": 5,
+      "docs": [
+        {
+          "id": "8N4c98y2qL2KKfHJFmMB",
+          "levelId": "ED2PiWNU6S5rvzmRmOtq",
+          "title": "The Ostrich ",
+          "bigQuestion": "How do we say the letters O and P?",
+          "description": "An ostrich writes a letter to a panda. Luckily the octopus is there to deliver it!",
+          "order": 1,
+          "estimatedHours": 1,
+          "thumbnailUrl": "",
+          "initialAssessmentId": null,
+          "finalEvaluationId": null,
+          "finalProjectId": null,
+          "finalProjectType": null,
+          "createdAt": {
+            "_seconds": 1770140839,
+            "_nanoseconds": 714000000
+          },
+          "updatedAt": {
+            "_seconds": 1770140839,
+            "_nanoseconds": 714000000
+          },
+          "courseId": "EFVANTW1gYtYgU2La7s8"
+        },
+        {
+          "id": "LoRQDimyfFclxaQXNCCh",
+          "bigQuestion": "Why were castles big and singular? Why not small and abundant?",
+          "order": 1,
+          "estimatedHours": 0.5,
+          "thumbnailUrl": "https://www.canva.com/design/DAG_K0Jb2UE/FjMoDouzhNfHAEjTWBfNoQ/view?utm_content=DAG_K0Jb2UE&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25a016f389",
+          "initialAssessmentId": null,
+          "finalEvaluationId": null,
+          "finalProjectId": null,
+          "finalProjectType": null,
+          "createdAt": {
+            "_seconds": 1769190264,
+            "_nanoseconds": 601000000
+          },
+          "updatedAt": {
+            "_seconds": 1769190264,
+            "_nanoseconds": 601000000
+          },
+          "title": "Unit 1: Castles",
+          "description": "We will explore castles in this unit and compare our own fictional castle with famous examples of real ones. We will understand why real ones were big and stood alone, instead of small and everywhere in a kingdom.",
+          "levelId": "1ZaFH9SgB1Qjo0cuF5w2",
+          "courseId": "45Jkyfg94otjc4d22dZT"
+        },
+        {
+          "id": "YSqLynLQEzH6LU6eQOIU",
+          "levelId": "1ZaFH9SgB1Qjo0cuF5w2",
+          "title": "TEST Unit 2",
+          "bigQuestion": "TEST Unit 2",
+          "description": "TEST Unit 2",
+          "order": 2,
+          "estimatedHours": 2.5,
+          "thumbnailUrl": "",
+          "initialAssessmentId": null,
+          "finalEvaluationId": null,
+          "finalProjectId": null,
+          "finalProjectType": null,
+          "createdAt": {
+            "_seconds": 1769967954,
+            "_nanoseconds": 381000000
+          },
+          "updatedAt": {
+            "_seconds": 1769967954,
+            "_nanoseconds": 381000000
+          }
+        },
+        {
+          "id": "jFqKLBXt00JcUqCuW0V2",
+          "courseTemplateId": "course_a1_sample",
+          "title": "Food & Restaurants",
+          "bigQuestion": "Why do different cultures eat differently?",
+          "description": "Explore food vocabulary, ordering at restaurants, and cultural dining customs",
+          "thumbnailUrl": "",
+          "order": 1,
+          "estimatedHours": 2.5,
+          "initialAssessmentId": null,
+          "finalEvaluationId": null,
+          "finalProjectId": null,
+          "finalProjectType": null,
+          "createdAt": {
+            "_seconds": 1769185667,
+            "_nanoseconds": 781000000
+          },
+          "updatedAt": {
+            "_seconds": 1769185701,
+            "_nanoseconds": 109000000
+          }
+        },
+        {
+          "id": "qoXLSJHR2sX2uifT6Dqu",
+          "levelId": "1ZaFH9SgB1Qjo0cuF5w2",
+          "title": "TEST Unit 1",
+          "bigQuestion": "TEST Unit 1",
+          "description": "TEST Unit 1",
+          "order": 1,
+          "estimatedHours": 2.5,
+          "thumbnailUrl": "",
+          "initialAssessmentId": null,
+          "finalEvaluationId": null,
+          "finalProjectId": null,
+          "finalProjectType": null,
+          "createdAt": {
+            "_seconds": 1769967790,
+            "_nanoseconds": 990000000
+          },
+          "updatedAt": {
+            "_seconds": 1769967790,
+            "_nanoseconds": 990000000
+          }
+        }
+      ]
+    },
+    "studentPackagesSample": {
+      "sampleSize": 5,
+      "docs": [
+        {
+          "id": "3TsuUW60jSU2rj1Qdc6Y",
+          "studentId": "ylhpEoEIIHULLlzqS3re0K7lKSl1",
+          "studentName": "Luke",
+          "totalHours": 15,
+          "hoursRemaining": 14,
+          "price": 0,
+          "currency": "EUR",
+          "purchaseDate": {
+            "_seconds": 1776356248,
+            "_nanoseconds": 939000000
+          },
+          "status": "active",
+          "isPaused": false,
+          "pauseCount": 0,
+          "totalDaysPaused": 0,
+          "createdAt": {
+            "_seconds": 1776356248,
+            "_nanoseconds": 939000000
+          },
+          "updatedAt": "2026-04-18T01:08:47.358Z",
+          "courseId": "elW693MdfK6M1c2pkK6x"
+        },
+        {
+          "id": "f3SHiMuzTy4dtHVNjKfA",
+          "studentId": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+          "studentName": "Gordon",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "totalHours": 10,
+          "hoursRemaining": 10,
+          "price": 0,
+          "currency": "EUR",
+          "purchaseDate": {
+            "_seconds": 1776450939,
+            "_nanoseconds": 338000000
+          },
+          "status": "active",
+          "isPaused": false,
+          "pauseCount": 0,
+          "totalDaysPaused": 0,
+          "createdAt": {
+            "_seconds": 1776450939,
+            "_nanoseconds": 338000000
+          },
+          "updatedAt": "2026-04-18T01:08:47.358Z"
+        },
+        {
+          "id": "jSiRm6a7WQvCwkARUOXb",
+          "studentId": "8wa5iV5RA9NsqpR4PD74TLxep952",
+          "studentName": "Mark",
+          "courseId": "EFVANTW1gYtYgU2La7s8",
+          "courseTitle": "🔤 Fun Phonics KID'S CLASS 🔤",
+          "totalHours": 10,
+          "hoursRemaining": 10,
+          "price": 0,
+          "currency": "EUR",
+          "purchaseDate": {
+            "_seconds": 1776479585,
+            "_nanoseconds": 785000000
+          },
+          "status": "active",
+          "isPaused": false,
+          "pauseCount": 0,
+          "totalDaysPaused": 0,
+          "createdAt": {
+            "_seconds": 1776479585,
+            "_nanoseconds": 785000000
+          },
+          "updatedAt": "2026-04-18T02:44:17.017Z"
+        },
+        {
+          "id": "nqNWqrSpSOWbMnWvAsWG",
+          "studentId": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+          "courseId": "EFVANTW1gYtYgU2La7s8",
+          "totalHours": 10,
+          "currency": "EUR",
+          "price": 285.1,
+          "courseTitle": "🔤 Fun Phonics KID'S CLASS 🔤",
+          "purchaseDate": "2026-02-03T00:00:00.000Z",
+          "status": "active",
+          "isPaused": false,
+          "pauseCount": 0,
+          "totalDaysPaused": 0,
+          "expiresAt": "2026-08-18T19:16:39.570Z",
+          "hoursRemaining": 9.5,
+          "name": "Arina",
+          "studentName": "Arina",
+          "updatedAt": "2026-04-18T01:08:47.358Z"
+        },
+        {
+          "id": "qCi6xKj9ViETMibmOi1T",
+          "studentId": "1SLNgciKQlhKVzE9INPBROgBsEz2",
+          "totalHours": 10,
+          "hoursRemaining": 10,
+          "price": 293.65,
+          "currency": "EUR",
+          "purchaseDate": "2026-03-03T13:04:37.266Z",
+          "expiresAt": "2026-09-03T13:04:37.266Z",
+          "isPaused": false,
+          "totalDaysPaused": 0,
+          "pauseCount": 0,
+          "status": "active",
+          "name": "Max",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "courseTitle": "🌟 Fast Fluency KID'S CLASS 🌟",
+          "studentName": "Max",
+          "updatedAt": "2026-04-18T02:42:39.859Z"
+        }
+      ]
+    },
+    "studentProgressSample": {
+      "sampleSize": 5,
+      "docs": [
+        {
+          "id": "CWQXN8D0PFzUuGX5eoJP",
+          "studentId": "ECu8BrG4LLbk0yIvHCoiHLxDtuM2",
+          "unitId": "starter",
+          "sessionsTotal": 0,
+          "sessionsCompleted": 0,
+          "totalHoursCompleted": 0,
+          "hoursReserved": 0,
+          "status": "assigned",
+          "assignedAt": "2026-04-17T23:55:16.537Z",
+          "createdAt": "2026-04-17T23:55:16.537Z",
+          "updatedAt": "2026-04-17T23:55:16.537Z",
+          "name": "Melinda",
+          "courseId": "45Jkyfg94otjc4d22dZT"
+        },
+        {
+          "id": "GLiwMZnd98Z7GXIIIra7",
+          "studentId": "1SLNgciKQlhKVzE9INPBROgBsEz2",
+          "unitId": "starter",
+          "sessionsTotal": 0,
+          "sessionsCompleted": 0,
+          "totalHoursCompleted": 0,
+          "hoursReserved": 0,
+          "status": "assigned",
+          "assignedAt": "2026-04-17T23:55:14.961Z",
+          "createdAt": "2026-04-17T23:55:14.961Z",
+          "updatedAt": "2026-04-17T23:55:14.961Z",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "name": "Max"
+        },
+        {
+          "id": "THez99nEvMsOVG6zJaRB",
+          "studentId": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+          "courseId": "EFVANTW1gYtYgU2La7s8",
+          "unitId": "starter",
+          "sessionsTotal": 0,
+          "sessionsCompleted": 0,
+          "totalHoursCompleted": 0,
+          "hoursReserved": 0,
+          "status": "assigned",
+          "assignedAt": "2026-04-17T23:55:18.353Z",
+          "createdAt": "2026-04-17T23:55:18.353Z",
+          "updatedAt": "2026-04-17T23:55:18.353Z",
+          "name": "Arina"
+        },
+        {
+          "id": "kz8NGKwS7yUH4sy2Hf3A",
+          "studentId": "ylhpEoEIIHULLlzqS3re0K7lKSl1",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "unitId": "LoRQDimyfFclxaQXNCCh",
+          "sessionsTotal": 5,
+          "hoursReserved": 0,
+          "status": "assigned",
+          "assignedAt": "2026-04-16T16:25:26.284Z",
+          "createdAt": "2026-04-16T16:25:26.284Z",
+          "sessionsCompleted": 1,
+          "lastActivityAt": {
+            "_seconds": 1776363144,
+            "_nanoseconds": 510000000
+          },
+          "totalHoursCompleted": 1,
+          "updatedAt": {
+            "_seconds": 1776363144,
+            "_nanoseconds": 510000000
+          },
+          "name": "Luke"
+        },
+        {
+          "id": "v2nezdr7ZTt9dX9KDBny",
+          "studentId": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "unitId": "starter",
+          "sessionsTotal": 0,
+          "sessionsCompleted": 0,
+          "totalHoursCompleted": 0,
+          "hoursReserved": 0,
+          "status": "assigned",
+          "assignedAt": "2026-04-18T03:07:35.304Z",
+          "createdAt": "2026-04-18T03:07:35.304Z",
+          "updatedAt": "2026-04-18T03:07:35.304Z",
+          "studentName": "Gordon"
+        }
+      ]
+    },
+    "studentCreditSample": {
+      "sampleSize": 5,
+      "docs": [
+        {
+          "id": "4h2SvxuuLyTkjYP1Fr7u",
+          "studentId": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+          "completedHours": 0,
+          "currency": "EUR",
+          "createdAt": {
+            "_seconds": 1776445727,
+            "_nanoseconds": 110000000
+          },
+          "totalHours": 10,
+          "uncommittedHours": 9.5,
+          "packageId": "nqNWqrSpSOWbMnWvAsWG",
+          "committedHours": 0.5,
+          "name": "Arina",
+          "studentName": "Arina",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "updatedAt": {
+            "_seconds": 1776732968,
+            "_nanoseconds": 923000000
+          }
+        },
+        {
+          "id": "EYiRTBegEONZdjMjCmWW",
+          "studentId": "1SLNgciKQlhKVzE9INPBROgBsEz2",
+          "packageId": "qCi6xKj9ViETMibmOi1T",
+          "totalHours": 10,
+          "currency": "EUR",
+          "createdAt": "2026-03-03T13:04:37.490Z",
+          "completedSessions": 5,
+          "completedHours": 2.5,
+          "name": "Max",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "studentName": "Max",
+          "committedHours": 2,
+          "uncommittedHours": 5.5,
+          "updatedAt": {
+            "_seconds": 1776738236,
+            "_nanoseconds": 442000000
+          }
+        },
+        {
+          "id": "VcFpzUwNtx6LTTS0TBxa",
+          "studentId": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+          "committedHours": 0,
+          "completedHours": 0,
+          "currency": "EUR",
+          "createdAt": {
+            "_seconds": 1776450939,
+            "_nanoseconds": 338000000
+          },
+          "totalHours": 10,
+          "uncommittedHours": 10,
+          "name": "Gordon",
+          "packageId": "f3SHiMuzTy4dtHVNjKfA",
+          "studentName": "Gordon",
+          "courseId": "elW693MdfK6M1c2pkK6x",
+          "updatedAt": {
+            "_seconds": 1776732957,
+            "_nanoseconds": 991000000
+          }
+        },
+        {
+          "id": "ddAktC1E1YYAyzhOGqXP",
+          "studentId": "ECu8BrG4LLbk0yIvHCoiHLxDtuM2",
+          "packageId": "0uS0sJo6w3Mbq8voX7Jt",
+          "completedHours": 0,
+          "currency": "EUR",
+          "createdAt": "2026-03-01T16:04:05.893Z",
+          "totalHours": 10,
+          "committedHours": 0.5,
+          "uncommittedHours": 9.5,
+          "name": "Melinda",
+          "courseId": "EFVANTW1gYtYgU2La7s8",
+          "updatedAt": {
+            "_seconds": 1776732988,
+            "_nanoseconds": 523000000
+          },
+          "studentName": "Melinda"
+        },
+        {
+          "id": "l9hikJB5qrawqn0SgExy",
+          "studentId": "8wa5iV5RA9NsqpR4PD74TLxep952",
+          "totalHours": 10,
+          "currency": "EUR",
+          "source": "manual",
+          "createdAt": {
+            "_seconds": 1776479585,
+            "_nanoseconds": 785000000
+          },
+          "studentName": "Mark",
+          "packageId": "jSiRm6a7WQvCwkARUOXb",
+          "notes": "2 for 1 deal with Luke",
+          "courseId": "45Jkyfg94otjc4d22dZT",
+          "uncommittedHours": 9,
+          "committedHours": 0,
+          "completedSessions": 2,
+          "completedHours": 1,
+          "updatedAt": {
+            "_seconds": 1776765349,
+            "_nanoseconds": 285000000
+          }
+        }
+      ]
+    },
+    "targetLearners": {
+      "count": 4,
+      "docs": [
+        {
+          "id": "8wa5iV5RA9NsqpR4PD74TLxep952",
+          "name": "Mark",
+          "email": "369543334@qq.com",
+          "avatarUrl": "",
+          "birthday": "2019-01-01",
+          "gender": "boy",
+          "createdAt": {
+            "_seconds": 1776477531,
+            "_nanoseconds": 951000000
+          },
+          "messagingContacts": [
+            {
+              "app": "WeChat",
+              "handle": "sweetmelody2012"
+            }
+          ],
+          "primaryContact": {
+            "name": "Melody",
+            "email": "754831666@qq.com",
+            "phone": "",
+            "relationship": "mother",
+            "country": "China",
+            "city": "Shanghai",
+            "preferredContactMethod": "Messaging App"
+          },
+          "isNewStudent": false,
+          "status": "active",
+          "assignedTeacherId": "2gpJyXG01Nb3JSmYutAmWNpGFjO2",
+          "updatedAt": "2026-04-18T11:09:44.354Z"
+        },
+        {
+          "id": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+          "name": "Arina",
+          "email": "ksenia.shukhina@gmail.com",
+          "avatarUrl": "",
+          "birthday": "2019-06-17",
+          "gender": "girl",
+          "createdAt": {
+            "_seconds": 1772655572,
+            "_nanoseconds": 98000000
+          },
+          "primaryContact": {
+            "name": "Ksenia ",
+            "email": "ksenia.shukhina@gmail.com",
+            "phone": "+972584802090",
+            "relationship": "Mother",
+            "country": "Israel",
+            "city": "Modiin",
+            "preferredContactMethod": "Phone",
+            "profession": "Physicist",
+            "englishProficiency": "Upper-Intermediate"
+          },
+          "messagingContacts": [
+            {
+              "app": "WhatsApp",
+              "handle": "+972584802090"
+            }
+          ],
+          "secondaryContact": {
+            "name": "Anatoly",
+            "email": "anatoly.shukhin@gmail.com",
+            "phone": "+972539027350",
+            "relationship": "Father",
+            "country": "Israel",
+            "city": "Modiin",
+            "preferredContactMethod": "Phone",
+            "profession": "Physicist",
+            "englishProficiency": "Advanced"
+          },
+          "school": "",
+          "dragonLevel": "white",
+          "isNewStudent": false,
+          "updatedAt": {
+            "_seconds": 1776445727,
+            "_nanoseconds": 711000000
+          },
+          "assignedTeacherId": "2gpJyXG01Nb3JSmYutAmWNpGFjO2",
+          "status": "active"
+        },
+        {
+          "id": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+          "name": "Gordon",
+          "email": "cuhuiwei@163.com",
+          "avatarUrl": "",
+          "birthday": "2018-01-01",
+          "gender": "boy",
+          "messagingContacts": [
+            {
+              "app": "whatsapp",
+              "handle": "huiwei780655"
+            }
+          ],
+          "primaryContact": {
+            "name": "wei",
+            "email": "cuhuiwei@163.com",
+            "phone": "",
+            "relationship": "father",
+            "country": "China",
+            "city": "Shanghai",
+            "messaging": [],
+            "preferredContactMethod": "wechat",
+            "profession": "",
+            "englishProficiency": "none"
+          },
+          "createdAt": {
+            "_seconds": 1775237443,
+            "_nanoseconds": 564000000
+          },
+          "status": "active",
+          "isNewStudent": false,
+          "starredTutorIds": [],
+          "assignedTeacherId": "2gpJyXG01Nb3JSmYutAmWNpGFjO2",
+          "updatedAt": "2026-04-19T16:15:38.571Z"
+        },
+        {
+          "id": "ylhpEoEIIHULLlzqS3re0K7lKSl1",
+          "name": "Luke",
+          "email": "754831666@qq.com",
+          "avatarUrl": "",
+          "birthday": "2015-02-15",
+          "gender": "boy",
+          "messagingContacts": [
+            {
+              "app": "whatsapp",
+              "handle": "sweetmelody2012"
+            }
+          ],
+          "primaryContact": {
+            "name": "Melody",
+            "email": "754831666@qq.com",
+            "phone": "",
+            "relationship": "mother",
+            "country": "China",
+            "city": "Shanghai",
+            "messaging": [],
+            "preferredContactMethod": "whatsapp",
+            "profession": "sweetmelody2012",
+            "englishProficiency": "fluent"
+          },
+          "createdAt": {
+            "_seconds": 1775726377,
+            "_nanoseconds": 957000000
+          },
+          "updatedAt": {
+            "_seconds": 1775726377,
+            "_nanoseconds": 957000000
+          },
+          "assignedTeacherId": "2gpJyXG01Nb3JSmYutAmWNpGFjO2",
+          "isNewStudent": false,
+          "status": "active"
+        }
+      ]
+    },
+    "targetLearnerLinkages": {
+      "8wa5iV5RA9NsqpR4PD74TLxep952": {
+        "name": "Mark",
+        "studentProgress": [
+          {
+            "id": "wKB3WGQMUeVTfZjaVH9x",
+            "studentId": "8wa5iV5RA9NsqpR4PD74TLxep952",
+            "courseId": "EFVANTW1gYtYgU2La7s8",
+            "unitId": "8N4c98y2qL2KKfHJFmMB",
+            "sessionsTotal": 2,
+            "sessionsCompleted": 0,
+            "totalHoursCompleted": 0,
+            "hoursReserved": 0,
+            "status": "assigned",
+            "assignedAt": "2026-04-18T02:27:40.968Z",
+            "createdAt": "2026-04-18T02:27:40.968Z",
+            "updatedAt": "2026-04-18T02:27:40.968Z",
+            "studentName": "Mark"
+          }
+        ],
+        "studentPackages": [
+          {
+            "id": "jSiRm6a7WQvCwkARUOXb",
+            "studentId": "8wa5iV5RA9NsqpR4PD74TLxep952",
+            "studentName": "Mark",
+            "courseId": "EFVANTW1gYtYgU2La7s8",
+            "courseTitle": "🔤 Fun Phonics KID'S CLASS 🔤",
+            "totalHours": 10,
+            "hoursRemaining": 10,
+            "price": 0,
+            "currency": "EUR",
+            "purchaseDate": {
+              "_seconds": 1776479585,
+              "_nanoseconds": 785000000
+            },
+            "status": "active",
+            "isPaused": false,
+            "pauseCount": 0,
+            "totalDaysPaused": 0,
+            "createdAt": {
+              "_seconds": 1776479585,
+              "_nanoseconds": 785000000
+            },
+            "updatedAt": "2026-04-18T02:44:17.017Z"
+          }
+        ],
+        "studentCredit": [
+          {
+            "id": "l9hikJB5qrawqn0SgExy",
+            "studentId": "8wa5iV5RA9NsqpR4PD74TLxep952",
+            "totalHours": 10,
+            "currency": "EUR",
+            "source": "manual",
+            "createdAt": {
+              "_seconds": 1776479585,
+              "_nanoseconds": 785000000
+            },
+            "studentName": "Mark",
+            "packageId": "jSiRm6a7WQvCwkARUOXb",
+            "notes": "2 for 1 deal with Luke",
+            "courseId": "45Jkyfg94otjc4d22dZT",
+            "uncommittedHours": 9,
+            "committedHours": 0,
+            "completedSessions": 2,
+            "completedHours": 1,
+            "updatedAt": {
+              "_seconds": 1776765349,
+              "_nanoseconds": 285000000
+            }
+          }
+        ]
+      },
+      "iaWH8v359kXT3qMTuIwT7OHpCRJ2": {
+        "name": "Arina",
+        "studentProgress": [
+          {
+            "id": "THez99nEvMsOVG6zJaRB",
+            "studentId": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+            "courseId": "EFVANTW1gYtYgU2La7s8",
+            "unitId": "starter",
+            "sessionsTotal": 0,
+            "sessionsCompleted": 0,
+            "totalHoursCompleted": 0,
+            "hoursReserved": 0,
+            "status": "assigned",
+            "assignedAt": "2026-04-17T23:55:18.353Z",
+            "createdAt": "2026-04-17T23:55:18.353Z",
+            "updatedAt": "2026-04-17T23:55:18.353Z",
+            "name": "Arina"
+          }
+        ],
+        "studentPackages": [
+          {
+            "id": "nqNWqrSpSOWbMnWvAsWG",
+            "studentId": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+            "courseId": "EFVANTW1gYtYgU2La7s8",
+            "totalHours": 10,
+            "currency": "EUR",
+            "price": 285.1,
+            "courseTitle": "🔤 Fun Phonics KID'S CLASS 🔤",
+            "purchaseDate": "2026-02-03T00:00:00.000Z",
+            "status": "active",
+            "isPaused": false,
+            "pauseCount": 0,
+            "totalDaysPaused": 0,
+            "expiresAt": "2026-08-18T19:16:39.570Z",
+            "hoursRemaining": 9.5,
+            "name": "Arina",
+            "studentName": "Arina",
+            "updatedAt": "2026-04-18T01:08:47.358Z"
+          }
+        ],
+        "studentCredit": [
+          {
+            "id": "4h2SvxuuLyTkjYP1Fr7u",
+            "studentId": "iaWH8v359kXT3qMTuIwT7OHpCRJ2",
+            "completedHours": 0,
+            "currency": "EUR",
+            "createdAt": {
+              "_seconds": 1776445727,
+              "_nanoseconds": 110000000
+            },
+            "totalHours": 10,
+            "uncommittedHours": 9.5,
+            "packageId": "nqNWqrSpSOWbMnWvAsWG",
+            "committedHours": 0.5,
+            "name": "Arina",
+            "studentName": "Arina",
+            "courseId": "45Jkyfg94otjc4d22dZT",
+            "updatedAt": {
+              "_seconds": 1776732968,
+              "_nanoseconds": 923000000
+            }
+          }
+        ]
+      },
+      "kF86mIJ3MNZPe7dosNbKfaS5YIt1": {
+        "name": "Gordon",
+        "studentProgress": [
+          {
+            "id": "v2nezdr7ZTt9dX9KDBny",
+            "studentId": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+            "courseId": "45Jkyfg94otjc4d22dZT",
+            "unitId": "starter",
+            "sessionsTotal": 0,
+            "sessionsCompleted": 0,
+            "totalHoursCompleted": 0,
+            "hoursReserved": 0,
+            "status": "assigned",
+            "assignedAt": "2026-04-18T03:07:35.304Z",
+            "createdAt": "2026-04-18T03:07:35.304Z",
+            "updatedAt": "2026-04-18T03:07:35.304Z",
+            "studentName": "Gordon"
+          }
+        ],
+        "studentPackages": [
+          {
+            "id": "f3SHiMuzTy4dtHVNjKfA",
+            "studentId": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+            "studentName": "Gordon",
+            "courseId": "45Jkyfg94otjc4d22dZT",
+            "totalHours": 10,
+            "hoursRemaining": 10,
+            "price": 0,
+            "currency": "EUR",
+            "purchaseDate": {
+              "_seconds": 1776450939,
+              "_nanoseconds": 338000000
+            },
+            "status": "active",
+            "isPaused": false,
+            "pauseCount": 0,
+            "totalDaysPaused": 0,
+            "createdAt": {
+              "_seconds": 1776450939,
+              "_nanoseconds": 338000000
+            },
+            "updatedAt": "2026-04-18T01:08:47.358Z"
+          }
+        ],
+        "studentCredit": [
+          {
+            "id": "VcFpzUwNtx6LTTS0TBxa",
+            "studentId": "kF86mIJ3MNZPe7dosNbKfaS5YIt1",
+            "committedHours": 0,
+            "completedHours": 0,
+            "currency": "EUR",
+            "createdAt": {
+              "_seconds": 1776450939,
+              "_nanoseconds": 338000000
+            },
+            "totalHours": 10,
+            "uncommittedHours": 10,
+            "name": "Gordon",
+            "packageId": "f3SHiMuzTy4dtHVNjKfA",
+            "studentName": "Gordon",
+            "courseId": "elW693MdfK6M1c2pkK6x",
+            "updatedAt": {
+              "_seconds": 1776732957,
+              "_nanoseconds": 991000000
+            }
+          }
+        ]
+      },
+      "ylhpEoEIIHULLlzqS3re0K7lKSl1": {
+        "name": "Luke",
+        "studentProgress": [
+          {
+            "id": "kz8NGKwS7yUH4sy2Hf3A",
+            "studentId": "ylhpEoEIIHULLlzqS3re0K7lKSl1",
+            "courseId": "45Jkyfg94otjc4d22dZT",
+            "unitId": "LoRQDimyfFclxaQXNCCh",
+            "sessionsTotal": 5,
+            "hoursReserved": 0,
+            "status": "assigned",
+            "assignedAt": "2026-04-16T16:25:26.284Z",
+            "createdAt": "2026-04-16T16:25:26.284Z",
+            "sessionsCompleted": 1,
+            "lastActivityAt": {
+              "_seconds": 1776363144,
+              "_nanoseconds": 510000000
+            },
+            "totalHoursCompleted": 1,
+            "updatedAt": {
+              "_seconds": 1776363144,
+              "_nanoseconds": 510000000
+            },
+            "name": "Luke"
+          }
+        ],
+        "studentPackages": [
+          {
+            "id": "3TsuUW60jSU2rj1Qdc6Y",
+            "studentId": "ylhpEoEIIHULLlzqS3re0K7lKSl1",
+            "studentName": "Luke",
+            "totalHours": 15,
+            "hoursRemaining": 14,
+            "price": 0,
+            "currency": "EUR",
+            "purchaseDate": {
+              "_seconds": 1776356248,
+              "_nanoseconds": 939000000
+            },
+            "status": "active",
+            "isPaused": false,
+            "pauseCount": 0,
+            "totalDaysPaused": 0,
+            "createdAt": {
+              "_seconds": 1776356248,
+              "_nanoseconds": 939000000
+            },
+            "updatedAt": "2026-04-18T01:08:47.358Z",
+            "courseId": "elW693MdfK6M1c2pkK6x"
+          }
+        ],
+        "studentCredit": [
+          {
+            "id": "v6xjKqnRTAtxsGWYNYK1",
+            "studentId": "ylhpEoEIIHULLlzqS3re0K7lKSl1",
+            "totalHours": 15,
+            "currency": "EUR",
+            "createdAt": {
+              "_seconds": 1776356248,
+              "_nanoseconds": 939000000
+            },
+            "uncommittedHours": 14,
+            "committedHours": 0,
+            "completedSessions": 1,
+            "completedHours": 1,
+            "name": "Luke",
+            "studentName": "Luke",
+            "packageId": "f3SHiMuzTy4dtHVNjKfA",
+            "courseId": "elW693MdfK6M1c2pkK6x",
+            "updatedAt": {
+              "_seconds": 1776732946,
+              "_nanoseconds": 276000000
+            }
+          }
+        ]
+      }
+    },
+    "teacherProfiles": {
+      "count": 2,
+      "docs": [
+        {
+          "id": "2gpJyXG01Nb3JSmYutAmWNpGFjO2",
+          "username": "teacherjon",
+          "email": "jwag.lang@gmail.com",
+          "nativeLanguage": "English",
+          "countryFrom": "USA",
+          "cityLiving": "Lisbon",
+          "timezone": "Europe/Lisbon",
+          "stats": "{\n  rating: 5,\n  totalStudents: 0,\n  totalLessons: 0,\n  attendanceRate: 100,\n  responseRate: 100\n}",
+          "name": "Teacher Jon",
+          "isPublished": true,
+          "specialties": [],
+          "videoUrl": "https://www.youtube.com/watch?v=OaB4ozR5Qmo",
+          "interests": [],
+          "headline": "Fluency Specialist",
+          "otherLanguages": [],
+          "teachingMaterials": [],
+          "aboutMe": "✨ Hi there! I'm Teacher Jon, a native English speaking teacher with a passion for teaching communicatively, who will help you reach fluency fast! 🧭 I'm from the USA and currently live in Lisbon, Portugal where I had to master a foreign language, too. I am also a trained voice actor and media creator with TESOL certification and specialization certification in teaching young learners (elementary and primary). 🌟 I have taught on iTalki since 2011 and overall have 25 years of teaching experience. I also run successful Youtube and Rednote channels where I create English lessons for kids all over the world. 🚀 I can't wait to help you master English, too!",
+          "lessonStyle": "📣 My classes are FUN! 🥳\n📣 Top 1% teacher for kids 🎉 (according to iTalki)\n📣 Cambridge Speaking Examiner. Fluency Expert 👨‍🏫\n\n⭐️ Contact me before booking! I have important info for you about my classroom & availability!\n\n⭐️ I'm Teacher Jon! I'm a fun, friendly and TESOL-certified teacher, as well as a Cambridge University Speaking Examiner and a former accent coach!\n\n⭐️ 25 years of teaching experience!\n⭐️ Teacher, performer and content creator!\n⭐️ Videos, songs, interactive media in a kid-friendly platform.",
+          "teachingSince": "May 2000",
+          "teachingPhilosophy": "⭐️ Drawing on 25 years of teaching, I have specialized in young learners since 2014, with captivating classes. With 10s of thousands of hours taught, I seamlessly merge my teaching expertise with my background in performance to craft a distinctive, entertaining, and fun learning experience.\n\n⭐️ My highly interactive lessons, though grounded in educational theory, put the student first.\n\n⭐️ Through integrating the latest digital tools, I also ensure a dynamic educational journey where young learners take center stage, steering clear of rigid methodologies to embrace their individual interests.",
+          "avatarUrl": "https://firebasestorage.googleapis.com/v0/b/studio-3824588486-46768.firebasestorage.app/o/teacher-avatars%2F2gpJyXG01Nb3JSmYutAmWNpGFjO2%2Favatar.jpg?alt=media&token=f891bebe-89bc-4d77-8a47-7d2b75d42a3a",
+          "createdAt": "2026-04-17T16:59:17.851Z",
+          "avatarPositionY": 27,
+          "avatarPositionX": 45,
+          "updatedAt": {
+            "_seconds": 1776445157,
+            "_nanoseconds": 852000000
+          }
+        },
+        {
+          "id": "A9YKGu2jOgRAEVtR8n0E",
+          "username": "teacherjon",
+          "email": "teacher@lessonlink.com",
+          "name": "👨🏫 Teacher Jon 🎓",
+          "headline": "🌟 Fluency Specialist for All Ages 🌟",
+          "avatarUrl": "https://imagesavatar-static01.italki.com/9T010801680_Avatar_1.jpg",
+          "coverImageUrl": "https://ofs-cdn.italki.com/u/1080168/cover/d37lnjjf4q7i632j7gg0_480x,q75.jpg",
+          "aboutMe": "✨ Hi there! I'm Teacher Jon, a native English speaking teacher with a passion for teaching communicatively, who will help you reach fluency fast!\n\n🧭 I'm from the USA and currently live in Lisbon, Portugal where I had to master a foreign language, too. I am also a trained voice actor and media creator with TESOL certification and specialization certification in teaching young learners (elementary and primary).\n\n🌟 I have taught on iTalki since 2011 and overall have 25 years of teaching experience. I also run successful Youtube and Rednote channels where I create English lessons for kids all over the world.\n\n🚀 I can't wait to help you master English, too!",
+          "teachingPhilosophy": "⭐️ Drawing on 25 years of teaching, I have specialized in young learners since 2014, with captivating classes. With 10s of thousands of hours taught, I seamlessly merge my teaching expertise with my background in performance to craft a distinctive, entertaining, and fun learning experience.\n\n⭐️ My highly interactive lessons, though grounded in educational theory, put the student first.\n\n⭐️ Through integrating the latest digital tools, I also ensure a dynamic educational journey where young learners take center stage, steering clear of rigid methodologies to embrace their individual interests.",
+          "lessonStyle": "📣 My classes are FUN! 🥳\n📣 Top 1% teacher for kids 🎉 (according to iTalki)\n📣 Cambridge Speaking Examiner. Fluency Expert 👨‍🏫\n\n⭐️ Contact me before booking! I have important info for you about my classroom & availability!\n\n⭐️ I'm Teacher Jon! I'm a fun, friendly and TESOL-certified teacher, as well as a Cambridge University Speaking Examiner and a former accent coach!\n\n⭐️ 25 years of teaching experience!\n⭐️ Teacher, performer and content creator!\n⭐️ Videos, songs, interactive media in a kid-friendly platform.",
+          "teachingMaterials": [
+            "Presentation slides/PPT",
+            "Homework Assignments",
+            "PDF file",
+            "Audio files",
+            "Flashcards",
+            "Quizzes",
+            "Video files",
+            "Text Documents",
+            "Test templates and examples",
+            "Image files",
+            "Articles and news",
+            "Graphs and charts"
+          ],
+          "nativeLanguage": "English",
+          "otherLanguages": [
+            "Portuguese",
+            "Chinese (Mandarin)"
+          ],
+          "specialties": [
+            "Test Preparation",
+            "Kids",
+            "Conversation",
+            "Business English"
+          ],
+          "interests": [
+            "Pets & Animals",
+            "Gaming",
+            "Animation & Comics",
+            "Films & TV Series"
+          ],
+          "countryFrom": "United States",
+          "cityLiving": "Lisbon, Portugal",
+          "timezone": "Europe/Lisbon",
+          "certificates": [
+            {
+              "title": "TEFL Certification",
+              "issuer": "Magic Ears / Accreditat",
+              "year": "2021",
+              "description": "150 Hour TEFL certification",
+              "verified": true
+            },
+            {
+              "title": "Magic Ears TEFL Certification",
+              "issuer": "Accreditat",
+              "year": "2021",
+              "description": "The Magic Ears TEFL Certification with international accreditation, primarily focused on second language acquisition for young learners ages 5 to 12.",
+              "verified": true
+            },
+            {
+              "title": "Cambridge Speaking Examiner",
+              "issuer": "Cambridge University - English Language Assessment Division",
+              "year": "2016",
+              "description": "Speaking examiner for IELTS, CAE, FCE & PET exams.",
+              "verified": true
+            },
+            {
+              "title": "Cambridge Speaking Examiner Certification",
+              "issuer": "UCLES",
+              "year": "2016",
+              "description": "The Cambridge Speaking Examiner Certification from The University of Cambridge Local Examinations Syndicate (UCLES) qualifies professionals to conduct speaking exams for selected Cambridge tests.",
+              "verified": true
+            },
+            {
+              "title": "Certificate in TESOL",
+              "issuer": "Trinity College London",
+              "year": "1998",
+              "description": "Certificate in Teaching English to Speakers of Other Languages",
+              "verified": true
+            }
+          ],
+          "experience": [
+            {
+              "title": "Speaking Examiner",
+              "organization": "Cambridge",
+              "location": "Lisbon, Portugal",
+              "startYear": "2016",
+              "endYear": "2020",
+              "description": "Certified Speaking Examiner for Cambridge PET, KET, First Certificate, Advanced, Proficiency English and IELTS exams."
+            },
+            {
+              "title": "Online English Teacher",
+              "organization": "iTalki and many others",
+              "location": "Remote",
+              "startYear": "2010",
+              "endYear": "2024",
+              "description": "Taught online to children and adults almost exclusively since 2010."
+            },
+            {
+              "title": "Online Teaching Professional",
+              "organization": "LearnShip Networks GmbH",
+              "location": "Cologne, Germany",
+              "startYear": "2012",
+              "endYear": "",
+              "description": "Face-to-face customized training individually or in small groups using an interactive and multimedia-based Live Teaching Method."
+            },
+            {
+              "title": "Online Teaching Professional",
+              "organization": "Myngle Corporate Academy",
+              "location": "Amsterdam, Netherlands",
+              "startYear": "2011",
+              "endYear": "",
+              "description": "Private classes in Business English, CEFR level assessment and American pronunciation & accent training to executives of Boston Consulting Group, Bain Capital, Compagnia Generale Trattori – Caterpillar and LUISS University Rome."
+            },
+            {
+              "title": "Online Teaching Professional",
+              "organization": "Englishtown (Education First)",
+              "location": "Shanghai, China",
+              "startYear": "2010",
+              "endYear": "2012",
+              "description": "Online group lessons, providing personalized after-class feedback to students & tailor-made curricula for private lessons."
+            },
+            {
+              "title": "Online Teaching Professional",
+              "organization": "Verbling",
+              "location": "San Francisco, United States",
+              "startYear": "2015",
+              "endYear": "",
+              "description": "Develop and teach original courses in fluency, business English and conversation."
+            },
+            {
+              "title": "Online English Teacher",
+              "organization": "iTutorGroup / TutorABC",
+              "location": "Taipei, Taiwan",
+              "startYear": "2018",
+              "endYear": "2021",
+              "description": "Teaching general English online to young learners from ages 4 to 18. Teaching group and one-to-one adult classes in conversational general English."
+            },
+            {
+              "title": "Online English Teacher",
+              "organization": "Magic Ears",
+              "location": "Beijing, China",
+              "startYear": "2021",
+              "endYear": "2021",
+              "description": "Teaching English to Chinese young learners from 3 to 12 years of age through a state of the art interactive platform."
+            },
+            {
+              "title": "Online English Teacher",
+              "organization": "GoGoKid",
+              "location": "Beijing, China",
+              "startYear": "2020",
+              "endYear": "2021",
+              "description": "One-on-one online language lessons based on U.S. Common Core State Standards through a virtual classroom infused with cutting-edge AI technology."
+            },
+            {
+              "title": "Online English Teacher",
+              "organization": "Protostar Education",
+              "location": "Hong Kong, China",
+              "startYear": "2020",
+              "endYear": "2021",
+              "description": "Teaching English Phonics and reading skills in a dynamic, flipped classroom approach for young learners in groups of 2-4."
+            }
+          ],
+          "isOnline": true,
+          "createdAt": "2026-01-16T13:48:31.802Z",
+          "teachingSince": "Mar 16, 2013",
+          "stats": {
+            "rating": 5,
+            "totalStudents": 178,
+            "totalLessons": 1767,
+            "attendanceRate": 100,
+            "responseRate": 100
+          },
+          "videoUrl": "https://www.youtube.com/watch?v=SMdkIlyZf8Q",
+          "updatedAt": "2026-01-18T02:34:51.306Z",
+          "isPublished": "false"
+        }
+      ]
+    }
+  },
+  "notes": []
+}

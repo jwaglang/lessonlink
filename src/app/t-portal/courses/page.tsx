@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2, RotateCcw } from 'lucide-react';
+import ImportUnitPackageButton from './components/import-unit-package-button';
 import { onCoursesUpdate, onTrashedCoursesUpdate, deleteCourse, restoreCourse } from '@/lib/firestore';
 import type { Course } from '@/lib/types';
 import CourseList from './components/course-list';
@@ -88,6 +89,7 @@ export default function CoursesPage() {
                             Trash {showTrash ? '▲' : `(${trashed.length})`}
                         </Button>
                     )}
+                    <ImportUnitPackageButton />
                     <Button onClick={handleAddClick}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Add Course

@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PACKAGE_EXPIRY_MONTHS } from '@/lib/stripe-config';
 import { PackageType } from '@/lib/pricing';
-import { adminDb } from '@/lib/firebase-admin';
+import { getAdminDb } from '@/lib/firebase-admin';
+const adminDb = getAdminDb();
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,24 +46,29 @@ export async function POST(req: NextRequest) {
     const amountTotal = (session.amount_total ?? 0) / 100;
     const currency = (session.currency ?? 'eur').toUpperCase();
 
-    try {
-      // 1. Create Payment record
-      await adminDb.collection('payments').add({
-        studentId: metadata.studentId,
-        courseId: resolvedCourseId,
-        amount: amountTotal,
-        currency,
-        type: packageType === 'single' ? 'one_off' : 'package',
-        method: 'stripe',
-        paymentDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        status: 'completed',
-        stripeSessionId: session.id,
-        stripePaymentIntentId: typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : session.payment_intent?.id ?? '',
-        notes: `${resolvedCourseTitle} — ${packageType} (${metadata.duration}min)`,
-      });
+      try {
+       // 1. Create Payment record
+       const subtotal = metadata.subtotal ? parseFloat(metadata.subtotal) : amountTotal;
+       const processingFee = metadata.processingFee ? parseFloat(metadata.processingFee) : 0;
+
+       await adminDb.collection('payments').add({
+         studentId: metadata.studentId,
+         courseId: resolvedCourseId,
+         amount: amountTotal,
+         currency,
+         type: packageType === 'single' ? 'one_off' : 'package',
+         method: 'stripe',
+         paymentDate: new Date().toISOString(),
+         createdAt: new Date().toISOString(),
+         status: 'completed',
+         stripeSessionId: session.id,
+         stripePaymentIntentId: typeof session.payment_intent === 'string'
+           ? session.payment_intent
+           : session.payment_intent?.id ?? '',
+         notes: `${resolvedCourseTitle} — ${packageType} (${metadata.duration}min)`,
+         subtotal,
+         processingFee,
+       });
 
       // 2. Create StudentPackage record
       const expiryMonths = PACKAGE_EXPIRY_MONTHS[packageType] ?? 6;

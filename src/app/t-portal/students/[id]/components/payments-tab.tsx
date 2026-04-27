@@ -26,11 +26,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  DollarSign,
   Plus,
   Info,
   CreditCard,
   Loader2,
+  Coins,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -266,23 +266,37 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
                   key={payment.id}
                   className="flex items-center justify-between rounded-md border px-4 py-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
-                      <DollarSign className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {getCurrencySymbol(payment.currency)}{payment.amount.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(parseISO(payment.paymentDate), 'MMM d, yyyy')} — {getMethodLabel(payment.method)}
-                      </p>
-                      {payment.notes && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{payment.notes}</p>
-                      )}
-                      {payment.stripeSessionId && (
-                        <p className="text-xs text-muted-foreground mt-0.5">Stripe: {payment.stripeSessionId.slice(0, 20)}...</p>
-                      )}
+                   <div className="flex items-center gap-4">
+                     <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
+                       <Coins className="h-5 w-5" />
+                     </div>
+                     <div>
+                     {/* Primary amount: subtotal (course cost before fees) or total if no breakdown */}
+                     <p className="text-base font-semibold">
+                       {getCurrencySymbol(payment.currency)}{(payment.subtotal ?? payment.amount).toFixed(2)}
+                     </p>
+                     {payment.subtotal !== undefined && payment.processingFee !== undefined && (
+                       <>
+                         <p className="text-xs text-muted-foreground">
+                           Course price (before fees)
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                           + {getCurrencySymbol(payment.currency)}{payment.processingFee.toFixed(2)} card processing fee
+                         </p>
+                         <p className="text-xs font-medium">
+                           Total: {getCurrencySymbol(payment.currency)}{payment.amount.toFixed(2)}
+                         </p>
+                       </>
+                     )}
+                     <p className="text-xs text-muted-foreground">
+                       {format(parseISO(payment.paymentDate), 'MMM d, yyyy')} — {getMethodLabel(payment.method)}
+                     </p>
+                     {payment.notes && (
+                       <p className="text-xs text-muted-foreground mt-0.5">{payment.notes}</p>
+                     )}
+                     {payment.stripeSessionId && (
+                       <p className="text-xs text-muted-foreground mt-0.5">Stripe: {payment.stripeSessionId.slice(0, 20)}...</p>
+                     )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -447,14 +461,14 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
             <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting || !formAmount}>
-              {submitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <DollarSign className="mr-2 h-4 w-4" />
-              )}
-              Record Payment
-            </Button>
+      <Button onClick={handleSubmit} disabled={submitting || !formAmount}>
+               {submitting ? (
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+               ) : (
+                 <Coins className="mr-2 h-4 w-4" />
+               )}
+               Record Payment
+             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

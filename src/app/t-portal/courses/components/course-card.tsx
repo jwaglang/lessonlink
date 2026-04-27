@@ -28,7 +28,7 @@ export default function CourseCard({ course, onEdit, onDelete }: CourseCardProps
         : PlaceHolderImages.find(p => p.id === course.thumbnailUrl)?.imageUrl || 'https://placehold.co/400x225';
     const objectPosition = course.imagePosition ?? '50% 50%';
     
-    const currencySymbol = '$';
+    const currencySymbol = '€';
 
     const price30min = calculateLessonPrice(course.hourlyRate, 30);
     const price60min = calculateLessonPrice(course.hourlyRate, 60, course.discount60min);

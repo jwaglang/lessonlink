@@ -1,22 +1,26 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+/**
+ * Firebase Admin initialization for Node.js scripts
+ */
 
-function getAdminApp() {
-  if (getApps().length > 0) {
-    return getApps()[0];
+import admin from 'firebase-admin';
+import { cert } from 'firebase-admin/app';
+import path from 'path';
+
+// Load service account
+const serviceAccountPath = path.join(process.cwd(), 'firebase-service-account.json');
+
+let firebaseInitialized = false;
+
+export function getAdminDb() {
+  if (!firebaseInitialized) {
+    const serviceAccount = require(serviceAccountPath);
+
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    }
+    firebaseInitialized = true;
   }
-
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-  return initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-      privateKey,
-    }),
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  });
+  return admin.firestore();
 }
-
-const app = getAdminApp();
-export const adminDb = getFirestore(app);

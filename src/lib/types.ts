@@ -468,6 +468,9 @@ export interface Payment {
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
   status: PaymentStatus;
+  // Invoice breakdown (Stripe payments only)
+  subtotal?: number;          // Amount before processing fees
+  processingFee?: number;     // Stripe/processing fee charged
 }
 
 // ========================================
