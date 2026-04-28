@@ -182,7 +182,7 @@ export default function PackagesTab({ studentId, student }: PackagesTabProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={<Package className="h-4 w-4" />}
-            label="Packages"
+            label="Current Package"
             value={String(packages.length)}
           />
           <StatCard
