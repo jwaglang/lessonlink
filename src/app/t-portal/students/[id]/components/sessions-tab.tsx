@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Student, SessionInstance, SessionFeedback } from '@/lib/types';
+import type { Student, SessionInstance, SessionFeedback, Payment, Unit, Level } from '@/lib/types';
 import {
   getSessionInstancesByStudentId,
   completeSession,
@@ -9,6 +9,9 @@ import {
   getSessionFeedbackByStudent,
   updateSessionFeedback,
   createSessionFeedback,
+  getPaymentsByStudentId,
+  getUnitsByCourseId,
+  getLevelsByCourseId,
 } from '@/lib/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,6 +60,9 @@ interface SessionsTabProps {
 
 export default function SessionsTab({ studentId, student }: SessionsTabProps) {
   const [sessions, setSessions] = useState<SessionInstance[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [unitMap, setUnitMap] = useState<Record<string, Unit>>({});
+  const [levelMap, setLevelMap] = useState<Record<string, Level>>({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<SessionInstance | null>(null);
@@ -75,11 +81,21 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
     async function fetchSessions() {
       setLoading(true);
       try {
-        const [data, feedbacks] = await Promise.all([
+        const [data, feedbacks, pmts] = await Promise.all([
           getSessionInstancesByStudentId(studentId),
           getSessionFeedbackByStudent(studentId),
+          getPaymentsByStudentId(studentId),
         ]);
         setSessions(data);
+        setPayments(pmts);
+
+        const courseIds = [...new Set(data.map((s) => s.courseId).filter(Boolean))];
+        const [allUnits, allLevels] = await Promise.all([
+          Promise.all(courseIds.map((id) => getUnitsByCourseId(id))).then((r) => r.flat()),
+          Promise.all(courseIds.map((id) => getLevelsByCourseId(id))).then((r) => r.flat()),
+        ]);
+        setUnitMap(Object.fromEntries(allUnits.map((u) => [u.id, u])));
+        setLevelMap(Object.fromEntries(allLevels.map((l) => [l.id, l])));
         const map: Record<string, SessionFeedback> = {};
         for (const fb of feedbacks) map[fb.sessionInstanceId] = fb;
         setFeedbackMap(map);
@@ -148,6 +164,37 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
   const history = sessions
     .filter((s) => s.status !== 'scheduled' || (s.lessonDate && !isFuture(startOfDay(parseISO(s.lessonDate)))))
     .sort((a, b) => parseISO(b.lessonDate).getTime() - parseISO(a.lessonDate).getTime());
+
+  const packagesSorted = [...payments]
+    .filter((p) => p.type === 'package' || p.type === 'course')
+    .sort((a, b) => parseISO(a.paymentDate).getTime() - parseISO(b.paymentDate).getTime());
+  const creditSessionsSorted = [...sessions]
+    .filter((s) => s.billingType === 'credit')
+    .sort((a, b) => parseISO(a.lessonDate).getTime() - parseISO(b.lessonDate).getTime());
+  const oneOffSessionsSorted = [...sessions]
+    .filter((s) => s.billingType === 'one_off')
+    .sort((a, b) => parseISO(a.lessonDate).getTime() - parseISO(b.lessonDate).getTime());
+
+  function getSessionLabel(session: SessionInstance): string | null {
+    if (session.billingType === 'credit') {
+      const sessionNum = creditSessionsSorted.findIndex((s) => s.id === session.id) + 1;
+      if (packagesSorted.length === 0) return `Session ${sessionNum}`;
+      const sessionDate = parseISO(session.lessonDate).getTime();
+      let packageNum = 1;
+      for (let i = packagesSorted.length - 1; i >= 0; i--) {
+        if (sessionDate >= parseISO(packagesSorted[i].paymentDate).getTime()) {
+          packageNum = i + 1;
+          break;
+        }
+      }
+      return `Package ${packageNum} · Session ${sessionNum}`;
+    }
+    if (session.billingType === 'one_off') {
+      const n = oneOffSessionsSorted.findIndex((s) => s.id === session.id) + 1;
+      return `Session ${n}`;
+    }
+    return null;
+  }
 
   // Stats
   const totalCount = sessions.length;
@@ -337,7 +384,20 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
                       </p>
                     </div>
                     <div>
+                      {getSessionLabel(session) && (
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">
+                          {getSessionLabel(session)}
+                        </p>
+                      )}
                       <p className="text-sm font-medium">{session.title || 'Untitled Session'}</p>
+                      {session.unitId && unitMap[session.unitId] && (
+                        <p className="text-xs text-muted-foreground">
+                          {unitMap[session.unitId].title}
+                          {unitMap[session.unitId].levelId && levelMap[unitMap[session.unitId].levelId!] && (
+                            <> · {levelMap[unitMap[session.unitId].levelId!].title}</>
+                          )}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {session.startTime} – {session.endTime} ({session.durationHours}h)
                       </p>

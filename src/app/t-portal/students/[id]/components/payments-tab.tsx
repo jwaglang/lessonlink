@@ -209,6 +209,26 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
     return TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type;
   }
 
+  // Numbering — chronological (oldest = #1), separate sequences for packages vs one-offs
+  const packagesSorted = [...payments]
+    .filter(p => p.type === 'package' || p.type === 'course')
+    .sort((a, b) => a.paymentDate.localeCompare(b.paymentDate));
+  const sessionsSorted = [...payments]
+    .filter(p => p.type === 'one_off')
+    .sort((a, b) => a.paymentDate.localeCompare(b.paymentDate));
+
+  function getPaymentLabel(payment: Payment): string | null {
+    if (payment.type === 'package' || payment.type === 'course') {
+      const n = packagesSorted.findIndex(p => p.id === payment.id) + 1;
+      return `Package ${n}`;
+    }
+    if (payment.type === 'one_off') {
+      const n = sessionsSorted.findIndex(p => p.id === payment.id) + 1;
+      return `Session ${n}`;
+    }
+    return null;
+  }
+
   // Summary
   const totalReceived = payments
     .filter((p) => p.status === 'completed')
@@ -271,6 +291,11 @@ export default function PaymentsTab({ studentId, student }: PaymentsTabProps) {
                        <Coins className="h-5 w-5" />
                      </div>
                      <div>
+                     {getPaymentLabel(payment) && (
+                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">
+                         {getPaymentLabel(payment)}
+                       </p>
+                     )}
                      {/* Primary amount: subtotal (course cost before fees) or total if no breakdown */}
                      <p className="text-base font-semibold">
                        {getCurrencySymbol(payment.currency)}{(payment.subtotal ?? payment.amount).toFixed(2)}

@@ -211,17 +211,21 @@ export default function PackagesTab({ studentId, student }: PackagesTabProps) {
           </CardContent>
         </Card>
       ) : (
-        packages.map((pkg) => {
+        packages.map((pkg, index) => {
           const credit = getCreditForPackage(pkg);
           const maxPauses = getMaxPauses(pkg.totalHours);
           const remaining = pausesRemaining(pkg);
           const isPendingPause = hasPendingPause(pkg.id);
+          const packageNum = packages.length - index;
 
           return (
             <Card key={pkg.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                      Package {packageNum}
+                    </p>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Package className="h-5 w-5" />
                       {pkg.courseTitle}

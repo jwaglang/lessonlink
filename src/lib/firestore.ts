@@ -532,7 +532,7 @@ export async function bookLesson(input: {
 
   // Gate 2: credit exists (unless trial)
   if (input.billingType !== 'trial') {
-    const credit = await getStudentCredit(input.studentId);
+    const credit = await getStudentCredit(input.studentId, input.courseId ?? undefined);
     if (!credit) {
       throw new Error('No credit found. Please complete payment before booking.');
     }
@@ -624,14 +624,27 @@ export async function completeSession(instanceId: string): Promise<void> {
 
   let creditDocId: string | null = null;
   if (inst.billingType === 'credit') {
-    const creditQ = query(
-      studentCreditCollection,
-      where('studentId', '==', inst.studentId),
-      limit(1)
-    );
-    const creditSnap = await getDocs(creditQ);
+    const creditConstraints: any[] = [where('studentId', '==', inst.studentId)];
+    if (inst.courseId) creditConstraints.push(where('courseId', '==', inst.courseId));
+    creditConstraints.push(limit(1));
+    const creditSnap = await getDocs(query(studentCreditCollection, ...creditConstraints));
     if (!creditSnap.empty) {
       creditDocId = creditSnap.docs[0].id;
+    }
+  }
+
+  // Find the active studentPackage to decrement hoursRemaining
+  let packageDocId: string | null = null;
+  if (inst.billingType === 'credit') {
+    const pkgConstraints: any[] = [
+      where('studentId', '==', inst.studentId),
+      where('status', '==', 'active'),
+    ];
+    if (inst.courseId) pkgConstraints.push(where('courseId', '==', inst.courseId));
+    pkgConstraints.push(limit(1));
+    const pkgSnap = await getDocs(query(studentPackagesCollection, ...pkgConstraints));
+    if (!pkgSnap.empty) {
+      packageDocId = pkgSnap.docs[0].id;
     }
   }
 
@@ -657,6 +670,13 @@ export async function completeSession(instanceId: string): Promise<void> {
       await tx.get(cRef);
     }
 
+    // Read package doc if it exists
+    let pkgRef: ReturnType<typeof doc> | null = null;
+    if (packageDocId) {
+      pkgRef = doc(db, 'studentPackages', packageDocId);
+      await tx.get(pkgRef);
+    }
+
     // === ALL WRITES AFTER ===
     tx.update(ref, {
       status: 'completed',
@@ -678,6 +698,13 @@ export async function completeSession(instanceId: string): Promise<void> {
         committedHours: increment(-inst.durationHours),
         completedHours: increment(inst.durationHours),
         completedSessions: increment(1),
+        updatedAt: Timestamp.now(),
+      } as any);
+    }
+
+    if (pkgRef) {
+      tx.update(pkgRef, {
+        hoursRemaining: increment(-inst.durationHours),
         updatedAt: Timestamp.now(),
       } as any);
     }
@@ -1590,13 +1617,11 @@ export async function getAllStudentCredits(): Promise<StudentCredit[]> {
   return snapshot.docs.map(d => asId<StudentCredit>(d.id, d.data()));
 }
 
-export async function getStudentCredit(studentId: string, _courseId?: string): Promise<StudentCredit | null> {
-  // Course-agnostic: one credit pool per learner
-  const snapshot = await getDocs(query(
-    studentCreditCollection,
-    where('studentId', '==', studentId),
-    limit(1)
-  ));
+export async function getStudentCredit(studentId: string, courseId?: string): Promise<StudentCredit | null> {
+  const constraints: any[] = [where('studentId', '==', studentId)];
+  if (courseId) constraints.push(where('courseId', '==', courseId));
+  constraints.push(limit(1));
+  const snapshot = await getDocs(query(studentCreditCollection, ...constraints));
   if (snapshot.empty) return null;
   const d = snapshot.docs[0];
   return asId<StudentCredit>(d.id, d.data());
@@ -1627,15 +1652,14 @@ export async function deleteStudentCredit(creditId: string): Promise<void> {
 /**
  * Reserve credit for a unit assignment (uncommitted -> committed).
  */
-export async function reserveCredit(studentId: string, _courseId: string, hoursToReserve: number): Promise<void> {
+export async function reserveCredit(studentId: string, courseId: string, hoursToReserve: number): Promise<void> {
   if (hoursToReserve <= 0) throw new Error('hoursToReserve must be > 0');
 
   await runTransaction(db, async (tx) => {
-    const snapshot = await getDocs(query(
-      studentCreditCollection,
-      where('studentId', '==', studentId),
-      limit(1)
-    ));
+    const constraints: any[] = [where('studentId', '==', studentId)];
+    if (courseId) constraints.push(where('courseId', '==', courseId));
+    constraints.push(limit(1));
+    const snapshot = await getDocs(query(studentCreditCollection, ...constraints));
 
     if (snapshot.empty) throw new Error('No credit found. Please top up before booking.');
 
