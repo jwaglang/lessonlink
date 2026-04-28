@@ -39,6 +39,7 @@ import {
   BookOpen,
   FileText,
   Pencil,
+  Mail,
 } from 'lucide-react';
 import { format, parseISO, isFuture, startOfDay, differenceInHours } from 'date-fns';
 import Link from 'next/link';
@@ -75,6 +76,7 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
   const [editingFeedback, setEditingFeedback] = useState(false);
   const [editLines, setEditLines] = useState('');
   const [savingFeedback, setSavingFeedback] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -117,6 +119,25 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
       : '');
   }
 
+  async function sendFeedbackEmail(session: SessionInstance, englishReport: { summary: string; progressHighlights: string; suggestedActivities: string }) {
+    const parentEmail = student.primaryContact?.email;
+    if (!parentEmail) return null;
+    const res = await fetch('/api/email/send-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: parentEmail,
+        learnerName: student.name,
+        sessionTitle: session.title || 'Untitled Session',
+        sessionDate: session.lessonDate || '',
+        summary: englishReport.summary,
+        progressHighlights: englishReport.progressHighlights,
+        suggestedActivities: englishReport.suggestedActivities,
+      }),
+    });
+    return res.ok ? parentEmail : null;
+  }
+
   async function handleSaveFeedbackText() {
     if (!feedbackDialog) return;
     setSavingFeedback(true);
@@ -148,11 +169,36 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
       setFeedbackMap(prev => ({ ...prev, [feedbackDialog.session.id]: updated }));
       setFeedbackDialog(prev => prev ? { ...prev, feedback: updated } : null);
       setEditingFeedback(false);
-      toast({ title: 'Saved', description: 'Feedback notes saved to learner record.' });
+
+      const sentTo = await sendFeedbackEmail(feedbackDialog.session, englishReport);
+      if (sentTo) {
+        toast({ title: 'Saved & sent', description: `Feedback emailed to ${sentTo}.` });
+      } else if (!student.primaryContact?.email) {
+        toast({ title: 'Saved', description: 'Feedback saved. No parent email on file — email not sent.' });
+      } else {
+        toast({ title: 'Saved', description: 'Feedback saved. Email delivery failed — try resending.', variant: 'destructive' });
+      }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setSavingFeedback(false);
+    }
+  }
+
+  async function handleResendFeedbackEmail() {
+    if (!feedbackDialog?.feedback?.englishReport) return;
+    setSendingEmail(true);
+    try {
+      const sentTo = await sendFeedbackEmail(feedbackDialog.session, feedbackDialog.feedback.englishReport);
+      if (sentTo) {
+        toast({ title: 'Email sent', description: `Feedback re-sent to ${sentTo}.` });
+      } else {
+        toast({ title: 'Not sent', description: 'No parent email on file.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSendingEmail(false);
     }
   }
 
@@ -538,13 +584,19 @@ export default function SessionsTab({ studentId, student }: SessionsTabProps) {
 
           <DialogFooter className="gap-2">
             {feedbackDialog?.feedback?.englishReport && !editingFeedback ? (
-              <Button variant="outline" size="sm" onClick={() => {
-                const r = feedbackDialog.feedback!.englishReport!;
-                setEditLines([r.summary, r.progressHighlights, r.suggestedActivities].filter(Boolean).join('\n\n'));
-                setEditingFeedback(true);
-              }}>
-                <Pencil className="h-3 w-3 mr-1" /> Edit
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={handleResendFeedbackEmail} disabled={sendingEmail}>
+                  {sendingEmail ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Mail className="h-3 w-3 mr-1" />}
+                  Resend Email
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const r = feedbackDialog.feedback!.englishReport!;
+                  setEditLines([r.summary, r.progressHighlights, r.suggestedActivities].filter(Boolean).join('\n\n'));
+                  setEditingFeedback(true);
+                }}>
+                  <Pencil className="h-3 w-3 mr-1" /> Edit
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="outline" size="sm" onClick={() => setFeedbackDialog(null)}>Cancel</Button>
