@@ -17,19 +17,21 @@ export async function POST(request: NextRequest) {
 
     let storagePath: string | null = null;
 
-    // Extract storage path from Firebase Storage URL
-    if (imageUrl.includes('firebasestorage.googleapis.com')) {
-      try {
-        // Extract file path from URL: ...o%2Fpath%2Fto%2Ffile.png?...
-        const filePathMatch = imageUrl.match(/\/o\/(.+?)\?/);
-        if (filePathMatch) {
-          const encodedPath = filePathMatch[1];
-          storagePath = decodeURIComponent(encodedPath);
-          console.log('[create-item] Extracted storage path:', storagePath);
-        }
-      } catch (error) {
-        console.error('[create-item] Failed to extract path:', error);
+    // Extract storage path from Firebase Storage URL (handles all URL formats)
+    try {
+      if (imageUrl.includes('/o/')) {
+        const match = imageUrl.match(/\/o\/(.+?)\?/);
+        if (match) storagePath = decodeURIComponent(match[1]);
+      } else if (imageUrl.includes('.firebasestorage.app/')) {
+        const match = imageUrl.match(/\.firebasestorage\.app\/(.+?)(?:\?|$)/);
+        if (match) storagePath = match[1];
+      } else if (imageUrl.includes('storage.googleapis.com')) {
+        const match = imageUrl.match(/storage\.googleapis\.com\/[^/]+\/(.+?)(?:\?|$)/);
+        if (match) storagePath = match[1];
       }
+      if (storagePath) console.log('[create-item] Extracted storage path:', storagePath);
+    } catch (error) {
+      console.error('[create-item] Failed to extract path:', error);
     }
 
     // If we couldn't extract a path, reject the request
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
     const docRef = await adminDb.collection('petShopItems').add({
       name,
       description: description || '',
+      imageUrl,
       storagePath,
       price,
       stock: stock || 0,

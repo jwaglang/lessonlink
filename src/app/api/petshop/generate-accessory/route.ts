@@ -157,7 +157,7 @@ async function uploadImageToStorage(
     const response = await file.getSignedUrl({
       version: 'v4',
       action: 'read',
-      expires: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000, // 100 years
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days (v4 max)
     });
 
     const signedUrl = response[0];

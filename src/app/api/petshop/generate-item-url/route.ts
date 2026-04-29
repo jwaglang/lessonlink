@@ -26,13 +26,13 @@ export async function POST(request: NextRequest) {
     try {
       const app = getApps()[0];
       const storage = getStorage(app);
-      const bucket = storage.bucket();
+      const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
       const file = bucket.file(storagePath);
 
       const signedUrlResponse = await file.getSignedUrl({
         version: 'v4',
         action: 'read',
-        expires: Date.now() + 60 * 60 * 1000, // 1 hour (fresh URL generated on each page load)
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
       const imageUrl = signedUrlResponse[0];

@@ -25,7 +25,7 @@ async function fixAllUrls() {
 
     const app = getApps()[0];
     const storage = getStorage(app);
-    const bucket = storage.bucket();
+    const bucket = storage.bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
 
     let fixed = 0;
     let failed = 0;

@@ -1370,7 +1370,23 @@ export default function StudentDashboard({ learnerId, learnerName, viewerRole = 
 
         // Refresh signed URLs so images aren't expired (same as teacher pet shop view)
         const items = await Promise.all(rawItems.map(async (item) => {
-          const storagePath = (item as any).storagePath || (item as any).storePath;
+          let storagePath = (item as any).storagePath || (item as any).storePath;
+
+          // If no storagePath field, extract from the existing imageUrl
+          if (!storagePath && typeof (item as any).imageUrl === 'string') {
+            const url = (item as any).imageUrl as string;
+            if (url.includes('/o/')) {
+              const match = url.match(/\/o\/(.+?)\?/);
+              if (match) storagePath = decodeURIComponent(match[1]);
+            } else if (url.includes('.firebasestorage.app/')) {
+              const match = url.match(/\.firebasestorage\.app\/(.+?)(?:\?|$)/);
+              if (match) storagePath = match[1];
+            } else if (url.includes('storage.googleapis.com')) {
+              const match = url.match(/storage\.googleapis\.com\/[^/]+\/(.+?)(?:\?|$)/);
+              if (match) storagePath = match[1];
+            }
+          }
+
           if (!storagePath) return item;
           try {
             const res = await fetch('/api/petshop/generate-item-url', {
