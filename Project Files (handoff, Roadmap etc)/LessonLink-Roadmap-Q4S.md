@@ -1,8 +1,8 @@
 # LessonLink | Complete Roadmap
 
-**Version:** Q4Q (7.0) — Consolidated. Roadmap + Supplement merged. Strategic Context added (relationship to Kiddoland Studios). Phases affected by Kiddoland reframe flagged inline.
+**Version:** Q4S (7.1) — KHGT Phase 19-K updated to reflect built status. Templates Inventory section added. Bundle Templates sub-phase (19-K-1) added. Pet generation production fix logged. firebase-admin defensive cleanup task added.
 
-**Last Updated:** April 26, 2026 (Q4Q)
+**Last Updated:** April 29, 2026 (Q4S)
 
 ---
 
@@ -576,7 +576,7 @@ All seven full-screen direct-fire animations built:
 
 **Goal:** Transform LL from session-management into a curriculum-building platform. Reusable homework templates on units, provider-agnostic AI layer, three integrated modules (KTFT/KCBT/KUPT), unified session timeline, and standalone course pages.
 
-**Status:** Specs complete. Build not started.
+**Status:** Specs complete. Build not started (except Phase 19-K — see below).
 
 **Spec Documents:**
 
@@ -589,7 +589,7 @@ All seven full-screen direct-fire animations built:
 
 **KTFT** (framework) → **KCBT** (course) → **KUPT** (unit) → **KHGT** (homework)
 
-KHGT is the fourth zoom level not yet spec'd in the original Q36 document. Built first as standalone HTML (see Phase 19-K below), migrated inside LL once AI layer (Phase 19-B) is stable.
+KHGT is the fourth zoom level not yet spec'd in the original Q36 document. Built first inside LL (see Phase 19-K below); AI-populated form fields deferred to Phase 19-B.
 
 **Three integrated modules (all inside LL):**
 
@@ -630,19 +630,52 @@ KHGT is the fourth zoom level not yet spec'd in the original Q36 document. Built
 - [ ] S-portal sidebar: "My Courses" + "Browse Courses" replaces "Browse Units"
 - [ ] Foundational for multi-T launch
 
-**Phase 19-K: KHGT Standalone (build first, migrate later)**
-- [ ] Build KHGT as standalone HTML per Q42 spec (`Kiddoland-Homework-Generator-Spec-Q42.md`)
-- [ ] Three content types: Workbooks (WHITE), Song Worksheets, Phonics Workbooks
-- [ ] Single-file HTML pattern matching KTFT/KUPT
-- [ ] Estimated build: 1–2 sessions
-- [ ] Migration into LL deferred until Phase 19-B AI layer is stable
+**Phase 19-K: KHGT — built inside LL**
+- ✅ Built. Route: `/t-portal/students/[id]/create-homework` (inside LL, not standalone HTML as originally spec'd)
+- ✅ Three content types wired: Workbook (WHITE), Song Worksheet, Phonics Workbook
+- ✅ JSON import panel: accepts `lessonData` JSON from unit plan, auto-populates form fields
+- ✅ Generator: injects form content into template HTML via placeholder replacement, downloads teacher `.html` file
+- ⚠️ Template upload from disk — T must upload a `.html` template file before generating. No bundled templates in codebase.
+- ⬜ AI-populated form fields deferred — depends on Phase 19-B AI layer
+
+**Phase 19-K-1: Bundle Templates Inside LL**
+- [ ] Goal: replace manual upload-from-disk with auto-load from `public/templates/`
+- [ ] Add `public/templates/` directory with template HTML files and a `manifest.json` listing available templates by content type and level
+- [ ] Form populates a dropdown from the manifest; selected template loads automatically; no upload step required
+- [ ] Update `TemplateImporter` component to show bundled-template dropdown before falling back to file upload
+- [ ] Estimated effort: 1 session
+
+---
+
+### Template Inventory — KHGT
+
+Templates confirmed by Captain (Q4S). Files exist in Captain's local archive; none are bundled in the codebase (see Phase 19-K-1 for bundling task).
+
+**Workbook templates — WHITE/YELLOW/ORANGE/GREEN × Narrative/Informational/Inquiry/Functional:**
+
+| Level | Narrative | Informational | Inquiry | Functional |
+|-------|-----------|---------------|---------|------------|
+| WHITE | ✅ built, working | ❌ missing | ❌ missing | ❌ missing |
+| YELLOW | ✅ built, untested | ❌ missing | ❌ missing | ❌ missing |
+| ORANGE | ❌ missing | ❌ missing | ❌ missing | ❌ missing |
+| GREEN | ❌ missing | ❌ missing | ❌ missing | ❌ missing |
+
+Total workbook templates missing: 14 of 16.
+
+**Song and Phonics templates:**
+
+| Type | WHITE | YELLOW | ORANGE | GREEN |
+|------|-------|--------|--------|-------|
+| Song | ✅ 1 exists — level unknown, verify with Captain | ❌ missing | ❌ missing | ❌ missing |
+| Phonics | ✅ 1 exists — universal, pre-level | — | — | — |
+
+Total song templates missing: 3 (YELLOW, ORANGE, GREEN — assuming the existing song template covers WHITE; verify with Captain).
 
 **Stacked:**
 - Vocabulary Tracker
 - AI Advisor
 - Admin AI Settings
 - KUPT integration into LL
-- KHGT migration into LL (Option B per Q42 spec)
 
 ---
 
@@ -682,6 +715,7 @@ KHGT is the fourth zoom level not yet spec'd in the original Q36 document. Built
 - [ ] Terms of Service page
 - [ ] Privacy Policy page
 - [ ] Rate limiting on API routes
+- [ ] Refactor `src/lib/firebase-admin.ts` from module-level eager init (`export const adminDb = getAdminDb()`) to lazy init. Low priority — currently functioning. Brittle pattern: any future env-var hiccup fails every petshop route on import. Lazy init isolates failures to the routes that actually use Admin SDK.
 
 ---
 
@@ -834,9 +868,9 @@ Production tools that live as standalone HTML outside LessonLink today. They'll 
 | **KTFT** | Standalone HTML (v6) | Inside LL as read-only reference page, seed data in `src/lib/ktft-seed-data.ts` | Phase 19-A12 + 19-C6/C7 (spec'd) |
 | **KCBT** | Does not exist | Inside LL as interactive planning page, `courseBlueprint` Firestore collection | Phase 19-A9–A11 + 19-C8–C12 (spec'd, not built) |
 | **KUPT** | Standalone HTML (v9) | Eventually inside LL, AI-powered | Stacked — integration deferred until AI layer (19-B) stable |
-| **KHGT** | Does not exist. Spec'd as standalone HTML (Q42) | Eventually inside LL, AI-powered (Option B migration path per spec Section 13) | **Phase 19-K — build standalone first** (1–2 sessions). Integrate later. |
+| **KHGT** | Built inside LL at `/t-portal/students/[id]/create-homework` (Q46). Three content types wired. Template upload from disk — bundled templates stacked (Phase 19-K-1). | Inside LL with AI-populated form fields once Phase 19-B AI layer complete | Phase 19-K ✅ built. Phase 19-K-1 (template bundling) stacked. |
 
-The sequencing logic in the Q36 spec says KUPT stays external "until the AI layer is stable." The same logic applies to KHGT — Option A (standalone) now, Option B (inside LL) once Phase 19-B (AI layer) is done. The Q42 spec explicitly says "Option A is a prototype of Option B's output engine."
+The sequencing logic in the Q36 spec says KUPT stays external "until the AI layer is stable." KHGT was built inside LL directly (Option B), skipping the standalone HTML phase. The Q42 spec's "Option A is a prototype of Option B's output engine" framing remains useful context, but the standalone HTML phase was bypassed in practice.
 
 ### KHGT — Kiddoland Homework Generator Tool
 
@@ -846,9 +880,9 @@ The sequencing logic in the Q36 spec says KUPT stays external "until the AI laye
 
 **Problem solved:** T produces 8–10 homework files per week. Current workflow (prompt Claude, debug broken output, retry) costs 20–40 minutes per file, plus token cost, plus quality variance. KHGT replaces this with a form that produces identical reliable output every time.
 
-**Status:** Not yet built. Spec ready. Captain action item.
+**Status:** Built inside LL at `/t-portal/students/[id]/create-homework` (Q46). Template upload from disk required — no bundled templates yet (Phase 19-K-1 stacked). Verify with Captain which templates are ready for bundling.
 
-**Architecture:** Same single-file HTML pattern as KTFT and KUPT. Opens in browser, no install, works offline.
+**Architecture:** Next.js route inside T-portal, multi-component, client-side generation. Template HTML injected from file upload; form data replaces placeholders via `generator.ts`. Downloads finished `.html` file to T's machine. (Note: original spec called for a single-file HTML pattern matching KTFT/KUPT; built inside LL instead, per Option B migration path.)
 
 **Build justification:**
 
@@ -856,7 +890,7 @@ The sequencing logic in the Q36 spec says KUPT stays external "until the AI laye
 2. **Zero integration cost.** Pure HTML, no backend, no LL codebase changes, no token cost, works offline. Nothing blocks it. Nothing depends on it.
 3. **Dual-purpose build.** Building KHGT now gives the production infrastructure *and* the prototype of what the Option B module will look like inside LL later. The HTML templates and generation logic transfer directly into Phase 19-B when that phase arrives. Two wins from one build.
 
-**Future path (Option B):** When LL has the AI layer (Phase 19-B), KHGT migrates inside LL. AI populates form fields from unit data. HTML templates and generation logic transfer directly.
+**Future path (Option B):** When LL has the AI layer (Phase 19-B), AI populates form fields from unit data. HTML templates and generation logic already in place — only the AI layer needs adding.
 
 ### SaaS Tier Argument
 
@@ -896,6 +930,7 @@ Four modules, three or four tiers. The tier names are flexible — what matters 
 - `/t-portal/students/[id]` — Learner profile page with tabs
 - `/t-portal/students/[id]/assessments/new` — Create new assessment
 - `/t-portal/students/[id]/assessments/compare` — Before/after comparison
+- `/t-portal/students/[id]/create-homework` — KHGT homework generator (Phase 19-K)
 - `/t-portal/calendar` — Calendar and availability [When]
 - `/t-portal/courses` — Course templates
 - `/t-portal/courses/[id]/levels/[levelId]/units` — Manage units
@@ -995,11 +1030,12 @@ Four modules, three or four tiers. The tier names are flexible — what matters 
 
 ---
 
-## CURRENT STATUS (Q4Q — April 26, 2026)
+## CURRENT STATUS (Q4S — April 29, 2026)
 
 - ✅ **Phases 1–18:** Complete and production-ready.
 - 🔧 **Phase 18 needs testing** — end-of-session scoreboard in particular. Functional but untested.
-- ⬜ **Phase 19:** Curriculum-AI Architecture + Session History + Course Pages + KHGT. Specs complete, build not started. Now four modules (KTFT/KCBT/KUPT/KHGT).
+- 🔧 **Phase 19-K:** KHGT built inside LL at `/t-portal/students/[id]/create-homework`. Three content types wired. Template bundling (Phase 19-K-1) stacked — T must upload template HTML from disk.
+- ⬜ **Phase 19:** Curriculum-AI Architecture + Session History + Course Pages. Specs complete, build not started (except 19-K above). Four modules: KTFT/KCBT/KUPT/KHGT.
 - ⬜ **Phases 20–22:** Stacked.
 - 🔥 **Next Projects** — TMS (Project 1), PCS (Project 2 = Kiddoland Studios), BARS (Project 3) defined. Procurement plan to be drafted first session back.
 - 🆕 **Kiddoland Studios** — formally established as separate Claude project (Q4Q). Founding white paper drafted and added to project files. LL roadmap reframed to acknowledge Studios as the IP layer LL delivers.
@@ -1008,7 +1044,9 @@ Four modules, three or four tiers. The tier names are flexible — what matters 
 
 **Captain action items:**
 
-- Build KHGT standalone HTML (1–2 sessions, Phase 19-K)
+- Identify which level the existing Song template covers (see Template Inventory above)
+- Build remaining KHGT templates (14 workbook + 3 song — see Template Inventory above)
+- Bundle templates into `public/templates/` once ready (Phase 19-K-1, 1 session)
 - Namecheap email forwards once MX propagates (`kiddo`/`hello`/`notifications` → `jwag.lang@gmail.com`)
 - Firebase Console: create/assign courses for Arina, Luke, Gordon, Mark
 - Update Gordon's `studentProgress.unitId` (currently `'starter'`)
@@ -1030,6 +1068,7 @@ Four modules, three or four tiers. The tier names are flexible — what matters 
 ## KNOWN ISSUES & WORKAROUNDS
 
 - ✅ All resolved through Q4J: AI_USE_MOCK, Resend domain, feedback duplicate, TS errors, calendar availability, `.toFixed`, L Settings saves, Stripe webhook 500s, homework attachment, xpSpent backfill, contact form mailto.
+- ✅ **Q4S resolved:** `GEMINI_API_KEY` was missing from Netlify production env vars. Added Q4S, redeployed. Pet generation working in production. Root cause was unrelated to the Q4R firebase-admin.ts rewrite, despite initial diagnosis to the contrary.
 - ⚠️ **Namecheap email forwarding** — MX records added (fwd1/fwd2.pns.ch). Awaiting DNS propagation.
 - ⚠️ **Booking flow requires courseId** — L calendar booking still requires courseId/unitId/sessionId in URL params. Top Up credit works but L must select a course to book.
 - ⚠️ **Calendar tab-switch refresh** — Availability doesn't re-fetch when switching tabs. Requires page reload.
@@ -1076,8 +1115,14 @@ When a previously working feature starts failing:
 
 ---
 
-**Last Updated:** April 26, 2026 (Q4Q)
+**Last Updated:** April 29, 2026 (Q4S)
 
-**Version:** Q4Q (7.0) — Roadmap + Supplement consolidated. Strategic Context section added (LL ↔ Kiddoland Studios relationship). Module Architecture & Kiddoland Tools folded in as canonical section. Phase 19 expanded to four modules (added KHGT as Phase 19-K). Phases affected by Kiddoland reframe flagged with 🔶. Petland documentation flagged for future revision pass.
+**Version:** Q4S (7.1) — Phase 19-K updated from "not built / standalone HTML" to "built inside LL at `/t-portal/students/[id]/create-homework`." Phase 19-K-1 (Bundle Templates) added as new sub-phase. Template Inventory section added with workbook/song/phonics matrix. Q4S Pet Generation production fix (`GEMINI_API_KEY` missing from Netlify) logged in Known Issues Resolved. firebase-admin lazy-init refactor added as stacked item in Phase 21. Routes updated to include `/t-portal/students/[id]/create-homework`. Captain action items updated to remove KHGT build task and add template-related items. Module Architecture table updated to reflect KHGT built state. KHGT section in Module Architecture updated to reflect actual architecture (Next.js route, not standalone HTML).
 
-**Supersedes:** `LessonLink-Roadmap-Q4K.md` (v6.0) and `LessonLink-Roadmap-Supplement-Q4K.md`. Both retired.
+**Supersedes:** `LessonLink-Roadmap-Q4Q.md` (v7.0).
+
+---
+
+## UPDATE NOTES (Q4Q → Q4S)
+
+Seven changes were made between Q4Q and Q4S. (1) **Phase 19-K** rewritten: status changed from "not built / standalone HTML" to "built inside LL at `/t-portal/students/[id]/create-homework`"; checklist replaced with verified ✅/⚠️/⬜ items reflecting actual implementation (three content types wired, JSON import working, template upload from disk, no bundled templates, AI-population deferred). (2) **Phase 19-K-1** added as new sub-phase: Bundle Templates Inside LL, estimated 1 session, replaces upload-from-disk with `public/templates/` dropdown. (3) **Template Inventory** added as a new section after Phase 19-K-1, containing a workbook matrix table (WHITE/YELLOW/ORANGE/GREEN × Narrative/Informational/Inquiry/Functional) and a song/phonics table, with confirmed-by-Captain status on each entry. (4) **Known Issues** — resolved item added: `GEMINI_API_KEY` missing from Netlify, added Q4S, pet generation working in production; root cause noted as unrelated to Q4R firebase-admin rewrite. (5) **Phase 21 Platform Hardening** — one new stacked item added: refactor `src/lib/firebase-admin.ts` to lazy init, low priority, rationale included. (6) **Routes** — `/t-portal/students/[id]/create-homework` added to Teacher Portal routes list. (7) **Module Architecture** — KHGT row in the Kiddoland Tools table updated to reflect built state; KHGT subsection Status and Architecture fields updated to reflect actual implementation; "KHGT migration into LL" removed from Phase 19 Stacked (no longer applicable); Captain action items updated to remove KHGT build task and add template identification/bundling tasks.
