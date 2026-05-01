@@ -10,6 +10,22 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Safely coerce an unknown value to a display string.
+// Tries common string sub-fields before falling back to JSON.
+function str(value: any): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'object') {
+    // Try common prose fields in order of preference
+    for (const key of ['target', 'text', 'value', 'description', 'goal', 'criteria']) {
+      if (typeof value[key] === 'string' && value[key]) return value[key];
+    }
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
 export function unitPlanFilename(unit: Unit): string {
   return `${slug(unit.title)}-unit-plan-${today()}.md`;
 }
@@ -90,29 +106,32 @@ export function renderUnitMarkdown(unit: Unit, sessions: Session[], gse?: string
     lines.push('');
   }
 
-  // 7. Teacher Asset Pack — flatten materialsRich where type = "asset", dedup by assetCode
-  const assetMap = new Map<string, { name: string; type: string; purpose: string; sessions: number[] }>();
+  // 7. Teacher Asset Pack — list every asset per session, no dedup
+  const assetRows: { session: number; code: string; name: string; type: string; purpose: string }[] = [];
   sessions.forEach(s => {
     (s.materialsRich ?? [])
       .filter(m => m.assetCode)
       .forEach(m => {
-        const key = m.assetCode!;
-        if (assetMap.has(key)) {
-          const entry = assetMap.get(key)!;
-          if (!entry.sessions.includes(s.order)) entry.sessions.push(s.order);
-        } else {
-          assetMap.set(key, { name: m.name, type: m.type, purpose: m.purpose, sessions: [s.order] });
-        }
+        assetRows.push({
+          session: s.order,
+          code: m.assetCode!,
+          name: m.name,
+          type: m.type,
+          purpose: m.purpose,
+        });
       });
   });
-  if (assetMap.size > 0) {
+  if (assetRows.length > 0) {
     lines.push('## Teacher Asset Pack');
     lines.push('');
-    lines.push('| Asset code | Type | Purpose | Session(s) |');
+    lines.push('| Session | Code | Name | Purpose |');
     lines.push('|---|---|---|---|');
-    assetMap.forEach((v, code) => {
-      lines.push(`| ${code} | ${v.type} | ${v.purpose} | ${v.sessions.join(', ')} |`);
-    });
+    assetRows
+      .sort((a, b) => a.session - b.session || a.code.localeCompare(b.code))
+      .forEach(r => {
+        const safe = (s: string) => s.replace(/\|/g, '\\|');
+        lines.push(`| ${r.session} | ${r.code} | ${safe(r.name)} | ${safe(r.purpose)} |`);
+      });
     lines.push('');
   }
 
@@ -139,7 +158,11 @@ export function renderUnitMarkdown(unit: Unit, sessions: Session[], gse?: string
   for (const s of sessions) {
     const slide = (s.deckSpec?.slides ?? []).find((sl: any) => sl.type === 'song');
     if (slide) {
-      anchorSong = { title: slide.title ?? slide.content ?? 'Anchor Song', url: slide.url };
+      const c = slide.content || {};
+      anchorSong = {
+        title: c.title || 'Anchor Song',
+        url: c.url,
+      };
       break;
     }
   }
@@ -155,15 +178,17 @@ export function renderUnitMarkdown(unit: Unit, sessions: Session[], gse?: string
     lines.push('## Assessment Loop');
     lines.push('');
     if (unit.assessmentLoop.tinyTalk) {
-      lines.push(`**Tiny Talk target:** ${unit.assessmentLoop.tinyTalk}`);
+      lines.push(`**Tiny Talk target:** ${str(unit.assessmentLoop.tinyTalk)}`);
+      lines.push('');
     }
     if (unit.assessmentLoop.evaluationMonologue) {
-      lines.push(`**Evaluation Monologue target:** ${unit.assessmentLoop.evaluationMonologue}`);
+      lines.push(`**Evaluation Monologue target:** ${str(unit.assessmentLoop.evaluationMonologue)}`);
     }
-    // Fallback: render any string values not already shown
+    // Fallback: render any top-level values not already shown
     if (!unit.assessmentLoop.tinyTalk && !unit.assessmentLoop.evaluationMonologue) {
       Object.entries(unit.assessmentLoop).forEach(([k, v]) => {
-        if (typeof v === 'string') lines.push(`**${k}:** ${v}`);
+        const s = str(v);
+        if (s) lines.push(`**${k}:** ${s}`);
       });
     }
     lines.push('');
@@ -184,6 +209,103 @@ export function renderUnitMarkdown(unit: Unit, sessions: Session[], gse?: string
   }
 
   return lines.join('\n');
+}
+
+// ===== Slide content renderer =====
+
+function renderSlideContent(slide: any): { description: string; defaultTPrompt?: string; defaultLResponse?: string } {
+  const content = slide.content ?? {};
+  const layout = str(slide.layout);
+
+  switch (slide.type) {
+    case 'title':
+      return {
+        description: [content.unitTitle, content.levelBadge].filter(Boolean).join(' — '),
+      };
+
+    case 'song': {
+      let desc = `Song: "${content.title || ''}"`;
+      if (content.lyricsExcerpt) desc += `. Opening line: "${content.lyricsExcerpt}"`;
+      if (content.url) desc += ` [Play](${content.url})`;
+      return { description: desc };
+    }
+
+    case 'phonics-caps':
+      return { description: `Capital letters: ${(content.letters ?? []).join(', ')}` };
+
+    case 'phonics-caps-lower':
+      return { description: `Capital + lowercase pairs: ${(content.pairs ?? []).join(', ')}` };
+
+    case 'phonics-caps-recall':
+      return { description: `Recall: ${(content.letters ?? []).join(', ')}` };
+
+    case 'framing':
+      return { description: content.text || layout };
+
+    case 'vocab-card': {
+      if (content.command) {
+        return {
+          description: `TPR command: "${content.command}"`,
+          defaultTPrompt: content.command,
+          defaultLResponse: `(L performs the action)`,
+        };
+      }
+      if (content.description) {
+        return {
+          description: `Riddle: "${content.description}"${content.options ? `. Options: ${content.options.join(', ')}` : ''}`,
+          defaultTPrompt: `Listen. Which one?`,
+          defaultLResponse: content.answer || `(L picks)`,
+        };
+      }
+      if (content.state === 'closed-door') {
+        return {
+          description: `Closed barn door. Word: ${content.word}.`,
+          defaultTPrompt: `Who's behind the door?`,
+          defaultLResponse: `(guess)`,
+        };
+      }
+      if (content.state === 'open-door') {
+        return {
+          description: content.caption || `Open door: ${content.animal || content.word}.`,
+          defaultTPrompt: `What's this?`,
+          defaultLResponse: `It's a ${content.animal || content.word}.`,
+        };
+      }
+      return { description: content.caption || content.word || layout };
+    }
+
+    case 'transition':
+      return { description: `Group view: ${(content.animals ?? []).join(', ')}` };
+
+    case 'story-panel':
+      return {
+        description: `Panel ${content.panelNumber}: "${content.text}". (${content.illustration})`,
+        defaultTPrompt: content.text,
+        defaultLResponse: content.text,
+      };
+
+    case 'cumulative-reveal':
+      return {
+        description: `Visible: ${(content.visible ?? []).join(', ')}. Pattern: ${content.captionPattern}`,
+        defaultTPrompt: `What's this?`,
+        defaultLResponse: `(L names the new item)`,
+      };
+
+    case 'final-task': {
+      let desc = content.task ? `Task: ${content.task}.` : '';
+      if (content.secretMessage) desc += ` Secret message: "${content.secretMessage}".`;
+      if (content.hotspots?.length) desc += ` ${content.hotspots.length} hotspot(s).`;
+      return { description: desc };
+    }
+
+    case 'evaluation':
+      return {
+        description: content.target || content.label || (content.items ? `Items: ${content.items.join(', ')}` : ''),
+      };
+
+    default:
+      return { description: layout };
+  }
 }
 
 // ===== Session-level renderer =====
@@ -253,19 +375,26 @@ export function renderSessionMarkdown(session: Session, unit: Unit): string {
     lines.push('## Slide Walkthrough');
     lines.push('');
     session.deckSpec.slides.forEach((slide: any, i: number) => {
-      const label = [slide.type, slide.layout].filter(Boolean).join(' · ');
+      const layout = str(slide.layout);
+      const label = [slide.type, layout].filter(Boolean).join(' · ');
       lines.push(`### Slide ${i + 1}${label ? ` — ${label}` : ''}`);
       lines.push('');
-      if (slide.content) {
-        lines.push(slide.content);
+
+      const { description, defaultTPrompt, defaultLResponse } = renderSlideContent(slide);
+      if (description) {
+        lines.push(description);
         lines.push('');
       }
-      if (slide.tPrompt) {
-        lines.push(`> **T:** ${slide.tPrompt}`);
+
+      const tPrompt = str(slide.tPrompt) || defaultTPrompt || '';
+      if (tPrompt) {
+        lines.push(`> **T:** ${tPrompt}`);
         lines.push('');
       }
-      if (slide.expectedLResponse) {
-        lines.push(`*Expected L response: ${slide.expectedLResponse}*`);
+
+      const expectedLResponse = str(slide.expectedLResponse) || defaultLResponse || '';
+      if (expectedLResponse) {
+        lines.push(`*Expected L response: ${expectedLResponse}*`);
         lines.push('');
       }
     });
@@ -302,15 +431,14 @@ export function renderSessionMarkdown(session: Session, unit: Unit): string {
   }
 
   // 8. Assessment
-  const assessmentLines: string[] = [];
-  if (unit.assessmentLoop?.tinyTalk) assessmentLines.push(`**Tiny Talk target:** ${unit.assessmentLoop.tinyTalk}`);
-  if (unit.assessmentLoop?.evaluationMonologue) assessmentLines.push(`**Evaluation Monologue target:** ${unit.assessmentLoop.evaluationMonologue}`);
-  if (session.tbltTask) assessmentLines.push(`**Track via TBLT task:** ${session.tbltTask}`);
-  if (assessmentLines.length > 0) {
+  const assessmentItems: string[] = [];
+  if (unit.assessmentLoop?.tinyTalk) assessmentItems.push(`**Tiny Talk target:** ${str(unit.assessmentLoop.tinyTalk)}`);
+  if (unit.assessmentLoop?.evaluationMonologue) assessmentItems.push(`**Evaluation Monologue target:** ${str(unit.assessmentLoop.evaluationMonologue)}`);
+  if (session.tbltTask) assessmentItems.push(`**Track via TBLT task:** ${session.tbltTask}`);
+  if (assessmentItems.length > 0) {
     lines.push('## Assessment');
     lines.push('');
-    assessmentLines.forEach(l => lines.push(l));
-    lines.push('');
+    assessmentItems.forEach(l => { lines.push(l); lines.push(''); });
   }
 
   return lines.join('\n');

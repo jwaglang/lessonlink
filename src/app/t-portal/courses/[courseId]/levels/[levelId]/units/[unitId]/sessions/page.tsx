@@ -153,7 +153,7 @@ export default function SessionsPage() {
                                             {session.description}
                                         </p>
                                     </CardContent>
-                                    <CardFooter className="text-xs text-muted-foreground bg-muted/50 p-3 mt-auto flex justify-between">
+                                    <CardFooter className="text-xs text-muted-foreground px-6 pb-3 flex justify-between">
                                         <span>Order: {session.order}</span>
                                         <span className="flex items-center gap-1">
                                             <Clock className="h-3 w-3" /> {session.duration} min
@@ -161,8 +161,8 @@ export default function SessionsPage() {
                                     </CardFooter>
                                     <div className="px-3 pb-3">
                                         <Link href={`/t-portal/courses/${courseId}/levels/${levelId}/units/${unitId}/sessions/${session.id}`}>
-                                            <Button variant="outline" size="sm" className="w-full">
-                                                <BookOpen className="mr-2 h-3 w-3" />
+                                            <Button size="sm" className="w-full">
+                                                <BookOpen className="mr-2 h-4 w-4" />
                                                 Lesson Plan
                                             </Button>
                                         </Link>
