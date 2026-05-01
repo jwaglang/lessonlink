@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiddoland Unit Plan Tool v.11 | Schema Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Contrail+One&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --k-navy: #404376;
+      --k-slate: #686ea8;
+      --k-orange: #f2811d;
+      --k-pink-bright: #fe598b;
+      --k-ice-blue: #dcebf4;
+      --k-peach: #f8dab9;
+    }
+    body { font-family: 'Poppins', sans-serif; background-color: var(--k-ice-blue); }
+    h1 { font-family: 'Contrail One', cursive; }
+    h2, h3 { font-family: 'Poppins', sans-serif; }
+    .kiddoland-gradient { background: linear-gradient(135deg, var(--k-navy) 0%, var(--k-slate) 100%); }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--k-pink-bright); border-radius: 10px; }
+  </style>
+</head>
+<body class="pb-20">
+  <header class="kiddoland-gradient text-white p-10 shadow-2xl mb-10 rounded-b-[2rem]">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div>
+        <h1 class="text-4xl font-normal uppercase tracking-tight">Kiddoland <span style="color: #f8dab9;">Unit Plan Tool v.11</span></h1>
+        <p class="text-white/80 font-medium mt-2 uppercase tracking-widest text-sm">Schema-Aligned • LL Importer Ready</p>
+      </div>
+      <div class="flex gap-4">
+        <div class="text-right">
+          <p class="text-[10px] uppercase font-bold text-white/60 tracking-[0.2em]">Framework</p>
+          <p class="text-xs font-semibold text-white">Long (2015) • Shintani (2016) • Prabhu (1987)</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-5 space-y-6">
+      <section class="bg-white rounded-[2rem] p-8 border border-gray-200 shadow-xl">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-3" style="color: #404376;">
+          <span class="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background: #404376;">1</span>
+          SLA Logic (KTFT JSON Ingest)
+        </h2>
+        <textarea id="jsonInput"
+          class="w-full h-32 p-4 border border-gray-200 rounded-2xl font-mono text-[10px] outline-none transition-all"
+          style="background: #dcebf4; color: #404376;"
+          placeholder="Paste KTFT export here..."></textarea>
+      </section>
+
+      <section class="bg-white rounded-[2rem] p-8 border border-gray-200 shadow-xl">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-3" style="color: #404376;">
+          <span class="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background: #404376;">2</span>
+          Course &amp; Hierarchy
+        </h2>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Course (existing only)</label>
+            <select id="courseSelect" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;">
+              <option value="">— select course —</option>
+              <option value="EFVANTW1gYtYgU2La7s8|🔤 Fun Phonics 🔤|30">🔤 Fun Phonics 🔤 (30 min)</option>
+	<option value="45Jkyfg94otjc4d22dZT|🌟 Fast Fluency 🌟|30">🌟 Fast Fluency 🌟 (30 min)</option>
+	<option value="elW693MdfK6M1c2pkK6x|📚 Really Reading 📚|30">📚 Really Reading 📚 (30 min)</option>
+            </select>
+            <p class="text-[10px] mt-1" style="color: #686ea8;">If your course isn't listed, create it first via the LL T-portal.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-[2rem] p-8 border border-gray-200 shadow-xl">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-3" style="color: #404376;">
+          <span class="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background: #404376;">3</span>
+          Inquiry &amp; Context
+        </h2>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Unit Topic</label>
+            <input type="text" id="unitTopic" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., Farm Animals">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Big Question (The Mystery)</label>
+            <input type="text" id="bigQuestion" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., What animals live on the farm?">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Unit Pitch (~200 words)</label>
+            <textarea id="unitPitch" class="w-full h-40 p-4 border border-gray-200 rounded-xl outline-none text-sm leading-relaxed transition-all" style="background: #dcebf4; color: #404376;" placeholder="Describe the narrative arc..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-[2rem] p-8 border border-gray-200 shadow-xl">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-3" style="color: #404376;">
+          <span class="text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background: #404376;">4</span>
+          Production Pattern
+        </h2>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Visual Motif</label>
+            <input type="text" id="visualMotif" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., playing-card vocab cards">
+            <p class="text-[10px] mt-1" style="color: #686ea8;">Bugs uses playing cards. Subway uses scene-titled story panels. Pick the unit's signature visual motif.</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Protagonist Name</label>
+              <input type="text" id="protagonistName" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., Beetle Ben">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Species / Type</label>
+              <input type="text" id="protagonistSpecies" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., grasshopper">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Protagonist Description</label>
+            <input type="text" id="protagonistDesc" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., a green grasshopper with a guitar">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Anchor Song Title</label>
+            <input type="text" id="anchorSongTitle" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="e.g., What Do You Hear?">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold uppercase mb-2 tracking-widest" style="color: #686ea8;">Anchor Song YouTube URL</label>
+            <input type="text" id="anchorSongUrl" class="w-full p-4 border border-gray-200 rounded-xl outline-none transition-all" style="background: #dcebf4; color: #404376;" placeholder="https://www.youtube.com/watch?v=...">
+          </div>
+        </div>
+        <button onclick="generateMasterPrompt()" class="mt-8 w-full text-white font-bold py-5 rounded-3xl transition-all shadow-xl uppercase tracking-wide text-lg hover:shadow-2xl active:scale-[0.98]" style="background: #f2811d;">
+          Generate Master Prompt
+        </button>
+      </section>
+    </div>
+
+    <div class="lg:col-span-7">
+      <div id="outputContainer" class="hidden h-full">
+        <section class="rounded-[3rem] p-10 shadow-2xl text-white border h-full flex flex-col" style="background: #404376; border-color: rgba(255,255,255,0.1);">
+          <div class="flex justify-between items-start mb-8">
+            <div>
+              <h2 class="text-2xl font-bold uppercase tracking-tight">AI Master Prompt</h2>
+              <p class="text-xs mt-2 font-medium" style="color: #686ea8;">Outputs unit-package.json (LL importer ready).</p>
+            </div>
+            <button onclick="copyToClipboard()" class="px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95" style="background: #fe598b; color: white;">
+              Copy Prompt
+            </button>
+          </div>
+          <div id="promptDisplay" class="flex-grow p-8 rounded-3xl border text-[12px] leading-relaxed font-mono whitespace-pre-wrap overflow-y-auto custom-scrollbar" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.05); color: rgba(220,235,244,0.9);">
+            Generating...
+          </div>
+        </section>
+      </div>
+
+      <div id="emptyState" class="h-full flex flex-col items-center justify-center border-4 border-dashed rounded-[3rem] p-20" style="color: #686ea8; border-color: #d1d5db;">
+        <span class="text-6xl mb-6">⚙️</span>
+        <p class="font-bold uppercase tracking-widest text-sm text-center">Awaiting Unit Parameters &amp; SLA Logic</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const SCHEMA_VERSION = "1.0";
+    const KUPT_VERSION = "v11";
+    const HEXDATE = "Q4R";
+
+    function generateMasterPrompt() {
+      const json = document.getElementById('jsonInput').value;
+      const topic = document.getElementById('unitTopic').value.trim();
+      const bq = document.getElementById('bigQuestion').value.trim();
+      const pitch = document.getElementById('unitPitch').value.trim();
+      const courseRaw = document.getElementById('courseSelect').value;
+      const visualMotif = document.getElementById('visualMotif').value.trim();
+      const protagonistName = document.getElementById('protagonistName').value.trim();
+      const protagonistSpecies = document.getElementById('protagonistSpecies').value.trim();
+      const protagonistDesc = document.getElementById('protagonistDesc').value.trim();
+      const anchorSongTitle = document.getElementById('anchorSongTitle').value.trim();
+      const anchorSongUrl = document.getElementById('anchorSongUrl').value.trim();
+
+      const required = { json, topic, bq, pitch, courseRaw, visualMotif, protagonistName, protagonistSpecies, protagonistDesc, anchorSongTitle, anchorSongUrl };
+      const missing = Object.entries(required).filter(([k, v]) => !v).map(([k]) => k);
+      if (missing.length) {
+  	alert(`Please complete all fields. Missing: ${missing.join(', ')}`);
+        return;
+      }
+
+      const [courseId, courseTitle, courseDuration] = courseRaw.split('|');
+      const course = { id: courseId, title: courseTitle, duration: parseInt(courseDuration, 10) };
+
+      try {
+        const data = JSON.parse(json);
+
+        const requiredKtft = ['level', 'track', 'gse', 'sessions', 'robinson', 'unitSpecs'];
+        const missingKtft = requiredKtft.filter(field => !data[field]);
+        if (missingKtft.length > 0) {
+          alert(`Missing KTFT fields: ${missingKtft.join(', ')}\n\nRe-copy from KTFT.`);
+          return;
+        }
+        if (!data.robinson.displacement || !data.unitSpecs.lexicalBoundary) {
+          alert("Incomplete KTFT data. Re-copy from KTFT.");
+          return;
+        }
+
+        const prompt = buildPrompt(data, {
+          topic, bq, pitch, course,
+          visualMotif,
+          protagonist: { name: protagonistName, species: protagonistSpecies, description: protagonistDesc },
+          anchorSong: { title: anchorSongTitle, url: anchorSongUrl }
+        });
+        document.getElementById('promptDisplay').textContent = prompt;
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('outputContainer').classList.remove('hidden');
+
+      } catch (e) {
+        alert(`JSON Error: ${e.message}\n\nCheck format and try again.`);
+        console.error('JSON Parse Error:', e);
+      }
+    }
+
+    function buildPrompt(d, ctx) {
+      const isPast = d.robinson?.displacement?.includes('-Past') ?? false;
+      const specs = d.unitSpecs || { lexicalBoundary: {} };
+      const logic = d.trackLogic || { format: 'text', assets: [] };
+      const boundary = specs.lexicalBoundary || {};
+
+      const isWhiteNarrative =
+        (d.level || '').toUpperCase().includes('WHITE') &&
+        (d.track || '').toLowerCase() === 'narrative';
+
+      const houseStyleBlock = isWhiteNarrative ? `
+
+### KIDDOLAND HOUSE STYLE — WHITE DRAGON × NARRATIVE (MANDATORY)
+This is not a generic TBLT lesson. You are designing a Kiddoland unit. Kiddoland units at the White Dragon Narrative level follow a fixed production pattern. You MUST honour every rule. If a rule conflicts with a generic TBLT instinct, the rule wins.
+
+**A. THE UNIT IS A 3-PHASE ARC ACROSS SESSIONS, NOT 4 INDEPENDENT LESSONS.**
+  - **Session 1 (Phase A — Vocabulary Introduction):** Words in isolation. Flashcards. Simple frames ("It's a cow."). NO master text yet. NO story yet. Initial Tiny Talk assessment.
+  - **Session 2 (Phase B — Story Emergence):** SAME vocabulary, now embedded in a narrative. Named protagonist introduced. Master text appears here for the first time.
+  - **Session 3 (Phase B/C — Story Retell):** L produces the story themselves, prompted by visuals. Cumulative reveal.
+  - **Session 4 (Phase C — Final Task + Evaluation):** Signature interactive task (e.g. scavenger map with secret-message decoder). Final Evaluation Monologue.
+
+**B. SESSION OPENERS ARE FIXED.** Every session opens with the same shell:
+  1. Title slide (unit name, level badge, copyright).
+  2. Song slide ("Let's Sing!") — the anchor song "${ctx.anchorSong.title}" (${ctx.anchorSong.url}). Same song every session.
+  3. Phonics slides ×3: caps-only / caps+lowercase / caps recall. Letters chosen are the initial letters of the unit's vocabulary.
+  4. "What's it all about?" framing slide — single sentence framing the session.
+
+**C. NAMED PROTAGONIST + PLOT REQUIRED.** This unit's protagonist: **${ctx.protagonist.name}** (${ctx.protagonist.species}) — ${ctx.protagonist.description}. The plot lives in the master text and on the deck. The T does not perform a one-person show; the deck carries the lesson.
+
+**D. CUMULATIVE REVEAL IS THE REVIEW MECHANIC.**
+  Slide N:   THE PIG / THE ___
+  Slide N+1: THE PIG / THE GOAT / THE ___
+  Slide N+2: THE PIG / THE GOAT / THE COW / THE ___
+Use this in review portions of Sessions 3 and 4.
+
+**E. WHAT THE T DOES vs. WHAT THE DECK HOLDS.** The T performs the lesson. The deck is the T's reference tool — it holds vocabulary art, master text, story panels, phonics slides, the anchor song link, and the final task structure. Live performance (voice acting, props, magic wand, ManyCam, "save the day" framings, theatrical reveals, improvisation) is what generates engagement and is encouraged, not banned. Document the deck contents in detail. Do NOT try to script the T's live performance — that's the T's job, not the UP's. The session-level lesson plan is where the T writes out their live mechanics if they need a reminder.
+
+**F. PROPOSE BOTH A LIVE-PERFORMANCE VERSION AND A DECK-ONLY ALTERNATIVE.** For activation tasks and key moments, propose the engaging live-performance mechanic (magic wand, ManyCam compositing, prop stacking, voice acting, dramatic reveals) as the primary version. Then briefly propose a deck-only fallback for Ts who prefer to skip the live-performance bits. The live version is the default; the fallback exists so the unit still functions if the T's setup or style differs.
+
+**G. UNIT VISUAL MOTIF.** This unit's signature visual motif is: **${ctx.visualMotif}**. Apply it to vocabulary slides and key visual moments. (Bugs uses playing cards. Subway uses scene-titled story panels. Pick something equally distinctive for this unit.)
+
+**H. PARENT-FACING DESCRIPTIONS USE KIDDOLAND VOICE.** First-person plural ("we'll take a trip…"), address the learner directly (not "your child"), Kiddoland-flavoured details ("Kiddoland's magic farm" not "the farm"), playful momentum-driven prose. NOT clinical outcomes-language.
+` : '';
+
+      return `Act as a Senior ELT Curriculum Designer for Kiddoland.
+You are building a ${d.sessions}-session unit for the ${d.level} level (GSE: ${d.gse}).
+Pedagogical Framework: Strong TBLT (Michael Long, 2015). Syllabus Type: Analytic (Long & Crookes, 1992).
+${houseStyleBlock}
+### YOUR OUTPUT FORMAT
+
+You will output a SINGLE valid JSON object matching the LessonLink \`unit-package.json\` schema (v${SCHEMA_VERSION}). Output ONLY the JSON. No markdown fences. No prose preamble. No explanation. The JSON must parse cleanly.
+
+The JSON object must have exactly these top-level keys: \`meta\`, \`course\`, \`level\`, \`unit\`, \`sessions\`, \`deckSpec\`, \`homework\`.
+
+Use these literal values where indicated below. Compute or invent the rest based on the inputs and the House Style.
+
+---
+
+### \`meta\` — use exactly:
+\`\`\`json
+{
+  "schemaVersion": "${SCHEMA_VERSION}",
+  "hexdate": "${HEXDATE}",
+  "kuptVersion": "${KUPT_VERSION}",
+  "sourceKtft": ${JSON.stringify(d)},
+  "generatedBy": "claude"
+}
+\`\`\`
+
+### \`course\` — use exactly:
+\`\`\`json
+{
+  "id": "${ctx.course.id}",
+  "title": "${ctx.course.title}"
+}
+\`\`\`
+
+### \`level\` — fill in:
+- \`id\`: null (level may not exist yet; importer will create)
+- \`title\`: "${d.level}" (use exactly this string, title-cased: e.g. "White Dragon")
+- \`description\`: parent-facing Kiddoland-voice copy, ~50 words (per House Style H)
+- \`order\`: integer (White=1, Yellow=2, Orange=3, Red=4, Purple=5, Black=6)
+- \`targetHours\`: integer (in-class hours for the whole level — use 45 unless KTFT says otherwise)
+- \`gse\`: "${d.gse}"
+
+### \`unit\` — fill in:
+- \`title\`: "${ctx.topic}"
+- \`bigQuestion\`: "${ctx.bq}"
+- \`description\`: parent-facing Kiddoland-voice copy, ~50 words (House Style H). Tease activities, not outcomes.
+- \`estimatedHours\`: number — compute as ${d.sessions} × ${ctx.course.duration} / 60 (round to 1 decimal)
+- \`thumbnailUrl\`: null
+- \`track\`: "${(d.track || '').toLowerCase()}"
+- \`visualMotif\`: "${ctx.visualMotif}"
+- \`protagonist\`: { "name": "${ctx.protagonist.name}", "species": "${ctx.protagonist.species}", "description": "${ctx.protagonist.description}" }
+- \`masterText\`: string under ${boundary.maxWords || 50} words. ${isPast ? 'Past tense.' : 'Present tense.'} Forbidden words: ${(boundary.forbidden || []).join(', ')}. Must feature the protagonist and the plot.
+- \`vocabulary\`: array of 10-15 target words (concrete nouns/verbs from the master text)
+- \`forbiddenJargon\`: ${JSON.stringify(boundary.forbidden || [])}
+- \`assessmentLoop\`: { "tinyTalk": { "session": 1, "target": "..." }, "evaluationMonologue": { "session": ${d.sessions}, "target": "..." } }
+
+### \`sessions\` — array of EXACTLY ${d.sessions} entries.
+For each session, fill in:
+- \`title\`: title-case session heading (e.g. "The Magic Farm Appears")
+- \`littleQuestion\`: the session's LQ
+- \`description\`: Kiddoland-voice parent-facing copy ~40 words (House Style H). Tease the actual session activity.
+- \`order\`: 1-indexed
+- \`duration\`: ${ctx.course.duration}
+- \`phase\`: ${isWhiteNarrative ? '"A" for session 1, "B" for session 2, "B/C" for session 3, "C" for session 4' : 'use one of "A","B","B/C","C"'}
+- \`tbltTask\`: one of "thematic-scene" | "listen-and-do" | "listen-and-select" | "show-and-tell"
+- \`sessionAims\`: { "linguistic": "...", "cognitive": "..." }
+- \`materials\`: array. Each entry: { "type": "asset"|"video"|"worksheet"|"link", "name": "...", "purpose": "...", "url": "..." or null, "assetCode": "A"|"B"|"C" or null }
+- \`recasts\`: array of { "likelyError": "...", "recast": "..." } — 3-4 entries
+- \`taskBrief\`: T's natural-language explanation of the session's main task
+- \`operationalMechanics\`: what actually happens during the activation phase
+
+### \`deckSpec\` — fill in:
+\`\`\`
+{
+  "sessions": [
+    { "sessionOrder": 1, "slides": [ ... ] },
+    { "sessionOrder": 2, "slides": [ ... ] },
+    ...
+  ]
+}
+\`\`\`
+Each session's \`slides\` array starts with the fixed shell (per House Style B):
+1. { "type": "title", "order": 1, "layout": "...", "content": {...} }
+2. { "type": "song", "order": 2, "layout": "...", "content": { "title": "${ctx.anchorSong.title}", "url": "${ctx.anchorSong.url}" } }
+3. { "type": "phonics-caps", "order": 3, ... }
+4. { "type": "phonics-caps-lower", "order": 4, ... }
+5. { "type": "phonics-caps-recall", "order": 5, ... }
+6. { "type": "framing", "order": 6, "content": { "text": "In this lesson, you will..." } }
+
+Then session-specific content slides. Use slide types from this enum: title, song, phonics-caps, phonics-caps-lower, phonics-caps-recall, framing, vocab-card, story-panel, cumulative-reveal, final-task, evaluation, transition.
+
+For each slide also include: \`layout\` (free text describing layout intent — apply the visual motif "${ctx.visualMotif}"), \`content\` (type-specific payload), and optionally \`tPrompt\` (what T says) and \`expectedLResponse\` (what L says/does).
+
+### \`homework\` — KHGT-compatible block. Fill in:
+\`\`\`json
+{
+  "title": "${ctx.topic}",
+  "level": "CEFR ${d.gse}",
+  "flashcards": [{"word": "...", "image": "<single emoji>"}, ...8 entries],
+  "readingText": "<the masterText>",
+  "memoryPairs": [{"word": "...", "match": "<emoji>"}, ...8 entries, same words/emojis as flashcards],
+  "minimalPairs": [{"word1": "...", "word2": "...", "audioText": "...", "correct": 0}, ...4 entries],
+  "fillInBlanks": [{"text": "... ___ ...", "answer": "..."}, ...8 entries, one per vocab word],
+  "wordBank": [...8 vocab words],
+  "matchingPairs": [{"left": "<word>", "right": "<simple description>"}, ...8 entries],
+  "listeningQuestions": [{"audioText": "<riddle>", "question": "What is this?", "options": [4 strings], "correct": 0-3}, ...4 entries],
+  "finalTask": "<the unit's final task prompt from the Creative Vision>"
+}
+\`\`\`
+
+Pick the 8 most concrete nouns from the vocabulary list for flashcards/memoryPairs/fillInBlanks/matchingPairs/wordBank.
+
+---
+
+### CREATIVE VISION (your raw input)
+TOPIC: ${ctx.topic}
+BIG QUESTION: ${ctx.bq}
+PITCH: ${ctx.pitch}
+TRACK: ${(d.track || '').toUpperCase()}
+ROBINSON: Elements ${d.robinson.elements} | Displacement ${d.robinson.displacement} | Reasoning ${d.robinson.reasoning}
+
+---
+
+REMINDER: Output ONLY the JSON object. No markdown fences. No commentary. No "Here is the JSON" preamble. Start with \`{\` and end with \`}\`. Validate it parses before sending.`;
+    }
+
+    function copyToClipboard() {
+      const text = document.getElementById('promptDisplay').textContent;
+      navigator.clipboard.writeText(text);
+      alert("V.11 Master Prompt copied!");
+    }
+  </script>
+</body>
+</html>

@@ -1,17 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { onSessionsUpdate, getUnitById, deleteSession } from '@/lib/firestore';
+import { renderUnitMarkdown, unitPlanFilename } from '@/lib/unit-package-renderer';
 
 import PageHeader from "@/components/page-header";
+import MarkdownView from '@/components/markdown-view';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SessionForm from './components/session-form';
-import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, Clock } from 'lucide-react';
+import { PlusCircle, ArrowLeft, Edit, Trash2, MoreVertical, Clock, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SessionsPage() {
@@ -21,7 +24,7 @@ export default function SessionsPage() {
     const courseId = params.courseId as string;
     const levelId = params.levelId as string;
     const unitId = params.unitId as string;
-    
+
     const [sessions, setSessions] = useState<any[]>([]);
     const [unit, setUnit] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,20 +36,21 @@ export default function SessionsPage() {
         // Safety: Force cleanup of any stuck pointer-events
         document.body.style.pointerEvents = '';
 
-        // Fetch parent unit details
         getUnitById(unitId).then(unitData => {
-            if (unitData) {
-                setUnit(unitData);
-            }
+            if (unitData) setUnit(unitData);
         });
 
-        // Set up real-time listener for sessions
         const unsubscribe = onSessionsUpdate(unitId, (data) => {
             setSessions(data);
         });
 
         return () => unsubscribe();
     }, [unitId]);
+
+    const unitMarkdown = useMemo(
+        () => unit && sessions.length > 0 ? renderUnitMarkdown(unit, sessions) : null,
+        [unit, sessions]
+    );
 
     const handleAddClick = () => {
         setSelectedSession(null);
@@ -71,8 +75,6 @@ export default function SessionsPage() {
 
     const handleFormSuccess = () => {
         setIsDialogOpen(false);
-        // This timeout is a workaround for a potential issue with Radix dialogs
-        // not cleaning up pointer-events on the body tag quickly enough.
         setTimeout(() => {
             document.body.style.pointerEvents = '';
         }, 500);
@@ -83,14 +85,14 @@ export default function SessionsPage() {
     }
 
     return (
-        <div className="flex flex-col gap-8 p-4 md:p-8">
-            <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-6 p-4 md:p-8">
+            <div className="flex items-start gap-4 print:hidden">
                 <Link href={`/t-portal/courses/${courseId}/levels/${levelId}/units`}>
                     <Button variant="ghost" size="icon" className="mt-2">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                 </Link>
-                <div>
+                <div className="flex-1">
                     <PageHeader
                         title={`Sessions: ${unit.title}`}
                         description={`🎯 ${unit.bigQuestion}`}
@@ -103,57 +105,89 @@ export default function SessionsPage() {
                 </div>
             </div>
 
-            {sessions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
-                    <h3 className="text-xl font-semibold">No Sessions Yet</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                        Click "Add Session" to create your first session for this unit.
-                    </p>
-                </div>
-            ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {sessions.map(session => (
-                        <Card key={session.id} className="flex flex-col">
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <CardTitle className="font-headline text-lg mb-2">{session.title}</CardTitle>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2">
-                                                <MoreVertical className="h-4 w-4" />
+            <Tabs defaultValue="sessions">
+                <TabsList className="print:hidden">
+                    <TabsTrigger value="sessions">Sessions</TabsTrigger>
+                    <TabsTrigger value="unit-plan">Unit Plan</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="sessions" className="mt-6">
+                    {sessions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+                            <h3 className="text-xl font-semibold">No Sessions Yet</h3>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Click "Add Session" to create your first session for this unit.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {sessions.map(session => (
+                                <Card key={session.id} className="flex flex-col">
+                                    <CardHeader>
+                                        <div className="flex items-start justify-between">
+                                            <CardTitle className="font-headline text-lg mb-2">{session.title}</CardTitle>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleEditClick(session)}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDelete(session.id)} className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow">
+                                        <p className="text-sm text-primary font-medium mb-4">
+                                            🤔 {session.littleQuestion}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground line-clamp-3">
+                                            {session.description}
+                                        </p>
+                                    </CardContent>
+                                    <CardFooter className="text-xs text-muted-foreground bg-muted/50 p-3 mt-auto flex justify-between">
+                                        <span>Order: {session.order}</span>
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3" /> {session.duration} min
+                                        </span>
+                                    </CardFooter>
+                                    <div className="px-3 pb-3">
+                                        <Link href={`/t-portal/courses/${courseId}/levels/${levelId}/units/${unitId}/sessions/${session.id}`}>
+                                            <Button variant="outline" size="sm" className="w-full">
+                                                <BookOpen className="mr-2 h-3 w-3" />
+                                                Lesson Plan
                                             </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleEditClick(session)}>
-                                                <Edit className="mr-2 h-4 w-4" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(session.id)} className="text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <p className="text-sm text-primary font-medium mb-4">
-                                    🤔 {session.littleQuestion}
-                                </p>
-                                <p className="text-sm text-muted-foreground line-clamp-3">
-                                    {session.description}
-                                </p>
-                            </CardContent>
-                            <CardFooter className="text-xs text-muted-foreground bg-muted/50 p-3 mt-auto flex justify-between">
-                                <span>Order: {session.order}</span>
-                                <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" /> {session.duration} min
-                                </span>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-            )}
+                                        </Link>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="unit-plan" className="mt-6">
+                    {unitMarkdown ? (
+                        <MarkdownView
+                            markdown={unitMarkdown}
+                            downloadFilename={unitPlanFilename(unit)}
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+                            <p className="text-sm text-muted-foreground">
+                                Add sessions to generate the Unit Plan view.
+                            </p>
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
 
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
                 setIsDialogOpen(open);
@@ -167,7 +201,7 @@ export default function SessionsPage() {
                     <DialogHeader>
                         <DialogTitle>{selectedSession ? 'Edit' : 'Add'} Session</DialogTitle>
                     </DialogHeader>
-                    <SessionForm 
+                    <SessionForm
                         courseId={courseId}
                         levelId={levelId}
                         unitId={unitId}

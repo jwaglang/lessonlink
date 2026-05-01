@@ -160,6 +160,29 @@ export interface Unit {
   order: number;
   estimatedHours: number;
   thumbnailUrl: string;
+  // Rich fields populated by unit-package importer
+  track?: string;
+  visualMotif?: string;
+  protagonist?: { name: string; species: string; description: string };
+  masterText?: string;
+  vocabulary?: string[];
+  forbiddenJargon?: string[];
+  assessmentLoop?: Record<string, any>;
+  homework?: Record<string, any>;
+  importedAt?: any;
+}
+
+export interface SessionMaterial {
+  type: string;
+  name: string;
+  purpose: string;
+  url?: string | null;
+  assetCode?: string | null;
+}
+
+export interface SessionRecast {
+  likelyError: string;
+  recast: string;
 }
 
 export interface Session {
@@ -175,6 +198,16 @@ export interface Session {
   thumbnailUrl: string;
   materials: string[];
   homeworkId?: string | null;
+  // Rich fields populated by unit-package importer
+  phase?: string;
+  tbltTask?: string;
+  sessionAims?: { linguistic: string; cognitive: string };
+  materialsRich?: SessionMaterial[];
+  recasts?: SessionRecast[];
+  taskBrief?: string;
+  operationalMechanics?: string;
+  livePerformanceNotes?: string;
+  deckSpec?: { sessionOrder: number; slides: any[] } | null;
 }
 
 export type ApprovalRequestType = 'new_student_booking' | 'late_reschedule' | 'late_cancel' | 'package_extension' | 'pause_request' | 'tutor_assignment' | 'approvalRequest';
