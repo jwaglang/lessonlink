@@ -351,7 +351,9 @@ Each session's \`slides\` array starts with the fixed shell (per House Style B):
 
 Then session-specific content slides. Use slide types from this enum: title, song, phonics-caps, phonics-caps-lower, phonics-caps-recall, framing, vocab-card, story-panel, cumulative-reveal, final-task, evaluation, transition.
 
-For each slide also include: \`layout\` (free text describing layout intent — apply the visual motif "${ctx.visualMotif}"), \`content\` (type-specific payload), and optionally \`tPrompt\` (what T says) and \`expectedLResponse\` (what L says/does).
+For each slide also include: \`layout\` (free text describing layout intent — apply the visual motif "${ctx.visualMotif}") and \`content\` (type-specific payload).
+
+\`tPrompt\` (what T says) and \`expectedLResponse\` (what L says/does) are REQUIRED on every slide where a T speaks or L responds. This means: every \`vocab-card\`, \`story-panel\`, \`cumulative-reveal\`, \`transition\`, \`final-task\`, and \`evaluation\` slide MUST have both \`tPrompt\` and \`expectedLResponse\` filled in — even when slides repeat a pattern (e.g. cow, pig, sheep, horse, duck — every single one gets its own \`tPrompt\` and \`expectedLResponse\`, do not abbreviate or skip after the first two). \`tPrompt\` and \`expectedLResponse\` are optional ONLY on display-only slides (\`title\`, \`song\`, \`phonics-caps\`, \`phonics-caps-lower\`, \`phonics-caps-recall\`, \`framing\`) where there is no T-L exchange.
 
 ### \`homework\` — KHGT-compatible block. Fill in:
 \`\`\`json

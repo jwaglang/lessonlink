@@ -647,6 +647,39 @@ KHGT is the fourth zoom level not yet spec'd in the original Q36 document. Built
 
 ---
 
+### ✅ Phase 19-L: T-Readable Markdown Views
+
+**Goal:** Render T-readable markdown views of Unit and Session content
+inside LL, generated from structured data already stored on Unit and
+Session records. Restore the readable lesson-plan artifact that existed
+before the Phase 19 JSON import flow, but generated from LL as the single
+source of truth (not as a parallel file).
+
+**Completed:** May 1, 2026 (Q4V).
+
+- Pure renderer module at `src/lib/unit-package-renderer.ts` with
+  `renderUnitMarkdown()` and `renderSessionMarkdown()` exports
+- Reusable display component at `src/components/markdown-view.tsx`
+  (react-markdown + remark-gfm, Tailwind prose styling, T-prompt
+  callouts, Download .md button, print-friendly chrome)
+- New session detail page at
+  `/t-portal/courses/[courseId]/levels/[levelId]/units/[unitId]/sessions/[sessionId]`
+- Sessions / Unit Plan tabs added to the existing sessions page
+- Type-aware slide formatter handles 12+ slide types (title, song,
+  phonics-caps, phonics-caps-lower, phonics-caps-recall, framing,
+  vocab-card, transition, story-panel, cumulative-reveal, final-task,
+  evaluation) with sensible per-type defaults for missing T prompts
+  and expected L responses
+- Asset Pack table shows asset name and is scoped per-session
+  (codes are session-local, not unit-wide)
+- Tested against Farm Animals unit (full Phase 19 import data) — both
+  views render cleanly, downloads produce valid .md files
+
+**Spec Document:** `LessonLink-Markdown-Views-Spec-Q4V.md`
+
+
+---
+
 ### Template Inventory — KHGT
 
 Templates confirmed by Captain (Q4S). Files exist in Captain's local archive; none are bundled in the codebase (see Phase 19-K-1 for bundling task).
